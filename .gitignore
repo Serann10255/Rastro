@@ -17,3 +17,9 @@ migracion/
 config/.identidad.env
 config/.api.env
 web/configuracion.json
+
+# Interfaces
+dist/
+*.tsbuildinfo
+web/public/configuracion.json
+cotejo/web/public/configuracion.json

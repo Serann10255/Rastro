@@ -1,6 +1,0 @@
-{
-  "_nota": "Plantilla. Copie a configuracion.json para el entorno local. En AWS lo regenera deploy/aws/90-configuracion.sh con los identificadores del despliegue, y por eso el archivo real no se versiona (REQ-09).",
-  "entorno": "local",
-  "region": "us-east-1",
-  "url_publica_api": "http://localhost:8080"
-}

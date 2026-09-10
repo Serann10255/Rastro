@@ -19,7 +19,7 @@ INICIO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "Despliegue de Rastro"
 echo "Inicio: ${INICIO}"
 
-for etapa in 10-datos 20-identidad 30-funciones 40-api 50-registro 90-configuracion; do
+for etapa in 10-datos 20-identidad 30-funciones 40-api 50-registro 60-sitios 90-configuracion; do
   echo
   echo "########################################"
   echo "# Etapa ${etapa}"

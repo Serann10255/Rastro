@@ -1,6 +1,6 @@
 # Instalación y uso
 
-Fecha: 2026-09-10 · Versión: 0.1
+Fecha: 2026-09-10 · Versión: 0.2
 
 ## Requisitos
 
@@ -8,7 +8,11 @@ Fecha: 2026-09-10 · Versión: 0.1
 |---|---|---|
 | Docker + Compose | 29.6 / v5.3 | Levantar la pila local |
 | Python | 3.12 o superior | Pruebas y programa de auditoría |
+| Node | 20 o superior | Solo para desarrollar las interfaces |
 | AWS CLI | 2.36 | Solo para desplegar en AWS |
+
+Con Docker basta para levantar todo: las interfaces se compilan dentro de su
+imagen. Node solo hace falta para iterar sobre ellas con recarga en caliente.
 
 ---
 
@@ -31,10 +35,15 @@ docker compose ps
 
 | Componente | Dirección |
 |---|---|
-| Interfaz de operación | http://localhost:5173 |
-| Consulta pública | http://localhost:5173/rastreo.html |
-| Puerta de enlace (API) | http://localhost:8080 |
+| Rastro — interfaz de operación | http://localhost:5173 |
+| Rastro — consulta pública | http://localhost:5173/rastreo |
+| Rastro — API | http://localhost:8080 |
+| Cotejo — interfaz de auditoría | http://localhost:5175 |
+| Cotejo — API | http://localhost:8007 |
 | Consola del almacenamiento | http://localhost:9001 (`local` / `localsecreto`) |
+
+El recorrido de cada aplicación está en
+[cómo se usa cada app](../despliegue/como-usar-cada-app.md).
 
 Cada microservicio expone además su documentación interactiva en su puerto
 directo, por ejemplo http://localhost:8002/docs para envíos.
@@ -63,8 +72,8 @@ docker compose down -v       # además borra los volúmenes
 1. Salir y entrar con `carlos@andes.test` / `Andes.2026`.
 2. La lista solo muestra los envíos asignados a ese conductor. El filtro lo
    aplica el servidor, no la pantalla.
-3. Abrir el envío y registrar puntos de control. El desplegable solo ofrece los
-   estados alcanzables desde el actual.
+3. Abrir el envío y registrar puntos de control. Solo aparecen como botones los
+   estados alcanzables desde el actual; el servidor los vuelve a comprobar.
 4. Antes de `ENTREGADO`, cargar la evidencia: el archivo va directamente al
    almacenamiento con un enlace prefirmado que vence en cinco minutos.
 
@@ -81,8 +90,13 @@ prueba que la acredite.
 
 ### Como destinatario
 
-Abrir http://localhost:5173/rastreo.html y pegar el identificador del envío. Sin
+Abrir http://localhost:5173/rastreo y pegar el identificador del envío. Sin
 cuenta y sin token. Se muestra el avance, no la operación de la empresa.
+
+### Como auditor, en Cotejo
+
+Abrir http://localhost:5175 y entrar con la misma cuenta de auditor. Ejecutar el
+catálogo, abrir un papel de trabajo y comprobar que su huella coincide.
 
 ### Comprobar el aislamiento
 
@@ -107,6 +121,13 @@ cualquier punto del repositorio.
 python -m pytest tests/unit -q      # solo unitarias
 python -m pytest tests/e2e -q       # solo extremo a extremo
 python -m pytest cotejo/tests -q    # solo el programa de auditoría
+```
+
+### Comprobar los tipos de las interfaces
+
+```bash
+cd web && npm install && npm run typecheck && npm run build
+cd ../cotejo/web && npm install && npm run typecheck && npm run build
 ```
 
 ---
@@ -151,6 +172,8 @@ Precedencia: variable de entorno → `config/deployment.json` → valor por omis
 | Variable | Para qué | Valor local |
 |---|---|---|
 | `RASTRO_ENTORNO` | `local`, `aws` o `memoria` (pruebas) | `local` |
+| `COTEJO_URL_API` | Sistema que Cotejo audita | `http://gateway:80` |
+| `COTEJO_DIR_PAPELES` | Dónde guarda los papeles de trabajo | `/papeles` (volumen) |
 | `RASTRO_ENDPOINT_DYNAMODB` | Dirección del almacén de datos | `http://dynamodb:8000` |
 | `RASTRO_ENDPOINT_S3` | Dirección interna del almacenamiento | `http://almacen:9000` |
 | `RASTRO_ENDPOINT_S3_PUBLICO` | Dirección con la que el **dispositivo** lo alcanza | `http://localhost:9000` |
@@ -173,6 +196,8 @@ firmar contra la dirección que usará el cliente. En AWS ambas coinciden.
 | El enlace prefirmado da error de nombre | Falta `RASTRO_ENDPOINT_S3_PUBLICO`, o apunta a un nombre que el cliente no resuelve |
 | `bloqueo de acceso publico: NO disponible` al preparar | Esperado: el almacenamiento local no implementa esa operación. En AWS sí se aplica |
 | Cotejo marca C-01 a C-03 como no ejecutados | Esperado en local: esas capacidades no existen. Se comprueban contra la cuenta desplegada |
+| El puerto 5175 está ocupado | Otro proyecto lo usa. Cambie el mapeo en `docker-compose.yml`; nada del sistema depende de ese número |
+| La interfaz muestra datos viejos tras una escritura | Recargue. Si persiste, es un fallo de invalidación en `web/src/api/consultas.ts` |
 
 ---
 

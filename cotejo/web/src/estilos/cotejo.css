@@ -1,0 +1,192 @@
+/* Estilos propios del programa de auditoria.
+ *
+ * Las fichas de diseno y los componentes se comparten con Rastro por una razon
+ * practica -son dos entregas del mismo equipo y mantener dos sistemas visuales
+ * seria trabajo sin retorno-, pero el color de acento cambia. La distincion
+ * importa: el auditor debe saber sin dudarlo si esta mirando el sistema o el
+ * programa que lo evalua.
+ */
+
+:root {
+  --acento: #5b3a8e;
+  --acento-fuerte: #472d70;
+  --acento-suave: #efe9f8;
+  --acento-borde: #cdbce6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --acento: #b79bea;
+    --acento-fuerte: #cdb8f3;
+    --acento-suave: #241a38;
+    --acento-borde: #402f60;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --acento: #b79bea;
+  --acento-fuerte: #cdb8f3;
+  --acento-suave: #241a38;
+  --acento-borde: #402f60;
+}
+
+/* -- Conclusiones de control ------------------------------------------- */
+
+.conclusion-CONFORME {
+  --estado-color: var(--exito);
+  --estado-fondo: var(--exito-suave);
+  --estado-borde: var(--exito-borde);
+}
+
+.conclusion-DESVIADO {
+  --estado-color: var(--peligro);
+  --estado-fondo: var(--peligro-suave);
+  --estado-borde: var(--peligro-borde);
+}
+
+/* Un control no ejecutado no es un control conforme, y tampoco una desviacion.
+ * Se le da un color propio para que no pueda confundirse con ninguno de los dos. */
+.conclusion-NO_EJECUTADA {
+  --estado-color: var(--texto-suave);
+  --estado-fondo: var(--fondo-sutil);
+  --estado-borde: var(--borde-fuerte);
+}
+
+.severidad-alta {
+  --estado-color: var(--peligro);
+  --estado-fondo: var(--peligro-suave);
+  --estado-borde: var(--peligro-borde);
+}
+
+.severidad-media {
+  --estado-color: var(--alerta);
+  --estado-fondo: var(--alerta-suave);
+  --estado-borde: var(--alerta-borde);
+}
+
+.severidad-baja {
+  --estado-color: var(--texto-suave);
+  --estado-fondo: var(--fondo-sutil);
+  --estado-borde: var(--borde);
+}
+
+/* -- Tarjeta de control ------------------------------------------------ */
+
+.control {
+  display: grid;
+  gap: var(--e-2);
+  padding: var(--e-3);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--estado-color, var(--borde-fuerte));
+  border-radius: var(--r-md);
+  background: var(--superficie);
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.control:hover {
+  box-shadow: var(--sombra-2);
+}
+
+.control__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+}
+
+.control__id {
+  font-family: var(--fuente-mono);
+  font-weight: 700;
+  font-size: var(--t-base);
+  color: var(--estado-color, var(--texto));
+}
+
+.control__enunciado {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.control__resumen {
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.control__marco {
+  font-size: var(--t-xs);
+  color: var(--texto-tenue);
+  overflow-wrap: anywhere;
+}
+
+/* -- Hallazgo ---------------------------------------------------------- */
+
+.hallazgo {
+  display: grid;
+  gap: var(--e-2);
+  padding: var(--e-4);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--estado-color, var(--borde-fuerte));
+  border-radius: var(--r-md);
+  background: var(--superficie);
+}
+
+.hallazgo__campo {
+  display: grid;
+  gap: 2px;
+}
+
+.hallazgo__termino {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-tenue);
+}
+
+.hallazgo__valor {
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+/* -- Evidencia literal ------------------------------------------------- */
+
+.evidencia {
+  margin: 0;
+  padding: var(--e-3);
+  background: var(--superficie-hundida);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  max-height: 28rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.informe {
+  margin: 0;
+  padding: var(--e-4);
+  background: var(--superficie-hundida);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  /* El informe usa un ancho fijo de 78 columnas: se desplaza dentro de su
+   * bloque en lugar de reflujar, porque su alineacion es parte del formato. */
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.huella {
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  overflow-wrap: anywhere;
+}

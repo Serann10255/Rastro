@@ -15,7 +15,7 @@ formato ISO.
 | `guias/` | [Instalación y uso](instalacion-y-uso.md) y este índice |
 | `decisiones/` | Registros de decisión (ADR) con contexto, alternativas y consecuencias |
 | `pruebas/` | [Plan y trazabilidad](../pruebas/plan-y-trazabilidad.md): cada requisito con la prueba que lo comprueba |
-| `despliegue/` | [Entorno AWS](../despliegue/entorno-aws.md): etapas, restricciones, coste y migración |
+| `despliegue/` | [Cómo se usa cada app](../despliegue/como-usar-cada-app.md) y [entorno AWS](../despliegue/entorno-aws.md): credenciales, etapas, coste y migración |
 | `cambios/` | Bitácora por fecha |
 
 ## Módulos documentados
@@ -29,8 +29,10 @@ formato ISO.
 | Evidencias | [`servicio-evidencias`](../modulos/servicio-evidencias/README.md) |
 | Consulta pública | [`servicio-consulta-publica`](../modulos/servicio-consulta-publica/README.md) |
 | Bitácora | [`servicio-bitacora`](../modulos/servicio-bitacora/README.md) |
-| Interfaz web | [`interfaz-web`](../modulos/interfaz-web/README.md) |
+| Interfaz web de Rastro | [`interfaz-web`](../modulos/interfaz-web/README.md) |
 | Programa de auditoría | [`cotejo`](../modulos/cotejo/README.md) |
+| API de auditoría | [`cotejo-api`](../modulos/cotejo-api/README.md) |
+| Interfaz de auditoría | [`cotejo-web`](../modulos/cotejo-web/README.md) |
 
 ## Decisiones registradas
 
@@ -40,6 +42,7 @@ formato ISO.
 | [002](../decisiones/adr-002-capa-comun-de-acceso-a-datos.md) | Una única capa de acceso a datos |
 | [003](../decisiones/adr-003-identificador-aleatorio.md) | Identificador de rastreo aleatorio |
 | [004](../decisiones/adr-004-rol-compartido.md) | Rol de ejecución compartido |
+| [005](../decisiones/adr-005-react-con-configuracion-en-ejecucion.md) | React con configuración en tiempo de ejecución |
 
 ## Al añadir o modificar un módulo
 

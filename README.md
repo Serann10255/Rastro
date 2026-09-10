@@ -30,10 +30,15 @@ puerta de enlace y la interfaz web, y siembra datos sintéticos.
 
 | Componente | Dirección |
 |---|---|
-| Interfaz de operación | http://localhost:5173 |
-| Consulta pública de un envío | http://localhost:5173/rastreo.html |
-| Puerta de enlace (API) | http://localhost:8080 |
+| Rastro — interfaz de operación | http://localhost:5173 |
+| Rastro — consulta pública | http://localhost:5173/rastreo |
+| Rastro — API | http://localhost:8080 |
+| Cotejo — interfaz de auditoría | http://localhost:5175 |
+| Cotejo — API | http://localhost:8007 |
 | Consola del almacenamiento | http://localhost:9001 |
+
+Cómo se usa cada una:
+[guía de aplicaciones](documentacion/despliegue/como-usar-cada-app.md).
 
 Usuarios sintéticos (definidos en [`seed/usuarios.json`](seed/usuarios.json)):
 
@@ -59,6 +64,8 @@ pila de microservicios. No requieren Docker ni credenciales de AWS.
 
 ## Ejecutar la auditoría
 
+Desde la interfaz en http://localhost:5175, o desde la línea de comandos:
+
 ```bash
 cd cotejo && python -m cotejo ejecutar
 ```
@@ -73,13 +80,16 @@ papeles de trabajo y el informe en `cotejo/papeles/<ejecución>/`.
 ```
 libs/rastro_core/     Capa común: los controles críticos viven aquí, una sola vez
 services/             Seis microservicios, uno por responsabilidad
-web/                  Interfaz web estática, mobile-first
+web/                  Interfaz de Rastro (React + TypeScript), mobile-first
 gateway/              Puerta de enlace local (equivalente de API Gateway)
 deploy/aws/           Secuencia de despliegue versionada
 deploy/local/         Preparación del entorno local
 tests/                Pruebas de Rastro
 seed/                 Datos sintéticos
 cotejo/               Programa de auditoría (proyecto de Auditoría de Sistemas)
+  cotejo/cotejo/      Ejecutor, papeles de trabajo, informe
+  cotejo/api/         Interfaz HTTP, restringida al rol auditor
+  cotejo/web/         Interfaz de auditoría (React + TypeScript)
 documentacion/        Toda la documentación del repositorio
 ```
 
@@ -105,6 +115,7 @@ El sistema corre igual en local y en AWS; lo que cambia es dónde está cada pie
 | DynamoDB | DynamoDB Local |
 | S3 + KMS | MinIO (sin KMS) |
 | Cognito | Microservicio `auth` |
+| Sitio estático en S3 | Contenedor nginx con el sitio compilado |
 
 Las diferencias no se disimulan. El cifrado con llave administrada, el registro
 de actividad y el bloqueo de acceso público **no existen** en el entorno local:

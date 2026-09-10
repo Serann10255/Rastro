@@ -42,17 +42,23 @@ cat > "${ARCHIVO_CONFIG}" <<JSON
 JSON
 ok "escrito ${ARCHIVO_CONFIG}"
 
-# La interfaz web lee el mismo archivo, servido junto al sitio estatico.
-cp "${ARCHIVO_CONFIG}" "${RAIZ_PROYECTO}/web/configuracion.json"
-ok "copia disponible para la interfaz web"
+# La configuracion de la interfaz la escribe la etapa 60-sitios, que la publica
+# junto al sitio compilado. Aqui solo se comprueba que exista.
+if [[ -f "${RAIZ_PROYECTO}/web/public/configuracion.json" ]]; then
+  ok "la interfaz web tiene su configuracion de ejecucion"
+else
+  aviso "falta web/public/configuracion.json; ejecute 60-sitios.sh"
+fi
 
 paso "Verificacion de que no quedan identificadores escritos a mano"
 
 # Comprobacion del riesgo R-07: si el numero de cuenta aparece literal en el
 # codigo, la migracion a otra cuenta fallara. Se busca antes de necesitarlo.
 if grep -rIn --exclude-dir=config --exclude-dir=.git --exclude-dir=evidencias-despliegue \
-     --exclude="*.json" -e "${CUENTA}" "${RAIZ_PROYECTO}/libs" "${RAIZ_PROYECTO}/services" \
-     "${RAIZ_PROYECTO}/web" 2>/dev/null; then
+     --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=public \
+     --exclude="*.json" -e "${CUENTA}" \
+     "${RAIZ_PROYECTO}/libs" "${RAIZ_PROYECTO}/services" \
+     "${RAIZ_PROYECTO}/web/src" "${RAIZ_PROYECTO}/cotejo/cotejo" 2>/dev/null; then
   aviso "el numero de cuenta aparece literal en el codigo: corrijalo antes de migrar (R-07)"
   exit 1
 fi

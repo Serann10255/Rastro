@@ -170,15 +170,68 @@ services:
       - publico
       - bitacora
 
+  # Sitio estatico compilado. La imagen final solo sirve archivos: no lleva
+  # Node ni node_modules, igual que el despliegue en el almacenamiento de
+  # objetos de AWS, donde tampoco hay servidor de aplicaciones.
   web:
-    image: nginx:1.27-alpine
-    volumes:
-      - ./web:/usr/share/nginx/html:ro
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - gateway
 
+  # ----------------------------------------------------------------------- #
+  # Cotejo: programa de auditoria del sistema anterior
+  # ----------------------------------------------------------------------- #
+  #
+  # Es un proyecto distinto -otra asignatura- y por eso corre como servicio
+  # aparte, con su propia interfaz y su propio almacen. Comparte la pila porque
+  # audita a Rastro: sin el sistema auditado levantado, sus pruebas sustantivas
+  # no tienen contra que ejecutarse.
+
+  cotejo-api:
+    build:
+      context: .
+      dockerfile: cotejo/Dockerfile
+    restart: unless-stopped
+    environment:
+      COTEJO_ENTORNO: local
+      COTEJO_URL_API: http://gateway:80
+      COTEJO_ENDPOINT_S3: http://almacen:9000
+      COTEJO_ENDPOINT_DYNAMODB: http://dynamodb:8000
+      COTEJO_BUCKET: rastro-evidencias-local
+      COTEJO_TABLA_BITACORA: rastro-bitacora
+      COTEJO_DIR_PAPELES: /papeles
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: localsecreto
+      # El mismo material de verificacion que Rastro: el auditor es un usuario
+      # de la organizacion auditada y presenta el token que emite su proveedor
+      # de identidad.
+      RASTRO_JWT_EMISOR: http://localhost:8080/auth
+      RASTRO_JWT_AUDIENCIA: rastro-web
+      RASTRO_JWT_SECRETO: ${RASTRO_JWT_SECRETO:-rastro-secreto-local-solo-para-desarrollo-32b}
+    volumes:
+      - papeles-cotejo:/papeles
+    ports:
+      - "8007:8000"
+    depends_on:
+      - gateway
+
+  cotejo-web:
+    build:
+      context: ./cotejo/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5175:80"
+    depends_on:
+      - cotejo-api
+
 volumes:
   datos-dynamodb:
   datos-minio:
+  papeles-cotejo:

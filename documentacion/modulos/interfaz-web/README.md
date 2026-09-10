@@ -1,49 +1,95 @@
-# Módulo `interfaz-web`
+# Módulo `interfaz-web` — interfaz de operación de Rastro
 
-Ubicación: `web/` · Puerto local: 5173
+Ubicación: `web/` · Puerto local: 5173 · Stack: React 18 + TypeScript + Vite
 
 ## Qué hace
 
-Interfaz de operación y consulta pública. Aplicación de página única en
-JavaScript sin dependencias ni paso de compilación: se sirve como sitio estático
-desde el almacenamiento de objetos, que es lo que la mantiene disponible entre
-sesiones del laboratorio.
+Interfaz de operación y consulta pública. Aplicación de una sola página que se
+compila a archivos estáticos y se publica en el almacenamiento de objetos, lo
+que la mantiene disponible entre sesiones del laboratorio.
 
-| Archivo | Para qué |
+| Ruta | Quién entra | Qué hace |
+|---|---|---|
+| `/acceso` | cualquiera | Entrar. Muestra las cuentas sintéticas |
+| `/panel` | los cuatro roles | Panel distinto según el rol |
+| `/envios` | admin, despachador, conductor | Listado con búsqueda y filtros |
+| `/envios/nuevo` | admin, despachador | Registro de envío |
+| `/envios/:id` | los cuatro roles | Detalle, punto de control, evidencia |
+| `/bitacora` | auditor | Bitácora y verificación de integridad |
+| `/rastreo` | **sin cuenta** | Consulta pública del avance |
+
+## Estructura
+
+```
+src/
+├── api/
+│   ├── cliente.ts      Cliente HTTP, configuración en ejecución, errores tipados
+│   ├── sesion.tsx      Contexto de sesión y aviso de caducidad
+│   └── consultas.ts    Hooks de React Query: lecturas, escrituras, invalidación
+├── componentes/
+│   ├── ui.tsx          Botones, campos, tarjetas, avisos, modal, esqueletos
+│   ├── Estructura.tsx  Barra, navegación por rol, selector de tema, pie
+│   └── notificaciones.tsx  Avisos emergentes y traducción de errores
+├── paginas/            Una por ruta
+├── estilos/            tokens.css · base.css · componentes.css
+└── tipos/              Contratos del backend
+```
+
+## Un panel distinto por rol
+
+Cada rol llega buscando algo diferente. Una pantalla común obligaría a los tres a
+buscar lo suyo entre lo de los demás.
+
+| Rol | Qué ve primero |
 |---|---|
-| `index.html` | Operación: acceso, listado, registro, detalle y bitácora |
-| `rastreo.html` | Consulta pública por identificador, sin cuenta |
-| `assets/api.js` | Cliente de la API y manejo de sesión |
-| `assets/app.js` | Lógica de la interfaz de operación |
-| `assets/estilos.css` | Estilos, mobile-first |
-| `configuracion.json` | Dirección de la API, leída en ejecución (REQ-09) |
+| Despachador | Envíos en curso, sin asignar, con incidencia y entregados; distribución del proceso; pendientes de asignar |
+| Conductor | Su siguiente parada, con acción directa; el resto de su ruta |
+| Auditor | Registros en bitácora, intentos rechazados y estado de la cadena, con verificación en un botón |
 
 ## Decisiones
 
-**Sin framework ni compilación.** Un sitio estático se publica copiando
-archivos, sobrevive al cierre de la sesión del laboratorio y no añade una cadena
-de herramientas que mantener durante un semestre.
+**React con configuración en tiempo de ejecución.** Justificada en
+[ADR-005](../../decisiones/adr-005-react-con-configuracion-en-ejecucion.md). La
+condición crítica es que la dirección de la API **no se hornea en el bundle**: se
+lee de `configuracion.json`, porque REQ-09 exige que trasladar el sistema a otra
+cuenta no obligue a recompilar.
 
-**La dirección de la API no está en el código.** Se lee de `configuracion.json`;
-al migrar de cuenta cambia ese archivo y nada más.
+**Las acciones salen del servidor, no de una copia de la máquina de estados.** El
+detalle pregunta a `/transiciones` qué estados son alcanzables. Duplicar esa
+lógica en el cliente crearía dos fuentes de verdad, y la del cliente se quedaría
+atrás sin que nadie lo notara hasta ver un rechazo inexplicable.
 
-**El token vive en `sessionStorage`, no en una cookie.** Se pierde al cerrar la
-pestaña, que es el comportamiento deseado en un dispositivo compartido.
+**El selector de estado son botones, no un desplegable.** Un desplegable exige
+tres toques: abrir, buscar, elegir. Registrar el avance debe costar menos que
+enviar un mensaje de chat; si cuesta más, el mensajero vuelve al chat y el
+sistema deja de tener datos. Es la decisión de interfaz con más efecto sobre la
+viabilidad operativa del proyecto.
 
-**La interfaz oculta lo que un rol no puede hacer, pero eso es comodidad y no
-control.** La autorización la decide el servidor en cada operación. Cualquiera
-puede editar esta página; nadie puede editar la matriz de autorización.
+**La carga de evidencia muestra sus tres pasos.** Solicitar el enlace, cargar el
+archivo y confirmar son operaciones distintas contra servicios distintos.
+Mostrarlas por separado hace que un fallo señale dónde ocurrió, en lugar de
+producir un «no se pudo cargar» que no dice nada.
+
+**Sin biblioteca de componentes de terceros.** El proyecto se audita a sí mismo;
+conviene que lo que se sirve sea código propio y revisable.
+
+**Sin biblioteca de gráficos.** Las barras del panel y la cadena de la bitácora
+son CSS. Añadir una dependencia de decenas de kilobytes para dibujar siete
+cantidades no se justifica.
+
+**El token vive en `sessionStorage`.** Se pierde al cerrar la pestaña, que es el
+comportamiento deseado en un dispositivo compartido entre mensajeros.
 
 **Un 401 cierra la sesión en lugar de reintentar.** Las credenciales del
-laboratorio duran cuatro horas: un token caducado a media jornada es normal, y
-reintentar contra él solo produce ruido.
+laboratorio duran cuatro horas: caducar a media jornada es normal, y reintentar
+contra un token muerto solo produce ruido. La interfaz avisa cinco minutos antes.
 
-**Todo texto de origen externo se escapa antes de insertarse en el documento.**
+**Sin conexión no es un error del sistema.** El cliente distingue el fallo de red
+y lo dice con esas palabras, porque la condición real del mensajero es
+conectividad intermitente en vía.
 
-**Descartado: aplicación móvil nativa.** Está fuera del alcance del proyecto.
-Se atiende con una interfaz web adaptable.
-
----
+**Descartado: aplicación móvil nativa.** Está fuera del alcance del proyecto. Se
+atiende con una interfaz web adaptable.
 
 ## Comportamiento responsive
 
@@ -56,48 +102,67 @@ conectividad intermitente en vía.
 
 | Nombre | Ancho mínimo | Qué cambia |
 |---|---|---|
-| base | — | Una columna. Navegación en fila deslizable horizontal |
-| `sm` | 640 px | Formularios a dos columnas (`.campos--pareja`). Estado del envío a la derecha del dato |
-| `md` | 768 px | Más espaciado. Navegación deja de deslizarse y se envuelve. Listado de envíos a dos columnas |
-| `lg` | 1024 px | Detalle en dos paneles: histórico a la izquierda, acciones a la derecha. El listado vuelve a una columna, ya ancha |
+| base | — | Una columna. Navegación en fila deslizable. Selector de estado apilado |
+| — | 480 px | Selector de estado a dos columnas |
+| `sm` | 640 px | Rejillas a dos columnas. Modal centrado en lugar de hoja inferior |
+| `md` | 768 px | Más espaciado. Rejillas a tres columnas. Filtros en línea |
+| `lg` | 1024 px | Rejillas a cuatro columnas. Detalle en dos paneles: histórico a la izquierda, acciones a la derecha |
 | `xl` | 1280 px | Solo aumenta el espaciado exterior |
 
-### Comprobaciones verificadas a 360 px
+### Comprobaciones verificadas
 
 | Regla del proyecto | Cómo se cumple |
 |---|---|
-| Usable a 360 px | Verificado en navegador |
+| Usable a 360 px | Verificado en navegador en las cinco pantallas |
 | Sin scroll horizontal en el documento | `overflow-x: hidden` en `body` y `min-width: 0` en los contenedores de rejilla |
 | Tablas anchas scrollean en su contenedor | `.tabla-contenedor` con `overflow-x: auto` y `max-width: 100%` |
 | Imágenes con `max-width: 100%` | Regla global |
-| Áreas táctiles de 44×44 px | Variable `--tactil`, aplicada a botones, campos y elementos de lista |
-| El texto no se desborda ni se corta | `overflow-wrap: anywhere` en identificadores UUID y datos largos |
-| Navegación colapsada en móvil | Fila deslizable con `overflow-x: auto` y elementos que no se encogen |
-
-### Un defecto encontrado y corregido
-
-La tabla de bitácora declara `min-width: 40rem` para que sus columnas sean
-legibles. En un viewport de 360 px, **estiraba su contenedor y trasladaba el
-desbordamiento a la página**: el documento medía 869 px.
-
-La causa es que un elemento de rejilla o de caja flexible no baja por omisión de
-su ancho de contenido. Se corrigió con `min-width: 0` en los contenedores y
-`max-width: 100%` en el contenedor de tabla. Tras la corrección el documento
-mide 360 px y la tabla scrollea dentro de su propio bloque.
+| Áreas táctiles de 44×44 px | Ficha `--tactil` aplicada a botones, campos, casillas y elementos de lista |
+| El texto no se desborda ni se corta | `overflow-wrap: anywhere` en identificadores, direcciones y hashes |
+| Navegación colapsada en móvil | Fila deslizable con `scroll-snap` y elementos que no se encogen |
 
 ### Otras consideraciones
 
-- **Contraste y tema.** Paleta de tokens con variante para `prefers-color-scheme: dark`.
-- **Tipografía de formulario a 1 rem.** Evita el zoom automático de iOS al enfocar un campo.
-- **`prefers-reduced-motion`.** Las transiciones se anulan.
-- **Foco visible.** `outline` de 3 px en todo elemento interactivo.
-- **Captura de evidencia.** `capture="environment"` abre la cámara trasera en móvil.
-- **Semántica.** `aria-current="page"` en la navegación, `role="status"` en el
-  progreso de carga, `<caption>` para lectores de pantalla en la tabla.
+- **Tema.** Claro, oscuro y automático. El selector rota entre los tres y
+  recuerda la elección. El mensajero a veces necesita fijar el modo claro con sol
+  directo.
+- **Tipografía de formulario a 1 rem.** Evita el zoom automático de iOS al
+  enfocar un campo.
+- **`prefers-reduced-motion`.** Transiciones y animaciones se anulan.
+- **Enlace de salto al contenido.** Primera parada del tabulador, visible solo al
+  recibir el foco.
+- **Foco visible** de 2 px en todo elemento interactivo.
+- **Semántica.** `aria-current` en navegación, `aria-pressed` en el selector de
+  estado, `aria-live="polite"` en las notificaciones, `role="alert"` en errores,
+  `<caption>` para lectores de pantalla en la tabla de bitácora.
+- **Captura de evidencia.** `capture="environment"` abre la cámara trasera.
+- **Límite de error.** Un fallo de renderizado muestra un mensaje con opción de
+  recargar. En un dispositivo en vía, una pantalla en blanco es indistinguible de
+  una caída del sistema.
 
 ## Dependencias y relaciones
 
-- **Depende de**: la puerta de enlace (`gateway`) y, a través de ella, de todos
-  los servicios. Ninguna biblioteca de terceros.
-- **Sirve a**: despachador, conductor y auditor en `index.html`; destinatario en
-  `rastreo.html`.
+| Dependencia | Para qué |
+|---|---|
+| `react`, `react-dom` | Interfaz |
+| `react-router-dom` | Enrutamiento y rutas protegidas |
+| `@tanstack/react-query` | Estado del servidor, reintento e invalidación |
+| `vite`, `typescript` | Compilación y tipos |
+
+- **Consume**: la puerta de enlace y, a través de ella, los seis servicios.
+- **Comparte estilos con** [`cotejo-web`](../cotejo/README.md), que copia las
+  mismas fichas de diseño y cambia el color de acento.
+
+## Desarrollo
+
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:5173, reenvía la API a localhost:8080
+npm run typecheck
+npm run build
+```
+
+En desarrollo, Vite reenvía `/auth`, `/envios`, `/publico` y `/bitacora` a la
+puerta de enlace, de modo que no hay diferencia de origen entre desarrollo y el
+sitio publicado.

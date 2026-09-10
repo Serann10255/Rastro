@@ -22,6 +22,68 @@ Fecha: 2026-09-10 · Versión: 0.1
 
 ---
 
+## Credenciales: qué hace falta y qué no
+
+**Nada de lo local necesita credenciales de AWS.** La pila de `docker compose`
+usa claves ficticias (`local` / `localsecreto`) contra DynamoDB Local y MinIO. Se
+puede desarrollar y probar el sistema entero sin haber abierto nunca el
+laboratorio.
+
+**Para desplegar sí son obligatorias**, porque los guiones llaman a la interfaz
+del proveedor.
+
+### Cómo cargarlas
+
+AWS Academy Learner Lab entrega credenciales **temporales** de tres partes. En el
+laboratorio, *AWS Details → AWS CLI → Show*, y se copia el bloque en
+`~/.aws/credentials`:
+
+```ini
+[default]
+aws_access_key_id     = ASIA...
+aws_secret_access_key = ...
+aws_session_token     = ...
+```
+
+El `aws_session_token` es imprescindible: son credenciales temporales y sin él
+toda llamada falla con un error de firma que no dice cuál es el problema.
+
+Comprobar antes de desplegar:
+
+```bash
+aws sts get-caller-identity
+```
+
+Debe devolver el número de cuenta. Si falla, las credenciales caducaron.
+
+### Caducan cada sesión
+
+Duran lo que la sesión del laboratorio, unas cuatro horas. Al caducar hay que
+volver a copiar el bloque; **el mismo `[default]` se sobrescribe**, no hay que
+crear perfiles nuevos.
+
+Por eso `comun.sh` consulta la identidad al empezar y **falla ahí** si no hay
+sesión válida, en lugar de a mitad del despliegue con recursos creados a medias.
+Y por eso la secuencia es idempotente: si caduca en mitad, se recargan las
+credenciales y se vuelve a ejecutar sin deshacer nada.
+
+### Si prefiere no tocar `~/.aws/credentials`
+
+Las variables de entorno tienen precedencia y no dejan rastro en disco:
+
+```bash
+export AWS_ACCESS_KEY_ID=ASIA...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_SESSION_TOKEN=...
+export AWS_REGION=us-east-1
+```
+
+Es lo recomendable en un equipo compartido. En cualquiera de los dos casos,
+**las credenciales nunca se versionan**: no aparecen en el repositorio ni en
+`config/deployment.json`, que solo guarda identificadores de recursos.
+
+---
+
 ## Ejecutar el despliegue
 
 ```bash
@@ -45,10 +107,26 @@ modo que un tercero pueda repetir la verificación.
 | `30-funciones.sh` | Empaqueta y despliega los cinco microservicios como funciones Lambda |
 | `40-api.sh` | Interfaz HTTP, validador de tokens (SU-01), rutas e integraciones |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
+| `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
 | `90-configuracion.sh` | Escribe `config/deployment.json` y comprueba que no queden identificadores literales |
 | `95-verificar.sh` | Confirma que cada componente existe y que el punto público responde |
 
 `auth` no se despliega en AWS: allí lo sustituye Amazon Cognito.
+
+La interfaz de **Cotejo no se publica por omisión**: el almacén de papeles de
+trabajo concentra información sobre las debilidades del sistema auditado, y
+publicarla en un sitio de lectura pública ampliaría la superficie sin necesidad.
+Se sirve en la máquina del auditor, o se publica de forma explícita con
+`RASTRO_PUBLICAR_COTEJO=si`.
+
+### Las interfaces y REQ-09
+
+La compilación **no hornea la dirección de la API en el bundle**. Cada sitio la
+lee de su `configuracion.json` en tiempo de ejecución, que `60-sitios.sh` escribe
+con los identificadores del despliegue. Un mismo `dist/` compilado sirve para
+local y para AWS. Si alguien introdujera una variable de entorno de compilación
+con la URL, REQ-09 dejaría de cumplirse aunque el resto siguiera igual. Véase
+[ADR-005](../decisiones/adr-005-react-con-configuracion-en-ejecucion.md).
 
 ---
 
@@ -139,10 +217,9 @@ concluye que el control está bien.
 
 ## Después de desplegar
 
-1. Copiar `config/deployment.json` junto a la interfaz web (`90-configuracion.sh`
-   ya lo hace).
-2. Publicar el sitio estático en su contenedor.
-3. Ejecutar el programa de auditoría:
+1. Abrir la interfaz en la dirección que imprime `60-sitios.sh` y comprobar el
+   acceso con una de las cuentas sintéticas.
+2. Ejecutar el programa de auditoría:
 
 ```bash
 cd cotejo && python -m cotejo ejecutar

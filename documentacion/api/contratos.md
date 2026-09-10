@@ -1,6 +1,6 @@
 # Contratos de la interfaz de programación
 
-Fecha: 2026-09-10 · Versión: 0.1
+Fecha: 2026-09-10 · Versión: 0.2
 
 Base local: `http://localhost:8080` · En AWS: el valor de `url_publica_api` en
 `config/deployment.json`.
@@ -275,3 +275,139 @@ es el mismo, de modo que la interfaz web funciona contra cualquiera de los dos.
 | `/envios/{id}/eventos`, `/envios/{id}/transiciones` | `tracking` |
 | `/envios/{id}/evidencias*` | `evidence` |
 | `/envios*` (resto) | `shipments` |
+
+
+---
+
+# API del programa de auditoría (Cotejo)
+
+Base local: `http://localhost:8007`. Es un **servicio distinto** del de Rastro:
+otro proyecto, otro puerto, otro almacén.
+
+**Toda operación salvo `/salud` exige un token del grupo `auditor`.** Se valida
+el mismo token que emite el proveedor de identidad de Rastro: el auditor es un
+usuario de la organización auditada. Un despachador con token válido recibe 403.
+
+El almacén de papeles de trabajo concentra información sobre las debilidades del
+sistema auditado; su lectura restringida es un control, no una formalidad.
+
+## Operaciones
+
+### `GET /salud` — sin autenticación
+
+```json
+{
+  "servicio": "cotejo-api",
+  "sistema_auditado": "Rastro",
+  "entorno": "local",
+  "url_auditada": "http://gateway:80",
+  "controles_en_catalogo": 8,
+  "catalogo": "cargado"
+}
+```
+
+### `GET /catalogo`
+
+Los ocho controles con marco, tipo, procedimiento, criterio, evidencia esperada y
+severidad, más los hallazgos permanentes con su nota de alcance.
+
+El criterio se devuelve tal como está declarado en el catálogo, **antes** de
+ejecutar nada: es lo que impide acomodarlo al resultado.
+
+### `POST /ejecuciones`
+
+Recorre el catálogo completo en una sola invocación.
+
+```json
+{ "solo": ["C-05", "C-06"] }
+```
+
+`solo` es opcional; vacío ejecuta todo. Devuelve `201` con la cobertura, el
+resultado por control y los hallazgos.
+
+Un fallo en un control no detiene el resto: queda marcado como `NO_EJECUTADA` con
+su motivo.
+
+### `GET /ejecuciones` · `GET /ejecuciones/{id}`
+
+Listado de ejecuciones almacenadas y detalle de una, con `cobertura`,
+`controles` y `hallazgos`.
+
+La cobertura distingue tres cosas que no deben confundirse:
+
+```json
+{
+  "controles_del_catalogo": 8,
+  "controles_con_resultado": 5,
+  "conformes": 5,
+  "desviados": 0,
+  "no_ejecutados": 3,
+  "cobertura": "5/8"
+}
+```
+
+**Un control no ejecutado no es un control conforme.**
+
+### `GET /ejecuciones/{id}/papeles/{control}`
+
+La evidencia literal, con la huella recalculada en el momento:
+
+```json
+{
+  "contenido": { "procedimiento": "...", "observaciones": [...] },
+  "huella_registrada": "3f2a...",
+  "huella_recalculada": "3f2a...",
+  "coincide": true
+}
+```
+
+La huella se recalcula al leer, no se copia del índice: así abrir el papel sirve
+además como comprobación de que nadie lo editó.
+
+### `POST /ejecuciones/{id}/verificacion`
+
+Recalcula todas las huellas del almacén.
+
+```json
+{
+  "almacen_integro": false,
+  "papeles_verificados": 8,
+  "discrepancias": [
+    { "control_id": "C-05", "tipo": "HUELLA_DISCORDANTE", "archivo": "evidencias/C-05.json" }
+  ]
+}
+```
+
+Tipos posibles: `HUELLA_DISCORDANTE` (el archivo se editó) y `ARCHIVO_AUSENTE`
+(se borró).
+
+El almacén **detecta** la manipulación; no la previene. Prometer prevención donde
+solo hay detección sería una afirmación que la evidencia no sostiene.
+
+### `GET /comparacion?a=&b=`
+
+Compara la clasificación de dos ejecuciones.
+
+```json
+{
+  "reproducible": true,
+  "controles_comparados": 8,
+  "coincidencias": 8,
+  "diferencias": []
+}
+```
+
+Se comparan las conclusiones y no las huellas: cada ejecución tiene su propia
+marca de tiempo y, por lo tanto, su propia huella. Lo que debe reproducirse es el
+juicio sobre cada control, no el byte.
+
+### `GET /ejecuciones/{id}/informe.txt`
+
+El informe completo en texto plano, con alcance, resultado por control,
+hallazgos y limitaciones declaradas.
+
+## Seguridad de las rutas
+
+Los identificadores de ejecución y de control se validan contra recorrido de
+directorios: uno con `/`, `\` o `..` se rechaza antes de tocar el sistema de
+archivos.
