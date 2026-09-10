@@ -1,0 +1,20 @@
+# Instrucciones locales para Claude
+CLAUDE.md
+.claude/
+
+# Entorno virtual de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Entorno y secretos
+.env
+.env.local
+
+# Sistema operativo / editores
+Thumbs.db
+desktop.ini
+.DS_Store
+.idea/
+.vscode/
