@@ -25,8 +25,9 @@ reproducibles.
 docker compose up -d
 ```
 
-Levanta la pila entera: DynamoDB Local, MinIO, los seis microservicios, la
-puerta de enlace y la interfaz web, y siembra datos sintéticos.
+Levanta la pila entera: DynamoDB Local, MinIO, los ocho microservicios, la
+puerta de enlace y las dos interfaces web, y siembra datos sintéticos —dos
+empresas, diez usuarios, catálogos y veinte envíos con recorridos variados—.
 
 | Componente | Dirección |
 |---|---|
@@ -40,15 +41,29 @@ puerta de enlace y la interfaz web, y siembra datos sintéticos.
 Cómo se usa cada una:
 [guía de aplicaciones](documentacion/despliegue/como-usar-cada-app.md).
 
-Usuarios sintéticos (definidos en [`seed/usuarios.json`](seed/usuarios.json)):
+Diez cuentas repartidas en dos empresas, definidas en
+[`seed/organizaciones.json`](seed/organizaciones.json). Las contraseñas se
+almacenan derivadas con PBKDF2; estas son de desarrollo y deben cambiarse antes
+de cualquier despliegue con datos reales.
 
-| Correo | Clave | Organización | Grupo |
+| Correo | Clave | Organización | Rol |
 |---|---|---|---|
-| `admin@andes.test` | `Andes.2026` | org-andes | administrador |
-| `despacho@andes.test` | `Andes.2026` | org-andes | despachador |
-| `carlos@andes.test` | `Andes.2026` | org-andes | conductor |
-| `auditor@andes.test` | `Andes.2026` | org-andes | auditor |
-| `despacho@sabana.test` | `Sabana.2026` | org-sabana | despachador |
+| `admin@andes.test` | `Andes.Admin.2026` | org-andes | administrador |
+| `despacho@andes.test` | `Andes.Despacho.2026` | org-andes | despachador |
+| `coordinacion@andes.test` | `Andes.Coord.2026` | org-andes | coordinador |
+| `carlos@andes.test` | `Andes.Carlos.2026` | org-andes | conductor |
+| `camila@andes.test` | `Andes.Camila.2026` | org-andes | conductor |
+| `auditor@andes.test` | `Andes.Auditor.2026` | org-andes | auditor |
+| `admin@sabana.test` | `Sabana.Admin.2026` | org-sabana | administrador |
+| `despacho@sabana.test` | `Sabana.Despacho.2026` | org-sabana | despachador |
+| `santiago@sabana.test` | `Sabana.Santiago.2026` | org-sabana | conductor |
+| `auditor@sabana.test` | `Sabana.Auditor.2026` | org-sabana | auditor |
+
+La lista completa, con el recorrido de cada rol, está en la
+[guía de aplicaciones](documentacion/despliegue/como-usar-cada-app.md). **La
+pantalla de acceso no muestra estas cuentas**: publicar usuarios válidos en la
+única pantalla abierta a cualquiera es exactamente lo que un sistema real no
+debe hacer.
 
 Las dos organizaciones existen para poder comprobar el aislamiento: comparten
 infraestructura y no deben verse entre sí.
@@ -59,7 +74,7 @@ infraestructura y no deben verse entre sí.
 python -m pytest -q
 ```
 
-98 pruebas: unitarias de los controles críticos y de extremo a extremo sobre la
+234 pruebas: unitarias de los controles críticos y de extremo a extremo sobre la
 pila de microservicios. No requieren Docker ni credenciales de AWS.
 
 ## Ejecutar la auditoría
@@ -79,13 +94,14 @@ papeles de trabajo y el informe en `cotejo/papeles/<ejecución>/`.
 
 ```
 libs/rastro_core/     Capa común: los controles críticos viven aquí, una sola vez
-services/             Seis microservicios, uno por responsabilidad
+services/             Ocho microservicios, uno por responsabilidad
+design/               Sistema de diseño y marca, compartido por las dos interfaces
 web/                  Interfaz de Rastro (React + TypeScript), mobile-first
 gateway/              Puerta de enlace local (equivalente de API Gateway)
 deploy/aws/           Secuencia de despliegue versionada
 deploy/local/         Preparación del entorno local
 tests/                Pruebas de Rastro
-seed/                 Datos sintéticos
+seed/                 Datos sintéticos: empresas, usuarios, catálogos y módulos
 cotejo/               Programa de auditoría (proyecto de Auditoría de Sistemas)
   cotejo/cotejo/      Ejecutor, papeles de trabajo, informe
   cotejo/api/         Interfaz HTTP, restringida al rol auditor
@@ -93,16 +109,20 @@ cotejo/               Programa de auditoría (proyecto de Auditoría de Sistemas
 documentacion/        Toda la documentación del repositorio
 ```
 
-### Los seis microservicios
+### Los ocho microservicios
 
 | Servicio | Puerto local | Responsabilidad |
 |---|---|---|
-| `auth` | 8001 | Emisor de tokens. En AWS lo sustituye Amazon Cognito |
-| `shipments` | 8002 | Registro, asignación y consulta de envíos |
+| `auth` | 8001 | Identidad: cuentas, contraseñas derivadas, sesiones revocables |
+| `shipments` | 8002 | Registro individual y masivo, asignación, exportación y guías |
 | `tracking` | 8003 | Puntos de control y máquina de estados |
 | `evidence` | 8004 | Enlaces prefirmados y evidencias cifradas |
 | `public` | 8005 | Consulta pública sin autenticación |
 | `audit` | 8006 | Bitácora encadenada y verificador de integridad |
+| `masters` | 8008 | Tiendas, clientes, transportistas y catálogo de estados |
+| `dashboard` | 8009 | Indicadores de operación de la organización |
+
+El puerto 8007 lo ocupa la API de **Cotejo**, que es el otro proyecto.
 
 ## Dos entornos, un mismo código
 
@@ -114,7 +134,6 @@ El sistema corre igual en local y en AWS; lo que cambia es dónde está cada pie
 | AWS Lambda | Un contenedor por microservicio |
 | DynamoDB | DynamoDB Local |
 | S3 + KMS | MinIO (sin KMS) |
-| Cognito | Microservicio `auth` |
 | Sitio estático en S3 | Contenedor nginx con el sitio compilado |
 
 Las diferencias no se disimulan. El cifrado con llave administrada, el registro

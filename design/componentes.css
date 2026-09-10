@@ -6,51 +6,136 @@
  */
 
 /* ======================================================================= */
-/* Barra superior y navegación                                             */
+/* Armazón: marca, navegación e identidad de la sesión                     */
 /* ======================================================================= */
 
-.barra {
+/* Una sola pieza que cambia de forma según el sitio disponible. En móvil es una
+ * barra superior con la navegación deslizable debajo; a partir de 1024px es una
+ * columna fija a la izquierda. No son dos componentes: es el mismo con otra
+ * rejilla, de modo que no pueden desincronizarse.
+ *
+ * En escritorio hay sitio de sobra a los lados y una barra superior obliga a
+ * subir la vista cada vez que se cambia de sección; en un teléfono no cabe
+ * ninguna columna, y por eso allí vuelve a ser una barra. */
+.armazon {
   position: sticky;
   top: 0;
   z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "marca identidad acciones"
+    "nav nav nav";
+  align-items: center;
+  column-gap: var(--e-2);
+  padding: 0 var(--e-3);
   background: var(--superficie);
   border-bottom: 1px solid var(--borde);
 }
 
-.barra__interior {
-  max-width: var(--ancho-contenido);
-  margin: 0 auto;
-  min-height: var(--alto-barra);
-  padding: var(--e-2) var(--e-4);
-  display: flex;
-  align-items: center;
-  gap: var(--e-3);
-  flex-wrap: wrap;
+.armazon__marca {
+  grid-area: marca;
 }
+.armazon__identidad {
+  grid-area: identidad;
+}
+.armazon__acciones {
+  grid-area: acciones;
+}
+.armazon .navegacion {
+  grid-area: nav;
+}
+
+/* -- Marca -------------------------------------------------------------- */
 
 .marca {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--e-2);
-  font-weight: 700;
-  font-size: var(--t-lg);
-  letter-spacing: -0.02em;
+  min-height: var(--tactil);
+  padding-right: var(--e-2);
   color: var(--texto);
   text-decoration: none;
+  border-radius: var(--r-md);
 }
 
-.marca__punto {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: var(--r-completo);
-  background: var(--acento);
+.marca__simbolo {
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  /* El símbolo se apoya en un fondo tenue del color de marca para que se lea
+   * igual sobre superficie clara y oscura sin cambiar el trazado. */
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--marca-1) 14%, transparent), color-mix(in srgb, var(--marca-2) 14%, transparent));
+  border: 1px solid color-mix(in srgb, var(--marca-1) 22%, transparent);
+}
+
+.marca__texto {
+  display: grid;
+  min-width: 0;
+}
+
+.marca__nombre {
+  font-weight: 700;
+  font-size: var(--t-lg);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  /* El nombre lleva el degradado de marca. Es el único texto del sistema que lo
+   * lleva: si lo llevaran más, dejaría de significar «esto es la marca». */
+  background: linear-gradient(120deg, var(--marca-1), var(--marca-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .marca__lema {
-  font-size: var(--t-xs);
-  font-weight: 400;
+  font-size: 0.6875rem;
+  font-weight: 500;
   color: var(--texto-tenue);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El lema no cabe en pantallas estrechas y no es información necesaria. */
+@media (max-width: 479px) {
+  .marca__lema {
+    display: none;
+  }
+}
+
+/* -- Identidad de la sesión --------------------------------------------- */
+
+.armazon__identidad {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e-2);
+  min-width: 0;
+}
+
+.identidad__persona {
+  display: none;
+  min-width: 0;
+}
+
+.identidad__nombre {
+  font-size: var(--t-sm);
+  font-weight: 650;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.identidad__rol {
+  font-size: var(--t-xs);
+  color: var(--texto-tenue);
+  white-space: nowrap;
 }
 
 /* La organización se muestra siempre: en infraestructura compartida, saber en
@@ -72,24 +157,38 @@
   text-overflow: ellipsis;
 }
 
+@media (min-width: 640px) {
+  .identidad__persona {
+    display: grid;
+  }
+}
+
+/* -- Acciones ----------------------------------------------------------- */
+
+.armazon__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+/* -- Navegación --------------------------------------------------------- */
+
 .navegacion {
-  border-bottom: 1px solid var(--borde);
-  background: var(--superficie);
-  position: sticky;
-  top: var(--alto-barra);
-  z-index: 15;
+  min-width: 0;
 }
 
 .navegacion__interior {
-  max-width: var(--ancho-contenido);
-  margin: 0 auto;
-  padding: 0 var(--e-2);
   display: flex;
   gap: var(--e-1);
+  padding-bottom: var(--e-1);
   /* En móvil la navegación es una fila deslizable; nunca se corta ni envuelve. */
   overflow-x: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   scroll-snap-type: x proximity;
+}
+
+.navegacion__interior::-webkit-scrollbar {
+  display: none;
 }
 
 .navegacion__enlace {
@@ -101,23 +200,32 @@
   min-height: var(--tactil);
   padding: 0 var(--e-3);
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--texto-suave);
   font-size: var(--t-base);
   font-weight: 550;
   text-decoration: none;
   cursor: pointer;
-  transition: color var(--transicion), border-color var(--transicion);
+  white-space: nowrap;
+  transition: color var(--transicion), background-color var(--transicion);
 }
 
 .navegacion__enlace:hover {
   color: var(--texto);
+  background: var(--fondo-sutil);
 }
 
 .navegacion__enlace[aria-current="page"] {
   color: var(--acento);
-  border-bottom-color: var(--acento);
+  background: var(--acento-suave);
+}
+
+.navegacion__icono {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: currentcolor;
 }
 
 .navegacion__contador {
@@ -132,8 +240,74 @@
 }
 
 .navegacion__enlace[aria-current="page"] .navegacion__contador {
-  background: var(--acento-suave);
+  background: color-mix(in srgb, var(--acento) 18%, transparent);
   color: var(--acento);
+}
+
+/* -- Columna lateral en escritorio -------------------------------------- */
+
+@media (min-width: 1024px) {
+  .aplicacion--con-lateral .armazon {
+    height: 100dvh;
+    /* Cada bloque se pega al inicio de su fila. Sin esto hereda el
+     * `align-items: center` de la barra móvil y la navegación queda flotando en
+     * mitad de la columna, lejos de la marca. */
+    align-items: start;
+    overflow-y: auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-areas:
+      "marca"
+      "nav"
+      "identidad"
+      "acciones";
+    row-gap: var(--e-4);
+    padding: var(--e-4) var(--e-3);
+    border-bottom: 0;
+    border-right: 1px solid var(--borde);
+    background: var(--fondo-sutil);
+  }
+
+  .aplicacion--con-lateral .navegacion__interior {
+    flex-direction: column;
+    gap: var(--e-1);
+    overflow: visible;
+    align-content: start;
+  }
+
+  .aplicacion--con-lateral .navegacion__enlace {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* El contador se va al extremo: en columna hay sitio y así se leen todos
+   * alineados en lugar de flotando tras textos de distinta longitud. */
+  .aplicacion--con-lateral .navegacion__contador {
+    margin-left: auto;
+  }
+
+  .aplicacion--con-lateral .armazon__identidad {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--e-2);
+    padding: var(--e-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--superficie);
+  }
+
+  .aplicacion--con-lateral .identidad__persona {
+    display: grid;
+  }
+
+  .aplicacion--con-lateral .insignia-org {
+    justify-content: center;
+  }
+
+  .aplicacion--con-lateral .armazon__acciones {
+    justify-content: space-between;
+  }
 }
 
 /* ======================================================================= */
@@ -151,6 +325,11 @@
 .tarjeta__cabecera {
   padding: var(--e-4);
   border-bottom: 1px solid var(--borde);
+  /* La cabecera se separa del cuerpo con un fondo apenas más frío. Sin ese
+   * escalón, una tarjeta con mucho contenido se lee como un bloque sin
+   * jerarquía y hay que buscar el título. */
+  background: linear-gradient(var(--superficie-hundida), var(--superficie));
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -187,15 +366,41 @@
 /* ======================================================================= */
 
 .metrica {
+  position: relative;
   display: grid;
   gap: var(--e-1);
   padding: var(--e-4);
+  padding-left: calc(var(--e-4) + var(--e-1));
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-left: 3px solid var(--metrica-color, var(--borde-fuerte));
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   box-shadow: var(--sombra-1);
   min-width: 0;
+  overflow: hidden;
+}
+
+/* La franja de color va como pseudoelemento y no como borde: un borde de 3px
+ * cuadra mal con el radio de la tarjeta y deja una esquina rota. */
+.metrica::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--metrica-color, var(--borde-fuerte));
+}
+
+/* Halo del color del indicador, apenas perceptible. Da profundidad sin teñir el
+ * fondo, que haría ilegible el número en tema oscuro. */
+.metrica::after {
+  content: "";
+  position: absolute;
+  inset: -40% -30% auto auto;
+  width: 9rem;
+  height: 9rem;
+  border-radius: var(--r-completo);
+  background: var(--metrica-color, var(--borde-fuerte));
+  opacity: 0.06;
+  pointer-events: none;
 }
 
 .metrica__valor {
@@ -238,6 +443,15 @@
   --etiqueta-color: var(--estado-color);
   --etiqueta-fondo: var(--estado-fondo);
   --etiqueta-borde: var(--estado-borde);
+}
+
+/* El código del estado, pegado a su nombre. Va en monoespaciada porque es lo
+ * que viaja en los archivos de intercambio: se copia y se compara. */
+.etiqueta__codigo {
+  font-family: var(--fuente-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  opacity: 0.75;
 }
 
 .etiqueta--ALLOW {
@@ -838,7 +1052,9 @@
 
 .grupo-segmentado__opcion {
   flex: 1 0 auto;
-  min-height: 2.25rem;
+  /* El area tactil minima del proyecto es 44px y aplica tambien aqui: un
+   * control agrupado no deja de ser un boton por estar dentro de un marco. */
+  min-height: var(--tactil);
   padding: 0 var(--e-3);
   border: 0;
   border-radius: var(--r-sm);
@@ -968,10 +1184,21 @@
 /* Pie                                                                     */
 /* ======================================================================= */
 
+/* El enlace del pie es el único camino a la consulta pública desde dentro de la
+ * aplicación, y se toca con el pulgar: cumple el área táctil como cualquier
+ * otro control en lugar de quedarse en texto de una línea. */
+.pie a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tactil);
+  padding: 0 var(--e-2);
+  border-radius: var(--r-sm);
+}
+
 .pie {
   max-width: var(--ancho-contenido);
   margin: 0 auto;
-  padding: var(--e-5) var(--e-4) var(--e-6);
+  padding: var(--e-3) var(--e-4) var(--e-6);
   color: var(--texto-tenue);
   font-size: var(--t-xs);
   display: flex;
@@ -987,5 +1214,406 @@
 @keyframes girar {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ======================================================================= */
+/* Pantalla de acceso                                                      */
+/* ======================================================================= */
+
+.pantalla-acceso {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--e-4);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, var(--acento-suave), transparent 70%),
+    var(--fondo);
+}
+
+.acceso {
+  width: 100%;
+  max-width: 26rem;
+  display: grid;
+  gap: var(--e-4);
+}
+
+.acceso__marca {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+/* El símbolo de la marca, más grande que en el armazón: en la pantalla de
+ * acceso es lo único que identifica el sistema antes de entrar. */
+.marca__simbolo--grande {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--r-lg);
+}
+
+.acceso__titulo {
+  font-size: var(--t-2xl);
+  letter-spacing: -0.03em;
+  margin: 0;
+  background: linear-gradient(120deg, var(--marca-1), var(--marca-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.acceso__lema {
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+}
+
+/* ======================================================================= */
+/* Permisos de un rol                                                      */
+/* ======================================================================= */
+
+/* Las operaciones se agrupan por area dentro de un `fieldset`: no es adorno,
+ * es lo que permite recorrer catorce permisos sin perder de vista de que van. */
+.grupo-permisos {
+  display: grid;
+  gap: var(--e-2);
+  margin: 0;
+  padding: var(--e-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  background: var(--superficie-hundida);
+  min-width: 0;
+}
+
+.grupo-permisos legend {
+  padding: 0 var(--e-2);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+
+/* ======================================================================= */
+/* Modulos de operaciones                                                  */
+/* ======================================================================= */
+
+.rejilla-modulos {
+  display: grid;
+  gap: var(--e-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .rejilla-modulos {
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  }
+}
+
+/* La tarjeta de módulo se lee en horizontal: icono a la izquierda, nombre y
+ * descripción a la derecha. Centrado se veía bonito y obligaba a leer en zigzag
+ * cuando hay catorce seguidos. */
+.modulo {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  min-height: 5.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  background: var(--superficie);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--sombra-1);
+  transition: border-color var(--transicion), box-shadow var(--transicion), transform var(--transicion);
+}
+
+.modulo:hover {
+  border-color: color-mix(in srgb, var(--acento) 55%, var(--borde));
+  box-shadow: var(--sombra-2);
+  transform: translateY(-1px);
+}
+
+.modulo--inactivo {
+  cursor: not-allowed;
+  background: var(--superficie-hundida);
+  border-style: dashed;
+}
+
+/* El módulo apagado no se atenúa hasta hacerlo ilegible: su motivo es
+ * justamente lo que hay que poder leer. Lo que se apaga es el icono. */
+.modulo--inactivo:hover {
+  border-color: var(--borde);
+  box-shadow: var(--sombra-1);
+  transform: none;
+}
+
+.modulo--inactivo .modulo__icono {
+  opacity: 0.4;
+  background: var(--fondo-sutil);
+  border-color: transparent;
+  color: var(--texto-tenue);
+}
+
+.modulo__icono {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-md);
+  background: var(--acento-suave);
+  border: 1px solid var(--acento-borde);
+  color: var(--acento);
+  line-height: 1;
+}
+
+.modulo__texto {
+  display: grid;
+  gap: var(--e-1);
+  min-width: 0;
+}
+
+.modulo__nombre {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-weight: 650;
+  font-size: var(--t-md);
+  letter-spacing: -0.01em;
+}
+
+.modulo__descripcion {
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+}
+
+/* El motivo por el que un módulo no está disponible. Se muestra completo: es la
+ * diferencia entre un alcance decidido y una carencia. */
+.modulo__motivo {
+  font-size: var(--t-xs);
+  color: var(--texto-tenue);
+  border-left: 2px solid var(--borde-fuerte);
+  padding-left: var(--e-2);
+}
+
+.modulo__contador {
+  flex: 0 0 auto;
+  min-width: 1.5rem;
+  padding: 0 var(--e-2);
+  border-radius: var(--r-completo);
+  background: var(--fondo-sutil);
+  color: var(--texto-suave);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ======================================================================= */
+/* Selección múltiple en el listado                                        */
+/* ======================================================================= */
+
+.barra-seleccion {
+  position: sticky;
+  bottom: var(--e-4);
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-4);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--acento-borde);
+  background: var(--superficie-elevada);
+  box-shadow: var(--sombra-3);
+}
+
+.envio--seleccionable {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--e-3);
+  align-items: start;
+}
+
+.envio__casilla {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--acento);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.codigo-estado {
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--estado-color, var(--texto-tenue));
+}
+
+/* ======================================================================= */
+/* Serie diaria del tablero                                                */
+/* ======================================================================= */
+
+.serie {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 7rem;
+  padding-top: var(--e-2);
+  overflow-x: auto;
+}
+
+.serie__dia {
+  flex: 1 0 0.5rem;
+  min-width: 0.5rem;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1px;
+  height: 100%;
+  justify-content: flex-start;
+}
+
+.serie__barra {
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  transition: height var(--transicion);
+}
+
+.serie__barra--creados {
+  background: var(--acento);
+  opacity: 0.55;
+}
+
+.serie__barra--entregados {
+  background: var(--exito);
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+  font-size: var(--t-xs);
+  color: var(--texto-suave);
+}
+
+.leyenda__punto {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+  margin-right: 0.25rem;
+  vertical-align: -1px;
+}
+
+/* ======================================================================= */
+/* Guías imprimibles                                                       */
+/* ======================================================================= */
+
+.hoja-guias {
+  display: grid;
+  gap: var(--e-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .hoja-guias {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.guia {
+  border: 2px solid #000;
+  border-radius: 4px;
+  padding: 0.75rem;
+  background: #fff;
+  color: #000;
+  display: grid;
+  gap: 0.5rem;
+  break-inside: avoid;
+  font-size: 12px;
+}
+
+.guia__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-bottom: 1px solid #000;
+  padding-bottom: 0.375rem;
+}
+
+.guia__empresa {
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.guia__bloque {
+  display: grid;
+  gap: 2px;
+}
+
+.guia__termino {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #444;
+}
+
+.guia__valor {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.guia__destinatario {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.guia__codigo {
+  font-family: var(--fuente-mono);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.guia__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid #000;
+  padding-top: 0.375rem;
+  font-size: 10px;
+}
+
+/* Al imprimir solo sale la hoja de guías: la navegación, los botones y el
+ * fondo de la aplicación no aportan nada en papel y gastan tinta. */
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .barra,
+  .navegacion,
+  .pie,
+  .acciones,
+  .no-imprimir {
+    display: none !important;
+  }
+
+  .contenido {
+    max-width: none;
+    padding: 0;
+  }
+
+  .hoja-guias {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6mm;
+  }
+
+  .guia {
+    box-shadow: none;
   }
 }

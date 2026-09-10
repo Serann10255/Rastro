@@ -26,14 +26,30 @@ os.environ.setdefault("RASTRO_ENTORNO", "memoria")
 os.environ.setdefault("RASTRO_JWT_EMISOR", "http://auth.pruebas")
 os.environ.setdefault("RASTRO_JWT_AUDIENCIA", "rastro-web")
 os.environ.setdefault("RASTRO_JWT_SECRETO", "secreto-de-pruebas-con-longitud-suficiente")
-os.environ.setdefault("RASTRO_SEMILLA_USUARIOS", str(RAIZ / "seed" / "usuarios.json"))
+os.environ.setdefault("RASTRO_TABLA_MAESTROS", "rastro-maestros-pruebas")
+# Coste de derivacion reducido: con el valor de produccion, derivar las
+# contrasenas de cada prueba lleva la suite de segundos a minutos y nadie la
+# ejecuta. Lo que se verifica es el mecanismo, no el coste.
+os.environ.setdefault("RASTRO_PBKDF2_ITERACIONES", "1000")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
 from rastro_core.config import cargar_config, reiniciar_config  # noqa: E402
 from rastro_core.http import fijar_dependencias  # noqa: E402
+from rastro_core.maestros import repositorio_maestros_en_memoria  # noqa: E402
+from rastro_core.passwords import derivar  # noqa: E402
 from rastro_core.repository import RepositorioMemoria  # noqa: E402
 from rastro_core.security import emitir_token_local  # noqa: E402
+
+#: Usuarios reales de las pruebas, con su contrasena. Se derivan al preparar el
+#: repositorio: ni siquiera en pruebas se guarda una contrasena en claro.
+USUARIOS_DE_PRUEBA = [
+    ("admin@andes.test", "Prueba.Admin.2026", "Ana Admin", "org-andes", ["administrador"]),
+    ("despacho@andes.test", "Prueba.Despacho.2026", "Diego Despacho", "org-andes", ["despachador"]),
+    ("carlos@andes.test", "Prueba.Carlos.2026", "Carlos Conductor", "org-andes", ["conductor"]),
+    ("auditor@andes.test", "Prueba.Auditor.2026", "Alicia Auditora", "org-andes", ["auditor"]),
+    ("despacho@sabana.test", "Prueba.Sabana.2026", "Sofia Sabana", "org-sabana", ["despachador"]),
+]
 
 
 class AlmacenSimulado:
@@ -108,24 +124,83 @@ def repositorio() -> RepositorioMemoria:
 
 
 @pytest.fixture
+def maestros():
+    """Empresas, usuarios, tiendas, clientes y transportistas de las pruebas.
+
+    Los usuarios se crean con su contrasena derivada, de modo que las pruebas
+    de inicio de sesion ejercitan el mismo camino que la operacion real.
+    """
+    repositorio = repositorio_maestros_en_memoria()
+
+    for org_id, nombre in (("org-andes", "Mensajeria Andes S.A.S."), ("org-sabana", "Envios Sabana Ltda.")):
+        repositorio.guardar_empresa(
+            {"org_id": org_id, "nombre": nombre, "nit": "900.000.000-0", "ciudad": "Bogota"}
+        )
+
+    for correo, clave, nombre, org_id, grupos in USUARIOS_DE_PRUEBA:
+        repositorio.guardar_usuario(
+            {
+                "correo": correo,
+                "nombre": nombre,
+                "org_id": org_id,
+                "grupos": grupos,
+                # Derivar cuesta cientos de milisegundos por usuario: es el
+                # proposito de PBKDF2 y el motivo de que esta preparacion tarde.
+                "hash_clave": derivar(clave),
+            }
+        )
+
+    repositorio.guardar_tienda(
+        "org-andes",
+        {"tienda_id": "tienda-andes-1", "nombre": "Centro de acopio", "ciudad": "Bogota", "departamento": "Cundinamarca"},
+    )
+    repositorio.guardar_cliente(
+        "org-andes", {"cliente_id": "cliente-andes-1", "nombre": "Distribuidora Kuma"}
+    )
+    repositorio.guardar_transportista(
+        "org-andes", {"transportista_id": "transp-andes-1", "nombre": "Flota propia"}
+    )
+    return repositorio
+
+
+@pytest.fixture
 def almacen() -> AlmacenSimulado:
     return AlmacenSimulado()
 
 
 @pytest.fixture
-def pila(repositorio, almacen):
-    """Levanta los seis microservicios sobre el mismo almacen de datos.
+def pila(repositorio, almacen, maestros):
+    """Levanta los ocho microservicios sobre el mismo almacen de datos.
 
     Comparten repositorio porque en el sistema desplegado comparten las tablas:
     lo que se aisla no son los servicios entre si, sino los datos de cada
     organizacion.
     """
     reiniciar_config()
-    fijar_dependencias(repositorio=repositorio, almacen=almacen)
+    fijar_dependencias(repositorio=repositorio, almacen=almacen, maestros=maestros)
+
+    modulos = {
+        nombre: _cargar_servicio(nombre)
+        for nombre in (
+            "auth",
+            "shipments",
+            "tracking",
+            "evidence",
+            "public",
+            "audit",
+            "masters",
+            "dashboard",
+        )
+    }
+    # Los servicios que consultan datos maestros reciben el mismo repositorio:
+    # si cada uno creara el suyo, un usuario creado en uno no existiria en otro.
+    for modulo in modulos.values():
+        if hasattr(modulo, "fijar_maestros"):
+            modulo.fijar_maestros(maestros)
 
     clientes = {
-        nombre: TestClient(_cargar_servicio(nombre).app, raise_server_exceptions=False)
-        for nombre in ("auth", "shipments", "tracking", "evidence", "public", "audit")
+        nombre: TestClient(modulo.app, raise_server_exceptions=False)
+        for nombre, modulo in modulos.items()
     }
     yield clientes
     for cliente in clientes.values():
@@ -155,6 +230,17 @@ def cabeceras(token):
 @pytest.fixture
 def despachador(cabeceras):
     return cabeceras("u-desp-a", "org-andes", ["despachador"])
+
+
+@pytest.fixture
+def coordinador(cabeceras):
+    """Mas alcance que un despachador y menos que un administrador."""
+    return cabeceras("u-coord-a", "org-andes", ["coordinador"])
+
+
+@pytest.fixture
+def administrador(cabeceras):
+    return cabeceras("u-admin-a", "org-andes", ["administrador"])
 
 
 @pytest.fixture

@@ -5,18 +5,23 @@
 # sitio estático: en AWS estos mismos archivos se copian al almacenamiento de
 # objetos y no hay servidor de aplicaciones en ninguna parte.
 
+# El contexto de construcción es la raíz del repositorio y no `web/`, porque el
+# sistema de diseño vive en `design/` y lo comparten las dos interfaces. La ruta
+# dentro de la imagen reproduce la del repositorio para que los alias `@design`
+# resuelvan igual aquí y en desarrollo.
 FROM node:22-alpine AS construccion
 
-WORKDIR /app
+WORKDIR /repo/web
 
 # Las dependencias se instalan antes de copiar el código para que un cambio en
 # una pantalla no invalide la capa de dependencias.
-COPY package.json package-lock.json ./
+COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-COPY tsconfig.json tsconfig.node.json vite.config.ts index.html ./
-COPY public/ ./public/
-COPY src/ ./src/
+COPY design/ /repo/design/
+COPY web/tsconfig.json web/tsconfig.node.json web/vite.config.ts web/index.html ./
+COPY web/public/ ./public/
+COPY web/src/ ./src/
 
 RUN npm run build
 
@@ -24,7 +29,7 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-COPY --from=construccion /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=construccion /repo/web/dist /usr/share/nginx/html
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

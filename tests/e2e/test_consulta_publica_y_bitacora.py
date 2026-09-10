@@ -177,13 +177,16 @@ def test_la_consulta_del_auditor_tambien_deja_rastro(pila, auditor, envio_creado
 # --------------------------------------------------------------------------- #
 
 
-def test_el_emisor_local_entrega_un_token_utilizable_en_los_demas_servicios(pila):
+def test_el_inicio_de_sesion_entrega_un_token_utilizable_en_los_demas_servicios(pila):
     respuesta = pila["auth"].post(
-        "/auth/token", json={"usuario": "despacho@andes.test", "clave": "Andes.2026"}
+        "/auth/token", json={"correo": "despacho@andes.test", "clave": "Prueba.Despacho.2026"}
     )
     assert respuesta.status_code == 200
     cuerpo = respuesta.json()
     assert cuerpo["usuario"]["grupos"] == ["despachador"]
+    assert cuerpo["usuario"]["org_id"] == "org-andes"
+    # La respuesta no filtra el hash de la contrasena por ninguna via.
+    assert "hash_clave" not in str(cuerpo)
 
     cabecera = {"Authorization": f"Bearer {cuerpo['token']}"}
     assert pila["shipments"].get("/envios", headers=cabecera).status_code == 200
@@ -192,10 +195,10 @@ def test_el_emisor_local_entrega_un_token_utilizable_en_los_demas_servicios(pila
 def test_las_credenciales_invalidas_no_distinguen_usuario_de_clave(pila):
     """Distinguirlas permitiria enumerar las cuentas del sistema."""
     inexistente = pila["auth"].post(
-        "/auth/token", json={"usuario": "nadie@andes.test", "clave": "x"}
+        "/auth/token", json={"correo": "nadie@andes.test", "clave": "clave-que-no-sirve"}
     )
     clave_mala = pila["auth"].post(
-        "/auth/token", json={"usuario": "despacho@andes.test", "clave": "incorrecta"}
+        "/auth/token", json={"correo": "despacho@andes.test", "clave": "clave-que-no-sirve"}
     )
     assert inexistente.status_code == clave_mala.status_code == 401
     assert inexistente.json()["mensaje"] == clave_mala.json()["mensaje"]

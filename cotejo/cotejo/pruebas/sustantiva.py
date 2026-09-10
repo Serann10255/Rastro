@@ -145,11 +145,17 @@ def autorizacion_por_rol(ctx: Contexto) -> ResultadoPrueba:
 
 
 def _sub_de(ctx: Contexto, etiqueta: str) -> str:
-    """Obtiene el identificador de sujeto del usuario de prueba desde su sesion."""
+    """Obtiene el identificador de sujeto del usuario de prueba desde su sesion.
+
+    El sujeto se lee del sistema auditado y no de una constante del programa: si
+    se escribiera aqui, la prueba compararia contra lo que el auditor cree que
+    vale, no contra lo que el sistema emite.
+    """
     respuesta = ctx.cliente.get("/auth/yo", headers=ctx.cabeceras(etiqueta))
-    if respuesta.status_code == 200:
-        return respuesta.json()["sub"]
-    return ""
+    if respuesta.status_code != 200:
+        return ""
+    cuerpo = respuesta.json()
+    return str((cuerpo.get("usuario") or {}).get("sub", ""))
 
 
 # --------------------------------------------------------------------------- #

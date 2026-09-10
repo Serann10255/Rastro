@@ -1,6 +1,6 @@
 # Despliegue en AWS
 
-Fecha: 2026-09-10 · Versión: 0.1
+Fecha: 2026-09-10 · Versión: 0.2
 
 ## Estado de verificación
 
@@ -14,9 +14,13 @@ Fecha: 2026-09-10 · Versión: 0.1
 > fase 1 del plan de trabajo:
 >
 > - **SU-01** — que el laboratorio permita crear una interfaz HTTP con validador
->   de tokens de Cognito. `40-api.sh` lo detecta y continúa si no se puede: cada
->   servicio valida el token por su cuenta, de modo que el sistema funciona igual
->   y solo se pierde una capa.
+>   de tokens. `40-api.sh` lo intenta y continúa si no se puede: cada servicio
+>   valida el token por su cuenta, de modo que el sistema funciona igual y solo
+>   se pierde una capa. Con el proveedor de identidad propio el validador no
+>   aplica de todas formas —solo verifica firmas de clave pública (RS256) contra
+>   un JWKS, y el sistema firma con clave compartida—, pero se intenta igual para
+>   dejar constancia de lo que el laboratorio permite, que es lo que el supuesto
+>   pregunta. Véase [ADR-007](../decisiones/adr-007-identidad-propia.md).
 > - **REQ-09** — que el despliegue se reproduzca en una cuenta vacía sin editar
 >   código.
 
@@ -103,15 +107,29 @@ modo que un tercero pueda repetir la verificación.
 | Etapa | Qué crea |
 |---|---|
 | `10-datos.sh` | Tablas con sus índices, llave de cifrado con rotación, contenedores con cifrado, versionado, bloqueo público y política que rechaza cargas sin cifrar |
-| `20-identidad.sh` | Grupo de usuarios de Cognito, los cuatro grupos de autorización, cliente de aplicación y usuarios sintéticos de dos organizaciones |
-| `30-funciones.sh` | Empaqueta y despliega los cinco microservicios como funciones Lambda |
+| `20-identidad.sh` | Aprovisiona las dos organizaciones, sus diez usuarios con las contraseñas derivadas y sus datos maestros, ejecutando **el mismo guion que prepara el entorno local** apuntado a la cuenta |
+| `30-funciones.sh` | Empaqueta y despliega los ocho microservicios como funciones Lambda. **Se niega a desplegar** si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32 caracteres |
 | `40-api.sh` | Interfaz HTTP, validador de tokens (SU-01), rutas e integraciones |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
 | `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
 | `90-configuracion.sh` | Escribe `config/deployment.json` y comprueba que no queden identificadores literales |
 | `95-verificar.sh` | Confirma que cada componente existe y que el punto público responde |
 
-`auth` no se despliega en AWS: allí lo sustituye Amazon Cognito.
+**`auth` sí se despliega en AWS**, como una función más: el sistema tiene su
+propio directorio de usuarios. La versión anterior delegaba en Amazon Cognito y
+se cambió porque administrar cuentas desde la aplicación exige permisos que el
+laboratorio no concede. Delegar en Cognito sigue siendo posible sin tocar nada
+más, porque lo único que los demás servicios conocen es la forma del token
+([ADR-007](../decisiones/adr-007-identidad-propia.md)).
+
+**El aprovisionamiento no tiene una segunda implementación.** `20-identidad.sh`
+ejecuta el mismo `deploy/local/preparar_entorno.py` con las variables apuntadas
+a la cuenta. Un segundo guion de siembra divergiría del primero y el síntoma
+aparecería en producción, no en local.
+
+**Las contraseñas de la semilla son de desarrollo.** Antes de un despliegue con
+datos reales deben sustituirse; se pasan por variable de entorno para no dejarlas
+escritas en el repositorio.
 
 La interfaz de **Cotejo no se publica por omisión**: el almacén de papeles de
 trabajo concentra información sobre las debilidades del sistema auditado, y

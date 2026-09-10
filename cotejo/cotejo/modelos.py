@@ -32,6 +32,32 @@ class Conclusion(StrEnum):
     NO_EJECUTADA = "NO_EJECUTADA"
 
 
+#: Cada conclusion en una palabra que no haya que aprenderse. El termino tecnico
+#: no se sustituye —es el que espera un tercero que lea el informe— pero deja de
+#: ser la unica forma de saber que paso. Las tres siguen siendo tres: llamar
+#: "sin revisar" a lo no ejecutado lo distingue de "bien" tanto como CONFORME lo
+#: distingue de NO_EJECUTADA.
+PALABRA_LLANA: dict[str, str] = {
+    Conclusion.CONFORME: "BIEN",
+    Conclusion.DESVIADO: "MAL",
+    Conclusion.NO_EJECUTADA: "SIN REVISAR",
+}
+
+#: Que significa cada conclusion, para quien la lee por primera vez.
+LLANO_EXPLICADO: dict[str, str] = {
+    Conclusion.CONFORME: "Se probo y cumplio la regla escrita de antemano.",
+    Conclusion.DESVIADO: "Se probo y no cumplio. Se convierte en un hallazgo.",
+    Conclusion.NO_EJECUTADA: (
+        "Ni bien ni mal: no se pudo probar aqui. Queda pendiente, no aprobado."
+    ),
+}
+
+
+def en_palabras(conclusion: "Conclusion | str") -> str:
+    """La conclusion en una palabra llana. Nunca sustituye al termino tecnico."""
+    return PALABRA_LLANA.get(str(conclusion), str(conclusion))
+
+
 class Severidad(StrEnum):
     ALTA = "alta"
     MEDIA = "media"
@@ -40,7 +66,15 @@ class Severidad(StrEnum):
 
 @dataclass(frozen=True)
 class Control:
-    """Una fila de la matriz de controles."""
+    """Una fila de la matriz de controles.
+
+    Lleva dos registros del mismo control: el tecnico, que es el que un tercero
+    espera leer en un informe de auditoria, y el llano —`pregunta`, `en_simple`,
+    `si_falla`—, que es el que permite discutirlo con quien decide. Ninguno
+    sustituye al otro y los dos salen del catalogo, no de la interfaz: si cada
+    pantalla escribiera su propia version, la consola y la web acabarian
+    diciendo cosas distintas del mismo control.
+    """
 
     id: str
     control: str
@@ -51,6 +85,9 @@ class Control:
     criterio: str
     evidencia_esperada: str
     severidad_si_desviado: Severidad
+    pregunta: str = ""
+    en_simple: str = ""
+    si_falla: str = ""
 
     @classmethod
     def desde_dict(cls, datos: dict) -> "Control":
@@ -64,6 +101,9 @@ class Control:
             criterio=" ".join(datos["criterio"].split()),
             evidencia_esperada=" ".join(datos["evidencia_esperada"].split()),
             severidad_si_desviado=Severidad(datos["severidad_si_desviado"]),
+            pregunta=" ".join(str(datos.get("pregunta", "")).split()),
+            en_simple=" ".join(str(datos.get("en_simple", "")).split()),
+            si_falla=" ".join(str(datos.get("si_falla", "")).split()),
         )
 
 
@@ -124,11 +164,21 @@ class PapelDeTrabajo:
     terminado_en: str
     archivo_evidencia: str = ""
     huella_evidencia: str = ""
+    #: El mismo control en lenguaje llano, copiado del catalogo. Se conserva en
+    #: el papel y no se resuelve al mostrarlo: un papel de trabajo debe poder
+    #: leerse solo, anos despues, sin el catalogo de su epoca al lado.
+    pregunta: str = ""
+    en_simple: str = ""
+    si_falla: str = ""
 
     def como_dict(self) -> dict:
         datos = asdict(self)
         datos["tipo"] = str(self.tipo)
         datos["conclusion"] = str(self.conclusion)
+        #: Derivados, no almacenados: si manana cambia la palabra llana de una
+        #: conclusion, cambia en un sitio y no en cada papel ya escrito.
+        datos["conclusion_llana"] = en_palabras(self.conclusion)
+        datos["conclusion_explicada"] = LLANO_EXPLICADO.get(str(self.conclusion), "")
         return datos
 
 
@@ -151,6 +201,9 @@ class Hallazgo:
     papel_de_trabajo: str
     huella_evidencia: str = ""
     permanente: bool = False
+    #: El mismo hallazgo contado sin vocabulario tecnico. Un hallazgo que solo
+    #: entiende quien lo escribio no se corrige.
+    en_simple: str = ""
 
     def como_dict(self) -> dict:
         datos = asdict(self)

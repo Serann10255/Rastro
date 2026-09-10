@@ -91,7 +91,12 @@ export function mensajeDeError(error: unknown): string {
           : error.message;
       }
       case "NO_AUTENTICADO":
-        return "La sesión expiró. Vuelva a entrar.";
+        // El servidor sabe por qué rechazó: unas credenciales incorrectas no
+        // son una sesión caducada, y decir lo segundo cuando pasó lo primero
+        // manda al usuario a reintentar en vez de a revisar lo que escribió.
+        // El texto por omisión queda para el 401 que emite el propio cliente
+        // cuando no hay sesión guardada.
+        return error.message || "La sesión expiró. Vuelva a entrar.";
       default:
         return error.message;
     }

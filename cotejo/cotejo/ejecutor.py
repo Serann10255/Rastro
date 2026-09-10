@@ -72,6 +72,16 @@ def cargar_catalogo(ruta: Path | None = None) -> dict:
                 f"El control {control.id} nombra la prueba '{control.prueba}', "
                 "que no esta implementada."
             )
+        # Un control que solo sabe decirse en vocabulario tecnico no se puede
+        # discutir con quien decide, y un hallazgo que nadie entiende no se
+        # corrige. La version llana se exige igual que el criterio, y por la
+        # misma razon: escribirla despues permitiria acomodarla al resultado.
+        for campo in ("pregunta", "en_simple", "si_falla"):
+            if not getattr(control, campo):
+                raise ErrorCatalogo(
+                    f"El control {control.id} no declara '{campo}'. Todo control "
+                    "debe poder explicarse sin vocabulario tecnico."
+                )
         identificadores.add(control.id)
         controles.append(control)
 
@@ -117,6 +127,9 @@ def ejecutar(
                 ejecucion_id=ejecucion_id,
                 control_id=control.id,
                 control=control.control,
+                pregunta=control.pregunta,
+                en_simple=control.en_simple,
+                si_falla=control.si_falla,
                 marco=control.marco,
                 tipo=control.tipo,
                 procedimiento=control.procedimiento,
@@ -135,6 +148,9 @@ def ejecutar(
     metadatos = {
         "sistema_auditado": catalogo.get("sistema_auditado", "Rastro"),
         "version_catalogo": catalogo.get("version", "sin version"),
+        # Viaja con la ejecucion para que el informe se explique solo, sin el
+        # catalogo de su epoca al lado.
+        "que_es_esto": " ".join(str(catalogo.get("que_es_esto", "")).split()),
         "entorno": ctx.entorno,
         "url_api": ctx.url_api,
         "region": ctx.region,

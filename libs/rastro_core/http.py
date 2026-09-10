@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .audit import Resultado
-from .authz import Operacion, exige_envio_propio, esta_autorizado
+from .authz import DefinicionRol, Operacion, exige_envio_propio, esta_autorizado
 from .config import Config, cargar_config
 from .errors import NoAutorizadoError, RastroError
 from .ids import marca_tiempo
@@ -27,6 +27,7 @@ from .storage import AlmacenEvidencias
 
 _repositorio: Repositorio | None = None
 _almacen: AlmacenEvidencias | None = None
+_maestros = None
 
 
 def obtener_repositorio() -> Repositorio:
@@ -44,13 +45,33 @@ def obtener_almacen() -> AlmacenEvidencias:
     return _almacen
 
 
-def fijar_dependencias(repositorio: Repositorio | None = None, almacen: AlmacenEvidencias | None = None) -> None:
+def obtener_maestros():
+    """Repositorio de datos maestros. Aqui se usa solo para resolver roles.
+
+    Cada servicio necesita saber que concede cada rol de la organizacion, y esa
+    definicion vive en la tabla de maestros. Se instancia una vez por proceso.
+    """
+    global _maestros
+    if _maestros is None:
+        from .maestros import RepositorioMaestros
+
+        _maestros = RepositorioMaestros()
+    return _maestros
+
+
+def fijar_dependencias(
+    repositorio: Repositorio | None = None,
+    almacen: AlmacenEvidencias | None = None,
+    maestros=None,
+) -> None:
     """Sustituye las instancias compartidas. Lo usan las pruebas."""
-    global _repositorio, _almacen
+    global _repositorio, _almacen, _maestros
     if repositorio is not None:
         _repositorio = repositorio
     if almacen is not None:
         _almacen = almacen
+    if maestros is not None:
+        _maestros = maestros
 
 
 # --------------------------------------------------------------------------- #
@@ -63,17 +84,37 @@ async def identidad_actual(authorization: str | None = Header(default=None)) -> 
     return identidad_desde_token(extraer_token(authorization))
 
 
-@dataclass(frozen=True)
+@dataclass
 class Contexto:
     """Lo que toda operacion necesita: quien pide, contra que datos y con que reglas."""
 
     identidad: Identidad
     repositorio: Repositorio
     config: Config
+    #: Los roles de la organizacion, resueltos una sola vez por peticion. Se
+    #: consultan de forma perezosa: la mayoria de las operaciones comprueban
+    #: varios permisos y seria una lectura por comprobacion.
+    _roles: dict[str, DefinicionRol] | None = None
 
     @property
     def org_id(self) -> str:
         return self.identidad.org_id
+
+    @property
+    def roles(self) -> dict[str, DefinicionRol] | None:
+        """Definiciones de rol de la organizacion, o None si no se alcanzan.
+
+        Si la tabla no responde se devuelve None y la autorizacion cae a los
+        roles de fabrica. Es deliberado: un fallo al leer la configuracion no
+        puede dejar sin operar a una empresa, y los roles de fabrica son mas
+        restrictivos que cualquier personalizacion razonable.
+        """
+        if self._roles is None:
+            try:
+                self._roles = obtener_maestros().definiciones_de_rol(self.org_id)
+            except Exception:  # noqa: BLE001 - se cae a los roles de fabrica
+                self._roles = {}
+        return self._roles or None
 
     def registrar(
         self,
@@ -108,7 +149,7 @@ class Contexto:
         que un intento no autorizado quede en la bitacora aunque la respuesta
         del servicio se pierda.
         """
-        if esta_autorizado(self.identidad.grupos, operacion):
+        if esta_autorizado(self.identidad.grupos, operacion, self.roles):
             return
         self.registrar(
             accion=operacion,
@@ -126,7 +167,11 @@ class Contexto:
         )
 
     def exige_envio_propio(self, operacion: Operacion) -> bool:
-        return exige_envio_propio(self.identidad.grupos, operacion)
+        return exige_envio_propio(self.identidad.grupos, operacion, self.roles)
+
+    def puede(self, operacion: Operacion) -> bool:
+        """Comprueba sin registrar ni lanzar. Para decidir que ofrecer."""
+        return esta_autorizado(self.identidad.grupos, operacion, self.roles)
 
 
 async def contexto_actual(identidad: Identidad = Depends(identidad_actual)) -> Contexto:

@@ -22,12 +22,13 @@ comprobar() {
 paso "Componentes de datos"
 comprobar "tabla de envios ${TABLA_ENVIOS}" aws dynamodb describe-table --table-name "${TABLA_ENVIOS}" --region "${REGION}"
 comprobar "tabla de bitacora ${TABLA_BITACORA}" aws dynamodb describe-table --table-name "${TABLA_BITACORA}" --region "${REGION}"
+comprobar "tabla de maestros ${TABLA_MAESTROS}" aws dynamodb describe-table --table-name "${TABLA_MAESTROS}" --region "${REGION}"
 comprobar "llave de cifrado ${ALIAS_LLAVE}" aws kms describe-key --key-id "${ALIAS_LLAVE}" --region "${REGION}"
 comprobar "contenedor de evidencias" aws s3api head-bucket --bucket "${BUCKET_EVIDENCIAS}"
 comprobar "contenedor de registro" aws s3api head-bucket --bucket "${BUCKET_REGISTRO}"
 
 paso "Funciones"
-for servicio in shipments tracking evidence public audit; do
+for servicio in "${SERVICIOS[@]}"; do
   comprobar "funcion ${PREFIJO}-${servicio}" aws lambda get-function --function-name "${PREFIJO}-${servicio}" --region "${REGION}"
 done
 
@@ -49,8 +50,21 @@ if [[ -f "${RAIZ_PROYECTO}/config/.api.env" ]]; then
     *)   aviso "respuesta inesperada del punto publico: ${CODIGO}" ; FALLOS=$((FALLOS + 1)) ;;
   esac
 
+  paso "Prueba de extremo a extremo del catalogo de estados"
+  # Ruta abierta que ejercita una funcion nueva: si responde, el reparto de
+  # rutas y el permiso de invocacion estan bien.
+  ESTADOS="$(curl -s "${URL_API}/catalogos/estados" | head -c 40 || true)"
+  if [[ "${ESTADOS}" == *"codigo"* ]]; then
+    ok "el catalogo de estados responde a traves de la interfaz"
+  else
+    aviso "el catalogo de estados no responde: ${ESTADOS:-sin respuesta}"
+    FALLOS=$((FALLOS + 1))
+  fi
+
   paso "Estado del supuesto SU-01"
   echo "  SU-01 (validador de tokens en API Gateway): ${SU01:-desconocido}"
+  echo "  Nota: el sistema valida el token en cada servicio, de modo que"
+  echo "  funciona igual con o sin validador en la puerta."
 else
   aviso "no hay datos de la interfaz; ejecute 40-api.sh"
   FALLOS=$((FALLOS + 1))

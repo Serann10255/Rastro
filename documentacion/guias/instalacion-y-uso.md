@@ -1,6 +1,6 @@
 # Instalación y uso
 
-Fecha: 2026-09-10 · Versión: 0.2
+Fecha: 2026-09-10 · Versión: 0.3
 
 ## Requisitos
 
@@ -23,9 +23,11 @@ docker compose up -d
 ```
 
 La primera vez tarda varios minutos: descarga las imágenes y construye la del
-proyecto. El servicio `preparar-entorno` crea las tablas con sus índices, el
-contenedor de objetos y siembra tres envíos sintéticos. Es idempotente: puede
-ejecutarse tantas veces como haga falta sin duplicar recursos ni datos.
+proyecto. El servicio `preparar-entorno` crea las tres tablas con sus índices y el
+contenedor de objetos, deriva las contraseñas de la semilla, siembra dos empresas
+con sus diez usuarios y sus catálogos, y genera veinte envíos con recorridos
+variados. Es idempotente: puede ejecutarse tantas veces como haga falta sin
+duplicar recursos ni datos.
 
 Comprobar que arrancó:
 
@@ -61,15 +63,20 @@ docker compose down -v       # además borra los volúmenes
 
 ### Como despachador
 
-1. Entrar en http://localhost:5173 con `despacho@andes.test` / `Andes.2026`.
+1. Entrar en http://localhost:5173 con `despacho@andes.test` / `Andes.Despacho.2026`.
 2. **Registrar** — crear un envío. El sistema devuelve un identificador UUID;
    ese es el que se le entrega al destinatario.
-3. Abrir el envío desde la lista y **asignar un mensajero**
-   (`u-andes-cond-1`, Carlos Nieto).
+3. Abrir el envío desde la lista y **asignar un mensajero**: los conductores de
+   la empresa aparecen como opciones, no hay que saberse su identificador.
+4. Marcar varias órdenes en el listado y pulsar **Guías** para imprimir sus
+   etiquetas con código de barras, o **Exportar** para descargar el CSV.
+5. Para un lote grande, **Nueva orden → Carga masiva**: se pega un CSV, la
+   pantalla muestra qué filas se aceptan antes de enviar nada, y una fila mala
+   no impide registrar las demás.
 
 ### Como conductor
 
-1. Salir y entrar con `carlos@andes.test` / `Andes.2026`.
+1. Salir y entrar con `carlos@andes.test` / `Andes.Carlos.2026`.
 2. La lista solo muestra los envíos asignados a ese conductor. El filtro lo
    aplica el servidor, no la pantalla.
 3. Abrir el envío y registrar puntos de control. Solo aparecen como botones los
@@ -82,7 +89,7 @@ prueba que la acredite.
 
 ### Como auditor
 
-1. Entrar con `auditor@andes.test` / `Andes.2026`.
+1. Entrar con `auditor@andes.test` / `Andes.Auditor.2026`.
 2. La bitácora muestra cada operación con actor, acción, recurso, resultado y
    hash. **Verificar integridad** recalcula la cadena completa.
 3. El auditor no puede crear ni modificar nada: si lo intenta, recibe 403 y el
@@ -93,6 +100,14 @@ prueba que la acredite.
 Abrir http://localhost:5173/rastreo y pegar el identificador del envío. Sin
 cuenta y sin token. Se muestra el avance, no la operación de la empresa.
 
+### Como administrador
+
+1. Entrar con `admin@andes.test` / `Andes.Admin.2026`.
+2. **Administración** — crear un usuario, cambiarle el rol o desactivarlo. El
+   sistema impide quedarse sin administradores y que uno se desactive a sí mismo.
+3. **Maestros** — tiendas, clientes y transportistas. Eliminar desactiva; no
+   borra, porque los envíos históricos apuntan a ellos.
+
 ### Como auditor, en Cotejo
 
 Abrir http://localhost:5175 y entrar con la misma cuenta de auditor. Ejecutar el
@@ -100,7 +115,7 @@ catálogo, abrir un papel de trabajo y comprobar que su huella coincide.
 
 ### Comprobar el aislamiento
 
-Entrar con `despacho@sabana.test` / `Sabana.2026` (otra organización) e intentar
+Entrar con `despacho@sabana.test` / `Sabana.Despacho.2026` (otra organización) e intentar
 abrir un envío de `org-andes` por su identificador: el sistema responde como si
 no existiera, y el intento queda en la bitácora de `org-sabana`.
 
@@ -129,6 +144,11 @@ python -m pytest cotejo/tests -q    # solo el programa de auditoría
 cd web && npm install && npm run typecheck && npm run build
 cd ../cotejo/web && npm install && npm run typecheck && npm run build
 ```
+
+Las dos comparten el sistema de diseño de `design/`, que está fuera de cada
+aplicación: si `npm run build` falla al resolver `@design/...`, falta el alias en
+`vite.config.ts` o el permiso `fs.allow`. Detalle en
+[sistema-de-diseno](../modulos/sistema-de-diseno/README.md).
 
 ---
 
@@ -174,11 +194,20 @@ Precedencia: variable de entorno → `config/deployment.json` → valor por omis
 | `RASTRO_ENTORNO` | `local`, `aws` o `memoria` (pruebas) | `local` |
 | `COTEJO_URL_API` | Sistema que Cotejo audita | `http://gateway:80` |
 | `COTEJO_DIR_PAPELES` | Dónde guarda los papeles de trabajo | `/papeles` (volumen) |
+| `COTEJO_CLAVES` | Claves de los usuarios de prueba, JSON de correo a clave | las de la semilla montada |
+| `COTEJO_TABLA_MAESTROS` | Directorio del que Cotejo descubre contra quién ejecutar | `rastro-maestros` |
 | `RASTRO_ENDPOINT_DYNAMODB` | Dirección del almacén de datos | `http://dynamodb:8000` |
 | `RASTRO_ENDPOINT_S3` | Dirección interna del almacenamiento | `http://almacen:9000` |
 | `RASTRO_ENDPOINT_S3_PUBLICO` | Dirección con la que el **dispositivo** lo alcanza | `http://localhost:9000` |
-| `RASTRO_JWT_SECRETO` | Secreto del emisor local | valor de desarrollo |
+| `RASTRO_JWT_SECRETO` | Secreto de firma de los tokens | valor de desarrollo |
+| `RASTRO_PBKDF2_ITERACIONES` | Coste de derivación de contraseñas | `600000` (las pruebas lo bajan a `1000`) |
+| `RASTRO_TABLA_MAESTROS` | Tabla de empresa, usuarios y catálogos | `rastro-maestros` |
 | `RASTRO_VIGENCIA_ENLACE` | Segundos de vigencia del enlace prefirmado | `300` |
+
+**El secreto de firma es crítico en AWS.** Quien lo conozca puede firmar un
+token de administrador de cualquier organización. Por eso `30-funciones.sh` se
+niega a desplegar si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32
+caracteres, en lugar de caer al valor de desarrollo que está en el repositorio.
 
 **Por qué dos direcciones de almacenamiento.** La firma de un enlace prefirmado
 cubre el nombre del servidor. El servicio alcanza el almacenamiento por el
@@ -197,7 +226,13 @@ firmar contra la dirección que usará el cliente. En AWS ambas coinciden.
 | `bloqueo de acceso publico: NO disponible` al preparar | Esperado: el almacenamiento local no implementa esa operación. En AWS sí se aplica |
 | Cotejo marca C-01 a C-03 como no ejecutados | Esperado en local: esas capacidades no existen. Se comprueban contra la cuenta desplegada |
 | El puerto 5175 está ocupado | Otro proyecto lo usa. Cambie el mapeo en `docker-compose.yml`; nada del sistema depende de ese número |
+| La pantalla de operaciones aparece vacía | Falta sembrar los módulos: `docker compose run --rm preparar-entorno`. Es idempotente y respeta los que un administrador haya apagado |
+| Un módulo muestra un icono genérico | Su campo `icono` no coincide con ningún trazado del sistema de diseño. Se dibuja el genérico a propósito: un hueco parecería una pantalla rota |
+| Cotejo reporta C-05 y C-06 no ejecutados | No encontró credenciales de los roles que necesita. Declare `COTEJO_CLAVES` o compruebe que `./seed` esté montado en el contenedor |
 | La interfaz muestra datos viejos tras una escritura | Recargue. Si persiste, es un fallo de invalidación en `web/src/api/consultas.ts` |
+| `npm run dev` devuelve HTML donde espera JSON | Falta el prefijo de esa ruta en el proxy de `web/vite.config.ts`. La lista debe coincidir con la que reparte `gateway/nginx.conf` |
+| Las pruebas tardan minutos | Falta `RASTRO_PBKDF2_ITERACIONES` bajo. `tests/conftest.py` lo fija; ejecutar un archivo suelto sin ese ajuste deriva a coste real |
+| Un usuario no puede entrar y la clave es correcta | Puede estar desactivado. La respuesta es deliberadamente la misma; el motivo real está en la bitácora |
 
 ---
 

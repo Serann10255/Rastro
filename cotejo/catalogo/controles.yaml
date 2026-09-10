@@ -8,10 +8,24 @@
 # juzga, que tipo de prueba lo comprueba, cual es el criterio de aceptacion y
 # que evidencia debe quedar. Declararlas antes es lo que impide que el criterio
 # se acomode al resultado.
+#
+# Ademas, cada control declara su version en lenguaje llano: `pregunta`,
+# `en_simple` y `si_falla`. No es decoracion de la interfaz. Un control que no
+# se puede explicar sin vocabulario tecnico no se puede discutir con quien
+# decide, y un hallazgo que nadie entiende no se corrige. Vive aqui, y no en la
+# interfaz, para que la consola, el informe y la web digan exactamente lo mismo.
 
-version: "0.1"
+version: "0.2"
 sistema_auditado: Rastro
 fecha_catalogo: "2026-09-10"
+
+# Lo que hace este programa, en una frase que se pueda leer en voz alta.
+que_es_esto: >-
+  Rastro promete unas cuantas cosas: que cada quien solo hace lo que le toca,
+  que una empresa no ve los datos de otra y que su historial no se puede
+  retocar. Cotejo comprueba si eso es verdad. No lee el codigo ni pregunta: usa
+  el sistema como lo usaria una persona, guarda lo que respondio tal cual y le
+  pone un sello para que se note si alguien cambia esa prueba despues.
 
 controles:
 
@@ -21,6 +35,14 @@ controles:
 
   - id: C-01
     control: El registro de actividad esta activo y con validacion de integridad de sus archivos.
+    pregunta: ¿Queda anotado todo lo que se hace en la nube, y se nota si alguien arranca una hoja?
+    en_simple: >-
+      La nube lleva sola un cuaderno donde apunta cada cosa que alguien hace.
+      Miramos dos cosas: que ese cuaderno este encendido y que tenga puesto el
+      sello que delata si le quitan o le cambian una hoja.
+    si_falla: >-
+      Alguien podria tocar algo importante y no habria forma de saber quien fue
+      ni cuando.
     marco: CIS AWS Foundations Benchmark; NIST SP 800-92 (Kent y Souppaya, 2006)
     tipo: cumplimiento
     prueba: cumplimiento.registro_de_actividad
@@ -39,6 +61,14 @@ controles:
     control: >-
       Las evidencias se cifran en reposo con una llave administrada por el
       responsable, con rotacion habilitada.
+    pregunta: ¿Las fotos y las firmas de entrega estan guardadas bajo llave?
+    en_simple: >-
+      Las evidencias de entrega se guardan cifradas, como en una caja fuerte.
+      Comprobamos tres cosas: que la caja se cierre sola, que la llave sea
+      nuestra y no prestada, y que esa llave se cambie cada cierto tiempo.
+    si_falla: >-
+      Cualquiera que llegara al almacenamiento podria abrir las fotos y los
+      datos de las personas que reciben los envios.
     marco: ISO/IEC 27001:2022, A.8.24
     tipo: cumplimiento
     prueba: cumplimiento.cifrado_de_evidencias
@@ -56,6 +86,14 @@ controles:
 
   - id: C-03
     control: El contenedor de evidencias no admite acceso publico.
+    pregunta: ¿Un desconocido de internet puede ver las evidencias de entrega?
+    en_simple: >-
+      El almacen donde viven las fotos de entrega tiene cuatro cerrojos que
+      impiden publicarlo en internet sin querer. Miramos que los cuatro esten
+      echados.
+    si_falla: >-
+      Las fotos y los datos de las personas que reciben los envios quedarian a
+      la vista de cualquiera que diera con el enlace.
     marco: CIS AWS Foundations Benchmark
     tipo: cumplimiento
     prueba: cumplimiento.acceso_publico_bloqueado
@@ -69,6 +107,13 @@ controles:
 
   - id: C-04
     control: El contenedor de evidencias conserva versiones anteriores de cada objeto.
+    pregunta: Si alguien borra o cambia una evidencia, ¿se puede recuperar la de antes?
+    en_simple: >-
+      El almacen puede guardar una copia de cada version anterior, como el
+      historial de un documento. Miramos que esa opcion este encendida.
+    si_falla: >-
+      Borrar o sustituir una foto de entrega seria definitivo, y nadie podria
+      demostrar que habia antes.
     marco: ISO/IEC 27001:2022, A.8.13
     tipo: cumplimiento
     prueba: cumplimiento.versionado_activo
@@ -91,6 +136,15 @@ controles:
     control: >-
       Cada operacion esta restringida a los roles autorizados y el intento
       rechazado queda registrado.
+    pregunta: ¿Un conductor puede crear envios, que es trabajo de otra persona?
+    en_simple: >-
+      Entramos de verdad como conductor, que solo debe reportar lo que pasa en
+      la ruta, e intentamos crear un envio. Rastro tiene que decir que no. Y
+      ademas tiene que apuntar en su cuaderno que alguien lo intento: un "no"
+      del que no queda constancia no sirve para investigar despues.
+    si_falla: >-
+      Cualquiera podria hacer cosas que no le corresponden, y encima sin dejar
+      rastro de que lo intento.
     marco: COBIT 2019, DSS05; OWASP Top 10:2021 A01
     tipo: sustantiva
     prueba: sustantiva.autorizacion_por_rol
@@ -109,6 +163,15 @@ controles:
     control: >-
       Un usuario no accede a envios, eventos ni evidencias de una organizacion
       distinta a la suya.
+    pregunta: ¿Una empresa puede ver los envios de otra empresa?
+    en_simple: >-
+      Creamos un envio con la empresa A. Luego entramos como la empresa B y
+      pedimos ese mismo envio por todas las puertas del sistema. Todas tienen
+      que contestar "eso no existe". Ojo al detalle: no vale contestar "no
+      puedes verlo", porque eso ya seria admitir que existe.
+    si_falla: >-
+      Una empresa veria los clientes, las direcciones y los movimientos de su
+      competencia. Eso es una fuga de informacion, no un defecto de uso.
     marco: COBIT 2019, DSS05; OWASP Top 10:2021 A01
     tipo: sustantiva
     prueba: sustantiva.aislamiento_entre_organizaciones
@@ -126,6 +189,14 @@ controles:
 
   - id: C-07
     control: El sistema rechaza las transiciones de estado no contempladas en su modelo.
+    pregunta: ¿Se puede marcar un envio como entregado sin haberlo recogido?
+    en_simple: >-
+      Un envio tiene que pasar por sus pasos en orden, como los niveles de un
+      juego. Cogemos uno recien creado e intentamos saltar directo a
+      "entregado". El sistema debe rechazarlo y anotar el intento.
+    si_falla: >-
+      El historial contaria cosas imposibles y dejaria de servir para demostrar
+      que paso de verdad con un envio.
     marco: COBIT 2019, DSS06
     tipo: sustantiva
     prueba: sustantiva.transiciones_invalidas
@@ -146,6 +217,16 @@ controles:
     control: >-
       La bitacora permite detectar la alteracion o eliminacion de cualquiera de
       sus registros.
+    pregunta: Si alguien retoca el cuaderno de Rastro, ¿se nota?
+    en_simple: >-
+      Cada anotacion del cuaderno lleva pegada la huella de la anterior, como
+      los eslabones de una cadena. Recalculamos la cadena entera para ver que
+      encaja. Despues, sobre una copia, cambiamos algo a proposito para
+      comprobar que el detector salta: que sepa decir "todo bien" no demuestra
+      nada si no sabe decir "aqui esta roto".
+    si_falla: >-
+      Alguien podria reescribir la historia y el cuaderno dejaria de valer como
+      prueba de nada.
     marco: Schneier y Kelsey (1999); Haber y Stornetta (1991)
     tipo: integridad
     prueba: integridad.cadena_de_bitacora
@@ -172,6 +253,12 @@ hallazgos_permanentes:
       Las funciones del sistema auditado comparten un unico rol de ejecucion con
       permisos amplios (LabRole) en lugar de disponer cada una de un rol
       restringido a lo que necesita.
+    en_simple: >-
+      Todas las piezas de Rastro entran con la misma llave maestra, que abre
+      todas las puertas. Lo correcto seria que cada pieza tuviera su propia
+      llave y que esa llave abriera solo su puerta. El laboratorio de clase de
+      AWS no deja crear llaves nuevas, asi que aqui no se puede arreglar: se
+      avisa en todos los informes en lugar de callarlo.
     criterio: >-
       Principio de minimo privilegio del pilar de seguridad del marco de buenas
       practicas del proveedor (Amazon Web Services, 2024).
@@ -195,6 +282,12 @@ hallazgos_permanentes:
       El programa de auditoria se ejecuta con el mismo rol compartido del
       laboratorio, que dispone de permisos de escritura sobre los recursos que
       audita.
+    en_simple: >-
+      Cotejo revisa a Rastro con esa misma llave maestra, o sea que
+      tecnicamente podria cambiar aquello que esta revisando. Quien revisa
+      deberia entrar con una llave que solo permita mirar. No cambia el
+      resultado de ninguna prueba, pero si le quita fuerza: se dice y no se
+      esconde.
     criterio: >-
       ITAF, normas de desempeno sobre independencia y objetividad (ISACA, 2020).
     causa: Misma restriccion RE-01 del entorno.
@@ -208,3 +301,132 @@ hallazgos_permanentes:
     nota_de_alcance: >-
       Se declara como condicion del trabajo y no como una condicion aceptable
       de diseno.
+
+# ------------------------------------------------------------------------ #
+# Diccionario
+# ------------------------------------------------------------------------ #
+#
+# Los terminos de auditoria son los del oficio y no se sustituyen: son lo que
+# se evalua en la asignatura y lo que un tercero espera leer. Pero nadie
+# deberia necesitar saberlos para entender que dice una pantalla. Cada termino
+# se define aqui una sola vez y la interfaz lo muestra donde aparece.
+
+glosario:
+  - termino: Auditoria
+    en_simple: >-
+      Comprobar si algo cumple las reglas que dice cumplir, y dejar por escrito
+      lo que se encontro con las pruebas al lado. No es opinar: es demostrar.
+
+  - termino: Control
+    en_simple: >-
+      Una promesa concreta que el sistema hace. Por ejemplo: "solo el
+      despachador crea envios". Cada control se comprueba por separado.
+
+  - termino: Criterio
+    en_simple: >-
+      La regla exacta con la que decidimos si algo esta bien o mal. Se escribe
+      ANTES de probar. Si se escribiera despues, siempre se podria acomodar
+      para que el resultado quede bonito.
+
+  - termino: Papel de trabajo
+    en_simple: >-
+      La ficha que queda de cada prueba: que hicimos, que respondio el sistema
+      palabra por palabra, a que hora y quien lo ejecuto. Es la prueba de que
+      la prueba se hizo.
+
+  - termino: Evidencia
+    en_simple: >-
+      La respuesta del sistema copiada tal cual, sin resumir ni retocar. Es lo
+      que permite que otra persona revise si la conclusion es justa.
+
+  - termino: Hallazgo
+    en_simple: >-
+      Algo que salio mal, contado en cinco partes: que pasa, con que regla
+      choca, por que pasa, que dano puede causar y que habria que hacer.
+
+  - termino: Huella
+    tambien_llamado: hash, SHA-256, sello
+    en_simple: >-
+      Un codigo largo que se calcula a partir del contenido de un archivo. Si
+      alguien cambia una sola letra del archivo, el codigo sale distinto. Sirve
+      para notar cambios; no impide que ocurran.
+
+  - termino: Bitacora
+    tambien_llamado: cadena de bitacora
+    en_simple: >-
+      El cuaderno donde Rastro apunta todo lo que pasa. Cada anotacion lleva la
+      huella de la anterior, encadenadas, de modo que arrancar o retocar una
+      hoja rompe la cadena y se ve.
+
+  - termino: Prueba de cumplimiento
+    en_simple: >-
+      Mirar como esta configurado algo, sin tocarlo. Como revisar que la puerta
+      tenga cerradura.
+
+  - termino: Prueba sustantiva
+    en_simple: >-
+      Usar el sistema de verdad para ver que hace. Como empujar la puerta para
+      ver si de verdad esta cerrada. Es lo que ninguna herramienta automatica
+      del proveedor hace por nosotros.
+
+  - termino: Prueba de integridad
+    en_simple: >-
+      Recalcular las huellas del historial para comprobar que nadie lo ha
+      retocado.
+
+  - termino: Conforme
+    tambien_llamado: BIEN
+    en_simple: Se probo y cumplio la regla que estaba escrita de antemano.
+
+  - termino: Desviado
+    tambien_llamado: MAL
+    en_simple: >-
+      Se probo y NO cumplio. Esto se convierte en un hallazgo con su
+      recomendacion.
+
+  - termino: No ejecutada
+    tambien_llamado: SIN REVISAR
+    en_simple: >-
+      Ni bien ni mal: no se pudo probar. Suele ser porque la pieza no existe en
+      este computador y hace falta la cuenta de AWS. Contarlo como "bien" seria
+      mentir, asi que tiene su propia casilla.
+
+  - termino: Cobertura
+    en_simple: >-
+      Cuantas cosas de la lista se llegaron a probar de verdad. "5 de 8"
+      significa que quedan 3 sin respuesta, no que 3 esten bien.
+
+  - termino: Severidad
+    en_simple: >-
+      Que tan grave seria si eso fallara: alta, media o baja. Sirve para
+      decidir que se arregla primero.
+
+  - termino: Marco de referencia
+    tambien_llamado: ISO 27001, COBIT, CIS, OWASP
+    en_simple: >-
+      Listas de buenas practicas que ya existen y que usa medio mundo. Las
+      reglas salen de ahi y no de lo que a nosotros nos parezca, para que nadie
+      pueda decir que elegimos las faciles.
+
+  - termino: Independencia
+    en_simple: >-
+      Que quien revisa no sea quien construyo. Aqui no se cumple del todo,
+      porque es el mismo equipo, y por eso esta escrito en todas las pantallas
+      y en el informe.
+
+  - termino: Reproducibilidad
+    en_simple: >-
+      Que otra persona pueda repetir la revision y obtener el mismo resultado.
+      Si dependiera de quien la ejecuta, no seria una medida: seria una opinion.
+
+  - termino: Rol
+    tambien_llamado: grupo
+    en_simple: >-
+      El papel de cada persona dentro del sistema: despachador, conductor,
+      auditor. Determina que puede hacer y que no.
+
+  - termino: Organizacion
+    tambien_llamado: org, multiempresa
+    en_simple: >-
+      Cada empresa que usa Rastro. Todas comparten el mismo programa, y por eso
+      hay que comprobar que ninguna alcance los datos de otra.

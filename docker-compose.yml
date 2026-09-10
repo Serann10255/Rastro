@@ -32,6 +32,7 @@ x-servicio-comun: &servicio-comun
     RASTRO_S3_PATH_STYLE: "true"
     RASTRO_TABLA_ENVIOS: rastro-envios
     RASTRO_TABLA_BITACORA: rastro-bitacora
+    RASTRO_TABLA_MAESTROS: rastro-maestros
     RASTRO_BUCKET_EVIDENCIAS: rastro-evidencias-local
     RASTRO_JWT_EMISOR: http://localhost:8080/auth
     RASTRO_JWT_AUDIENCIA: rastro-web
@@ -149,6 +150,22 @@ services:
     ports:
       - "8006:8000"
 
+  maestros:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: masters
+    ports:
+      - "8008:8000"
+
+  tablero:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: dashboard
+    ports:
+      - "8009:8000"
+
   # ----------------------------------------------------------------------- #
   # Puerta de enlace e interfaz
   # ----------------------------------------------------------------------- #
@@ -169,14 +186,18 @@ services:
       - evidencias
       - publico
       - bitacora
+      - maestros
+      - tablero
 
   # Sitio estatico compilado. La imagen final solo sirve archivos: no lleva
   # Node ni node_modules, igual que el despliegue en el almacenamiento de
   # objetos de AWS, donde tampoco hay servidor de aplicaciones.
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      # El contexto es la raiz porque el sistema de diseno esta en design/ y lo
+      # comparten las dos interfaces.
+      context: .
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     ports:
       - "5173:80"
@@ -204,6 +225,10 @@ services:
       COTEJO_ENDPOINT_DYNAMODB: http://dynamodb:8000
       COTEJO_BUCKET: rastro-evidencias-local
       COTEJO_TABLA_BITACORA: rastro-bitacora
+      # Cotejo averigua contra que cuentas ejecutar leyendo el directorio del
+      # sistema auditado; las claves no salen de ahi -estan derivadas- sino de
+      # COTEJO_CLAVES o, en local, de la misma semilla que creo las cuentas.
+      COTEJO_TABLA_MAESTROS: rastro-maestros
       COTEJO_DIR_PAPELES: /papeles
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: local
@@ -216,6 +241,13 @@ services:
       RASTRO_JWT_SECRETO: ${RASTRO_JWT_SECRETO:-rastro-secreto-local-solo-para-desarrollo-32b}
     volumes:
       - papeles-cotejo:/papeles
+      # La semilla del sistema auditado, en solo lectura. Es de donde Cotejo
+      # toma las claves de los usuarios de prueba en el entorno local: copiarlas
+      # en su propia configuracion significaria que al cambiar una, el programa
+      # de auditoria dejaria de entrar sin que nadie supiera por que. En un
+      # despliegue con datos reales no se monta nada: las claves llegan por
+      # COTEJO_CLAVES.
+      - ./seed:/app/seed:ro
     ports:
       - "8007:8000"
     depends_on:
@@ -223,8 +255,8 @@ services:
 
   cotejo-web:
     build:
-      context: ./cotejo/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: cotejo/web/Dockerfile
     restart: unless-stopped
     ports:
       - "5175:80"

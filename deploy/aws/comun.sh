@@ -28,6 +28,7 @@ ROL_EJECUCION="arn:aws:iam::${CUENTA}:role/${NOMBRE_ROL}"
 
 TABLA_ENVIOS="${PREFIJO}-envios"
 TABLA_BITACORA="${PREFIJO}-bitacora"
+TABLA_MAESTROS="${PREFIJO}-maestros"
 BUCKET_EVIDENCIAS="${PREFIJO}-evidencias-${CUENTA}"
 BUCKET_REGISTRO="${PREFIJO}-registro-${CUENTA}"
 BUCKET_WEB="${PREFIJO}-web-${CUENTA}"
@@ -40,8 +41,8 @@ RAIZ_PROYECTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ARCHIVO_CONFIG="${RAIZ_PROYECTO}/config/deployment.json"
 DIR_EVIDENCIAS="${RAIZ_PROYECTO}/evidencias-despliegue"
 
-# Los seis microservicios. El nombre de la funcion se deriva del prefijo.
-SERVICIOS=(auth shipments tracking evidence public audit)
+# Los ocho microservicios. El nombre de la funcion se deriva del prefijo.
+SERVICIOS=(auth shipments tracking evidence public audit masters dashboard)
 
 paso()  { printf '\n=== %s ===\n' "$*"; }
 ok()    { printf '  [ok] %s\n' "$*"; }

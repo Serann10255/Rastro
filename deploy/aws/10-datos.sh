@@ -54,6 +54,34 @@ else
   ok "tabla creada: ${TABLA_BITACORA}"
 fi
 
+if existe_tabla "${TABLA_MAESTROS}"; then
+  ok "tabla ya existente: ${TABLA_MAESTROS}"
+else
+  # Empresas, usuarios, tiendas, clientes y transportistas. Tabla aparte de la
+  # de envios porque no crece con el volumen de operacion: mezclarlas haria que
+  # un listado de tiendas compitiera por capacidad con el trafico de eventos.
+  #
+  # El indice gsi_email resuelve el inicio de sesion: el usuario escribe su
+  # correo y no su organizacion, de modo que hay que encontrarlo sin saber en
+  # que particion esta. Es la unica consulta que no filtra por organizacion, y
+  # esta acotada a ese uso.
+  aws dynamodb create-table \
+    --region "${REGION}" \
+    --table-name "${TABLA_MAESTROS}" \
+    --billing-mode PAY_PER_REQUEST \
+    --attribute-definitions \
+      AttributeName=pk,AttributeType=S \
+      AttributeName=sk,AttributeType=S \
+      AttributeName=gsi_email_pk,AttributeType=S \
+    --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
+    --global-secondary-indexes \
+      '[{"IndexName":"gsi_email","KeySchema":[{"AttributeName":"gsi_email_pk","KeyType":"HASH"}],"Projection":{"ProjectionType":"ALL"}}]' \
+    --tags Key=proyecto,Value="${PREFIJO}" \
+    >/dev/null
+  aws dynamodb wait table-exists --table-name "${TABLA_MAESTROS}" --region "${REGION}"
+  ok "tabla creada: ${TABLA_MAESTROS} (indice gsi_email)"
+fi
+
 paso "Llave de cifrado administrada por el cliente"
 
 # La llave se invoca por alias en todo el codigo. Su identificador cambia entre

@@ -15,9 +15,12 @@ import { ProveedorSesion } from "@/api/sesion";
 import { App } from "@/App";
 import { ProveedorNotificaciones } from "@/componentes/notificaciones";
 
-import "@/estilos/tokens.css";
-import "@/estilos/base.css";
-import "@/estilos/componentes.css";
+// El sistema de diseño es compartido con Cotejo y vive en `design/`, fuera de
+// esta aplicación. La identidad -el color de marca- es lo único propio.
+import "@design/tokens.css";
+import "@design/base.css";
+import "@design/componentes.css";
+import "@/estilos/identidad.css";
 
 const clienteConsultas = new QueryClient({
   defaultOptions: {

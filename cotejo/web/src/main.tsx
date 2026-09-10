@@ -7,9 +7,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cargarConfiguracion } from "@/api/cliente";
 import { App } from "@/App";
 
-import "@/estilos/tokens.css";
-import "@/estilos/base.css";
-import "@/estilos/componentes.css";
+// El mismo sistema de diseño que Rastro, sin copia: una copia por aplicación
+// diverge en cuanto alguien corrige un color en una sola.
+import "@design/tokens.css";
+import "@design/base.css";
+import "@design/componentes.css";
+import "@/estilos/identidad.css";
 import "@/estilos/cotejo.css";
 
 const cliente = new QueryClient({

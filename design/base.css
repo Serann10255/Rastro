@@ -129,6 +129,11 @@ textarea {
   top: var(--e-2);
   left: var(--e-2);
   z-index: 100;
+  /* Cumple el área táctil como cualquier otro control: se activa con el
+   * teclado, pero en un teléfono con teclado externo también se toca. */
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tactil);
   padding: var(--e-2) var(--e-4);
   background: var(--acento);
   color: var(--texto-invertido);
@@ -211,10 +216,35 @@ textarea {
 /* Estructura de la aplicación                                             */
 /* ======================================================================= */
 
+/* La aplicación es una rejilla de dos zonas: el armazón -barra o panel lateral-
+ * y el contenido. En móvil se apilan; a partir de 1024px el armazón pasa a ser
+ * una columna fija a la izquierda.
+ *
+ * El panel lateral no es decoración: en escritorio hay sitio de sobra a los
+ * lados y una barra superior obliga a subir la vista para cambiar de sección.
+ * En móvil no cabe, y por eso allí sigue siendo una barra. */
 .aplicacion {
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr;
+  background: var(--fondo);
+}
+
+@media (min-width: 1024px) {
+  .aplicacion--con-lateral {
+    grid-template-rows: none;
+    grid-template-columns: var(--ancho-lateral) minmax(0, 1fr);
+  }
+}
+
+/* La columna de contenido: lo que se lee, con el pie debajo. Existe para que el
+ * pie quede al final del contenido y no al final del panel lateral, que en
+ * escritorio es una columna aparte. */
+.marco {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .contenido {
@@ -288,6 +318,6 @@ textarea {
 
 @media (min-width: 1280px) {
   .contenido {
-    padding: var(--e-6) var(--e-5);
+    padding: var(--e-6);
   }
 }

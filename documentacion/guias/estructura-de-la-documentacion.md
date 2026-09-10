@@ -23,12 +23,16 @@ formato ISO.
 | Módulo | Documento |
 |---|---|
 | Capa común | [`rastro-core`](../modulos/rastro-core/README.md) |
-| Emisor de tokens | [`servicio-auth`](../modulos/servicio-auth/README.md) |
+| Sistema de diseño | [`sistema-de-diseno`](../modulos/sistema-de-diseno/README.md) |
+| Roles y permisos | [`roles-y-permisos`](../modulos/roles-y-permisos/README.md) |
+| Identidad, sesiones y cuentas | [`servicio-auth`](../modulos/servicio-auth/README.md) |
 | Envíos | [`servicio-envios`](../modulos/servicio-envios/README.md) |
 | Puntos de control | [`servicio-rastreo`](../modulos/servicio-rastreo/README.md) |
 | Evidencias | [`servicio-evidencias`](../modulos/servicio-evidencias/README.md) |
 | Consulta pública | [`servicio-consulta-publica`](../modulos/servicio-consulta-publica/README.md) |
 | Bitácora | [`servicio-bitacora`](../modulos/servicio-bitacora/README.md) |
+| Datos maestros y catálogos | [`servicio-maestros`](../modulos/servicio-maestros/README.md) |
+| Tablero de operación | [`servicio-tablero`](../modulos/servicio-tablero/README.md) |
 | Interfaz web de Rastro | [`interfaz-web`](../modulos/interfaz-web/README.md) |
 | Programa de auditoría | [`cotejo`](../modulos/cotejo/README.md) |
 | API de auditoría | [`cotejo-api`](../modulos/cotejo-api/README.md) |
@@ -43,6 +47,11 @@ formato ISO.
 | [003](../decisiones/adr-003-identificador-aleatorio.md) | Identificador de rastreo aleatorio |
 | [004](../decisiones/adr-004-rol-compartido.md) | Rol de ejecución compartido |
 | [005](../decisiones/adr-005-react-con-configuracion-en-ejecucion.md) | React con configuración en tiempo de ejecución |
+| [006](../decisiones/adr-006-ampliacion-de-alcance-a-tms.md) | Ampliación del alcance a sistema de gestión de transporte |
+| [007](../decisiones/adr-007-identidad-propia.md) | Directorio de usuarios propio en lugar de Amazon Cognito |
+| [008](../decisiones/adr-008-sistema-de-diseno-compartido.md) | Un solo sistema de diseño para las dos interfaces |
+| [009](../decisiones/adr-009-datos-de-operacion-fuera-del-codigo.md) | Ningún dato de operación escrito en el código |
+| [010](../decisiones/adr-010-roles-configurables.md) | Roles configurables por organización |
 
 ## Al añadir o modificar un módulo
 

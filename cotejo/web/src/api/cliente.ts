@@ -14,9 +14,17 @@ export type Conclusion = "CONFORME" | "DESVIADO" | "NO_EJECUTADA";
 export type TipoPrueba = "cumplimiento" | "sustantiva" | "integridad";
 export type Severidad = "alta" | "media" | "baja";
 
+/* Cada control se declara dos veces: en el vocabulario del oficio, que es el
+ * que espera leer un tercero, y en lenguaje llano, que es el que permite
+ * discutirlo con quien decide. Las dos versiones vienen del catálogo: si la
+ * interfaz escribiera la suya, la pantalla y el informe acabarían diciendo
+ * cosas distintas del mismo control. */
 export interface Control {
   id: string;
   control: string;
+  pregunta: string;
+  en_simple: string;
+  si_falla: string;
   marco: string;
   tipo: TipoPrueba;
   prueba: string;
@@ -26,8 +34,15 @@ export interface Control {
   severidad_si_desviado: Severidad;
 }
 
+export interface TerminoGlosario {
+  termino: string;
+  tambien_llamado?: string;
+  en_simple: string;
+}
+
 export interface HallazgoPermanente {
   id: string;
+  en_simple: string;
   condicion: string;
   criterio: string;
   causa: string;
@@ -41,6 +56,8 @@ export interface Catalogo {
   version: string;
   sistema_auditado: string;
   fecha_catalogo: string;
+  que_es_esto: string;
+  glosario: TerminoGlosario[];
   controles: Control[];
   hallazgos_permanentes: HallazgoPermanente[];
 }
@@ -55,12 +72,19 @@ export interface Observacion {
 export interface PapelDeTrabajo {
   control_id: string;
   control: string;
+  pregunta: string;
+  en_simple: string;
+  si_falla: string;
   marco: string;
   tipo: TipoPrueba;
   procedimiento: string;
   criterio: string;
   evidencia_esperada: string;
   conclusion: Conclusion;
+  /* Derivados en el servidor y no almacenados en el papel: si mañana cambia la
+   * palabra llana de una conclusión, cambia en un sitio. */
+  conclusion_llana?: string;
+  conclusion_explicada?: string;
   resumen: string;
   observaciones: Observacion[];
   detalle: Record<string, unknown>;
@@ -74,6 +98,7 @@ export interface PapelDeTrabajo {
 export interface Hallazgo {
   id: string;
   control_id: string;
+  en_simple: string;
   condicion: string;
   criterio: string;
   causa: string;
@@ -142,14 +167,16 @@ export interface Salud {
   url_auditada: string;
   controles_en_catalogo: number;
   catalogo: string;
+  que_es_esto: string;
 }
 
 export interface UsuarioAuditor {
   sub: string;
   nombre: string;
-  email: string;
+  correo: string;
   org_id: string;
   grupos: string[];
+  activo?: boolean;
 }
 
 export interface SesionAuditor {
@@ -283,10 +310,10 @@ export const api = {
   /* La autenticación va contra Rastro: el auditor es un usuario de la
    * organización auditada, con el grupo `auditor`. Cotejo no mantiene su propio
    * directorio de usuarios, y esa dependencia se declara en la documentación. */
-  async entrar(usuario: string, clave: string): Promise<SesionAuditor> {
+  async entrar(correo: string, clave: string): Promise<SesionAuditor> {
     const datos = await peticion<{ token: string; usuario: UsuarioAuditor }>("/auth/token", {
       metodo: "POST",
-      cuerpo: { usuario, clave },
+      cuerpo: { correo, clave },
       base: "rastro",
       autenticada: false,
     });

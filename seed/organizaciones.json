@@ -1,0 +1,248 @@
+{
+  "_nota": "Datos sinteticos. Ninguna de estas empresas, personas ni direcciones existe. El documento de proyecto (apartado 3.3) adopta la decision explicita de poblar el sistema unicamente con datos sinteticos, de modo que no se generan obligaciones de tratamiento sobre titulares reales bajo la Ley 1581 de 2012.",
+  "_claves": "Las claves de esta semilla se derivan con PBKDF2 al preparar el entorno; nunca se almacenan en claro. Son claves de desarrollo y deben cambiarse antes de cualquier despliegue con datos reales.",
+
+  "organizaciones": [
+    {
+      "org_id": "org-andes",
+      "nombre": "Mensajeria Andes S.A.S.",
+      "nit": "901.455.782-3",
+      "direccion": "Calle 100 #15-20, Oficina 402",
+      "ciudad": "Bogota",
+      "departamento": "Cundinamarca",
+      "pais": "Colombia",
+      "telefono": "+57 601 742 8890",
+      "correo_contacto": "operaciones@andes.test",
+      "activa": true,
+
+      "usuarios": [
+        {
+          "correo": "admin@andes.test",
+          "nombre": "Ana Duarte Salcedo",
+          "clave": "Andes.Admin.2026",
+          "grupos": ["administrador"],
+          "telefono": "+57 310 445 8821"
+        },
+        {
+          "correo": "despacho@andes.test",
+          "nombre": "Diego Rojas Mena",
+          "clave": "Andes.Despacho.2026",
+          "grupos": ["despachador"],
+          "telefono": "+57 311 662 0043"
+        },
+        {
+          "correo": "coordinacion@andes.test",
+          "nombre": "Paula Restrepo Vega",
+          "clave": "Andes.Coord.2026",
+          "grupos": ["coordinador"],
+          "telefono": "+57 312 908 7712"
+        },
+        {
+          "correo": "carlos@andes.test",
+          "nombre": "Carlos Nieto Pardo",
+          "clave": "Andes.Carlos.2026",
+          "grupos": ["conductor"],
+          "telefono": "+57 320 118 3390"
+        },
+        {
+          "correo": "camila@andes.test",
+          "nombre": "Camila Ortiz Bravo",
+          "clave": "Andes.Camila.2026",
+          "grupos": ["conductor"],
+          "telefono": "+57 321 774 5528"
+        },
+        {
+          "correo": "auditor@andes.test",
+          "nombre": "Alicia Pena Cardona",
+          "clave": "Andes.Auditor.2026",
+          "grupos": ["auditor"],
+          "telefono": "+57 313 220 4471"
+        }
+      ],
+
+      "tiendas": [
+        {
+          "nombre": "Centro de acopio Chapinero",
+          "codigo": "AND-CHA",
+          "tipo": "almacen",
+          "direccion": "Carrera 13 #63-39",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca",
+          "telefono": "+57 601 742 8891",
+          "responsable": "Diego Rojas Mena"
+        },
+        {
+          "nombre": "Tienda Usaquen",
+          "codigo": "AND-USA",
+          "tipo": "tienda",
+          "direccion": "Calle 116 #15-40",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca",
+          "telefono": "+57 601 742 8892",
+          "responsable": "Paula Restrepo Vega"
+        },
+        {
+          "nombre": "Estacion Fontibon",
+          "codigo": "AND-FON",
+          "tipo": "estacion",
+          "direccion": "Carrera 100 #17-25",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca",
+          "telefono": "+57 601 742 8893",
+          "responsable": "Camila Ortiz Bravo"
+        }
+      ],
+
+      "clientes": [
+        {
+          "nombre": "Distribuidora Kuma S.A.S.",
+          "correo": "logistica@kuma.test",
+          "telefono": "+57 601 300 1122",
+          "documento": "900.331.204-7",
+          "direccion": "Avenida 68 #40-11",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca"
+        },
+        {
+          "nombre": "Farmacias del Norte",
+          "correo": "compras@fnorte.test",
+          "telefono": "+57 601 300 4455",
+          "documento": "830.117.998-1",
+          "direccion": "Calle 134 #9-51",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca"
+        },
+        {
+          "nombre": "Estudio Legal Bermudez",
+          "correo": "recepcion@bermudez.test",
+          "telefono": "+57 601 300 7788",
+          "documento": "1.020.443.112-4",
+          "direccion": "Carrera 7 #32-16, Piso 8",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca"
+        }
+      ],
+
+      "transportistas": [
+        {
+          "nombre": "Flota propia Andes",
+          "correo": "flota@andes.test",
+          "telefono": "+57 310 445 8830",
+          "tipo": "propio",
+          "nit": "901.455.782-3",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca"
+        },
+        {
+          "nombre": "Enlace Urbano Ltda.",
+          "correo": "despacho@enlaceurbano.test",
+          "telefono": "+57 601 555 3311",
+          "tipo": "tercero",
+          "nit": "900.884.210-6",
+          "ciudad": "Bogota",
+          "departamento": "Cundinamarca"
+        }
+      ]
+    },
+
+    {
+      "org_id": "org-sabana",
+      "nombre": "Envios Sabana Ltda.",
+      "nit": "900.772.318-9",
+      "direccion": "Autopista Norte km 20, Bodega 7",
+      "ciudad": "Chia",
+      "departamento": "Cundinamarca",
+      "pais": "Colombia",
+      "telefono": "+57 601 884 2210",
+      "correo_contacto": "operaciones@sabana.test",
+      "activa": true,
+
+      "usuarios": [
+        {
+          "correo": "admin@sabana.test",
+          "nombre": "Mauricio Lemus Rico",
+          "clave": "Sabana.Admin.2026",
+          "grupos": ["administrador"],
+          "telefono": "+57 315 330 1187"
+        },
+        {
+          "correo": "despacho@sabana.test",
+          "nombre": "Sofia Lemus Rico",
+          "clave": "Sabana.Despacho.2026",
+          "grupos": ["despachador"],
+          "telefono": "+57 316 447 9902"
+        },
+        {
+          "correo": "santiago@sabana.test",
+          "nombre": "Santiago Bravo Nino",
+          "clave": "Sabana.Santiago.2026",
+          "grupos": ["conductor"],
+          "telefono": "+57 317 221 6634"
+        },
+        {
+          "correo": "auditor@sabana.test",
+          "nombre": "Sara Gil Montero",
+          "clave": "Sabana.Auditor.2026",
+          "grupos": ["auditor"],
+          "telefono": "+57 318 556 3320"
+        }
+      ],
+
+      "tiendas": [
+        {
+          "nombre": "Bodega Chia",
+          "codigo": "SAB-CHI",
+          "tipo": "almacen",
+          "direccion": "Autopista Norte km 20, Bodega 7",
+          "ciudad": "Chia",
+          "departamento": "Cundinamarca",
+          "telefono": "+57 601 884 2211",
+          "responsable": "Sofia Lemus Rico"
+        },
+        {
+          "nombre": "Punto Zipaquira",
+          "codigo": "SAB-ZIP",
+          "tipo": "tienda",
+          "direccion": "Calle 5 #8-22",
+          "ciudad": "Zipaquira",
+          "departamento": "Cundinamarca",
+          "telefono": "+57 601 884 2212",
+          "responsable": "Santiago Bravo Nino"
+        }
+      ],
+
+      "clientes": [
+        {
+          "nombre": "Vivero La Sabana",
+          "correo": "ventas@viverosabana.test",
+          "telefono": "+57 601 770 5566",
+          "documento": "901.220.775-2",
+          "direccion": "Vereda Bojaca, km 3",
+          "ciudad": "Chia",
+          "departamento": "Cundinamarca"
+        },
+        {
+          "nombre": "Textiles Zipa",
+          "correo": "despachos@textileszipa.test",
+          "telefono": "+57 601 770 8899",
+          "documento": "830.554.019-3",
+          "direccion": "Carrera 12 #4-18",
+          "ciudad": "Zipaquira",
+          "departamento": "Cundinamarca"
+        }
+      ],
+
+      "transportistas": [
+        {
+          "nombre": "Flota propia Sabana",
+          "correo": "flota@sabana.test",
+          "telefono": "+57 315 330 1190",
+          "tipo": "propio",
+          "nit": "900.772.318-9",
+          "ciudad": "Chia",
+          "departamento": "Cundinamarca"
+        }
+      ]
+    }
+  ]
+}

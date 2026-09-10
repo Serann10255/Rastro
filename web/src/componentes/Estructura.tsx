@@ -1,118 +1,152 @@
-/* Estructura común: barra superior, navegación por rol y pie.
+/* Armazón de la aplicación: marca, navegación por rol e identidad de la sesión.
  *
- * La navegación se arma a partir de los grupos del token. No es un control de
- * seguridad —el servidor decide en cada operación— sino de claridad: ofrecerle
- * a un conductor un botón de «bitácora» que siempre responderá 403 solo produce
- * intentos fallidos y ruido en la auditoría.
+ * La navegación **sale de la base de datos**, no de una lista escrita aquí. Cada
+ * organización tiene sus módulos en la tabla de maestros, y esta pantalla los
+ * pinta filtrados por el grupo del usuario. Escribirlos aquí obligaría a
+ * recompilar el sitio para dar de alta un módulo y haría imposible que dos
+ * empresas vieran cosas distintas.
+ *
+ * El filtro por grupo no es un control de seguridad —el servidor decide en cada
+ * operación— sino de claridad: ofrecerle a un conductor un botón de «bitácora»
+ * que siempre responderá 403 solo produce intentos fallidos y ruido en la
+ * auditoría.
+ *
+ * En pantalla estrecha el armazón es una barra superior con la navegación
+ * deslizable; a partir de 1024px es una columna lateral. Es el mismo bloque con
+ * otra rejilla, de modo que no pueden desincronizarse.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { configuracionActual } from "@/api/cliente";
-import { useAvisoDeCaducidad, useSesion } from "@/api/sesion";
-import { useEnvios } from "@/api/consultas";
-import { Aviso, Boton } from "@/componentes/ui";
-import type { Grupo } from "@/tipos";
+import { useEnvios, useEstadosFinales, useModulos } from "@/api/consultas";
+import { useSesion } from "@/api/sesion";
+import { Boton } from "@/componentes/ui";
+import { Icono } from "@design/marca/iconos";
+import { LogotipoRastro } from "@design/marca/rastro";
 
 interface EntradaNavegacion {
   a: string;
   texto: string;
-  grupos: Grupo[];
+  icono: string;
+  exacta: boolean;
   contador?: number;
 }
 
 export function Estructura() {
-  const { usuario, salir, tieneGrupo, segundosRestantes } = useSesion();
-  const avisarCaducidad = useAvisoDeCaducidad();
+  const { usuario, empresa, salir, tieneGrupo } = useSesion();
   const ubicacion = useLocation();
   const { data: envios } = useEnvios();
+  const { data: modulos } = useModulos();
 
-  const pendientes = (envios?.envios ?? []).filter((envio) => envio.estado !== "ENTREGADO").length;
+  const esFinal = useEstadosFinales();
 
-  const entradas: EntradaNavegacion[] = [
-    { a: "/panel", texto: "Panel", grupos: ["administrador", "despachador", "conductor", "auditor"] },
-    {
-      a: "/envios",
-      texto: tieneGrupo("conductor") && !tieneGrupo("despachador") ? "Mis envíos" : "Envíos",
-      grupos: ["administrador", "despachador", "conductor"],
-      contador: pendientes,
-    },
-    { a: "/envios/nuevo", texto: "Registrar", grupos: ["administrador", "despachador"] },
-    { a: "/bitacora", texto: "Bitácora", grupos: ["auditor"] },
-  ];
+  const soloConductor = tieneGrupo("conductor") && !tieneGrupo("administrador", "despachador");
+  const pendientes = (envios?.envios ?? []).filter((envio) => !esFinal(envio.estado)).length;
 
-  const visibles = entradas.filter((entrada) => tieneGrupo(...entrada.grupos));
+  const entradas = useMemo(() => {
+    const disponibles = (modulos?.modulos ?? []).filter(
+      (modulo) => modulo.disponible && tieneGrupo(...modulo.grupos),
+    );
+
+    const secciones: EntradaNavegacion[] = disponibles
+      // Qué módulos suben a la navegación principal lo dice el propio módulo:
+      // una barra con catorce entradas no es una barra, es una lista, y cuál
+      // merece estar arriba depende de la operación de cada empresa.
+      .filter((modulo) => modulo.destacado)
+      .map((modulo) => ({
+        a: modulo.ruta,
+        // El conductor no ve «Órdenes» sino «Mis envíos»: el servidor solo le
+        // devuelve los suyos, y llamarlo igual que al listado completo daría a
+        // entender que la empresa mueve seis envíos.
+        texto: modulo.clave === "ordenes" && soloConductor ? "Mis envíos" : modulo.nombre,
+        icono: modulo.icono,
+        contador: modulo.clave === "ordenes" ? pendientes : undefined,
+        exacta: modulo.clave === "ordenes",
+      }));
+
+    // Panel y Operaciones no son módulos: son las dos pantallas que enmarcan a
+    // los demás. Van siempre, en los extremos.
+    const inicio: EntradaNavegacion = { a: "/panel", texto: "Panel", icono: "panel", exacta: false };
+    const centro: EntradaNavegacion[] = tieneGrupo("administrador", "despachador", "conductor", "auditor")
+      ? [{ a: "/operaciones", texto: "Operaciones", icono: "estados", exacta: false }]
+      : [];
+
+    return [inicio, ...secciones, ...centro];
+  }, [modulos, pendientes, soloConductor, tieneGrupo]);
 
   return (
-    <div className="aplicacion">
+    <div className="aplicacion aplicacion--con-lateral">
       <a className="salto-contenido" href="#contenido">
         Ir al contenido
       </a>
 
-      <header className="barra">
-        <div className="barra__interior">
-          <NavLink to="/panel" className="marca">
-            <span className="marca__punto" aria-hidden="true" />
-            Rastro
-            <span className="marca__lema">trazabilidad verificable</span>
-          </NavLink>
+      <header className="armazon">
+        <NavLink to="/panel" className="marca armazon__marca">
+          <span className="marca__simbolo" aria-hidden="true">
+            <LogotipoRastro tamano={22} id="marca-armazon" />
+          </span>
+          <span className="marca__texto">
+            <span className="marca__nombre">Rastro</span>
+            <span className="marca__lema">Trazabilidad de envíos</span>
+          </span>
+        </NavLink>
 
-          <div className="crece" />
+        {entradas.length > 1 && (
+          <nav className="navegacion" aria-label="Secciones">
+            <div className="navegacion__interior">
+              {entradas.map((entrada) => (
+                <NavLink
+                  key={entrada.a}
+                  to={entrada.a}
+                  className="navegacion__enlace"
+                  end={entrada.exacta}
+                >
+                  <span className="navegacion__icono">
+                    <Icono nombre={entrada.icono} tamano={17} />
+                  </span>
+                  {entrada.texto}
+                  {entrada.contador ? (
+                    <span className="navegacion__contador">{entrada.contador}</span>
+                  ) : null}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        )}
 
-          {usuario && (
-            <>
-              <span className="insignia-org" title={`Organización ${usuario.org_id}`}>
-                {usuario.org_id}
-              </span>
-              <span className="texto-sm texto-suave" style={{ minWidth: 0 }}>
-                <strong style={{ color: "var(--texto)" }}>{usuario.nombre || usuario.email}</strong>
-                <span className="texto-xs"> · {usuario.grupos.join(", ")}</span>
-              </span>
-            </>
+        <div className="armazon__identidad">
+          {empresa && (
+            <span className="insignia-org" title={`${empresa.nombre} · ${empresa.org_id}`}>
+              {empresa.nombre}
+            </span>
           )}
-
-          <SelectorTema />
-
           {usuario && (
-            <Boton variante="secundario" onClick={() => salir()}>
+            <span className="identidad__persona">
+              <span className="identidad__nombre">{usuario.nombre}</span>
+              <span className="identidad__rol">{usuario.grupos.join(" · ")}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="armazon__acciones">
+          <SelectorTema />
+          {usuario && (
+            <Boton variante="secundario" onClick={() => void salir()}>
               Salir
             </Boton>
           )}
         </div>
       </header>
 
-      {visibles.length > 1 && (
-        <nav className="navegacion" aria-label="Secciones">
-          <div className="navegacion__interior">
-            {visibles.map((entrada) => (
-              <NavLink
-                key={entrada.a}
-                to={entrada.a}
-                className="navegacion__enlace"
-                end={entrada.a === "/envios"}
-              >
-                {entrada.texto}
-                {entrada.contador ? (
-                  <span className="navegacion__contador">{entrada.contador}</span>
-                ) : null}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
-      )}
+      <div className="marco">
+        <main id="contenido" className="contenido" key={ubicacion.pathname}>
+          <Outlet />
+        </main>
 
-      <main id="contenido" className="contenido" key={ubicacion.pathname}>
-        {avisarCaducidad && (
-          <Aviso tono="alerta" titulo="La sesión está por expirar">
-            Le quedan unos {Math.ceil((segundosRestantes ?? 0) / 60)} minutos. Termine lo que esté
-            haciendo y vuelva a entrar: las credenciales del laboratorio duran cuatro horas.
-          </Aviso>
-        )}
-        <Outlet />
-      </main>
-
-      <PieDePagina />
+        <PieDePagina />
+      </div>
     </div>
   );
 }
@@ -123,7 +157,13 @@ const CLAVE_TEMA = "rastro.tema";
 type Tema = "sistema" | "claro" | "oscuro";
 
 export function SelectorTema() {
-  const [tema, setTema] = useState<Tema>(() => (localStorage.getItem(CLAVE_TEMA) as Tema) ?? "sistema");
+  const [tema, setTema] = useState<Tema>(() => {
+    try {
+      return (localStorage.getItem(CLAVE_TEMA) as Tema) ?? "sistema";
+    } catch {
+      return "sistema";
+    }
+  });
 
   useEffect(() => {
     const raiz = document.documentElement;
@@ -137,7 +177,11 @@ export function SelectorTema() {
   }, [tema]);
 
   const siguiente: Record<Tema, Tema> = { sistema: "claro", claro: "oscuro", oscuro: "sistema" };
-  const rotulo: Record<Tema, string> = { sistema: "Tema del sistema", claro: "Tema claro", oscuro: "Tema oscuro" };
+  const rotulo: Record<Tema, string> = {
+    sistema: "Tema del sistema",
+    claro: "Tema claro",
+    oscuro: "Tema oscuro",
+  };
 
   return (
     <Boton
@@ -154,11 +198,14 @@ export function SelectorTema() {
 
 export function PieDePagina() {
   const config = configuracionActual();
+  const { empresa } = useSesion();
+
   return (
     <footer className="pie">
       <span>
         Entorno <strong>{config.entorno}</strong> · región {config.region}
       </span>
+      {empresa?.nit && <span>NIT {empresa.nit}</span>}
       <span>Datos sintéticos: el sistema no trata información de titulares reales.</span>
       <a href="/rastreo">Consulta pública de un envío</a>
     </footer>

@@ -1,118 +1,80 @@
 #!/usr/bin/env bash
-# Identidad: grupo de usuarios de Cognito, grupos de autorizacion y usuarios.
+# Identidad: aprovisiona las organizaciones, sus usuarios y sus datos maestros.
 #
-# Se usa un grupo de usuarios y no un grupo de identidades: este ultimo exigiria
-# crear roles nuevos, y el laboratorio no lo permite (restriccion RE-01).
+# El sistema tiene su propio directorio de usuarios, con las contrasenas
+# derivadas con PBKDF2 y almacenadas en la tabla de maestros. Esta etapa lo
+# puebla ejecutando el mismo guion que prepara el entorno local, apuntado a la
+# cuenta desplegada: no hay una segunda implementacion del aprovisionamiento
+# que pudiera divergir.
 #
-# Los cuatro grupos de autorizacion son los del apartado 3.1 del documento. El
-# identificador de organizacion viaja como atributo personalizado del token y es
-# el filtro obligatorio de toda consulta (riesgo R-05).
+# Sobre Amazon Cognito. La version anterior delegaba la identidad en un grupo de
+# usuarios de Cognito. Se cambio porque el sistema necesita administrar cuentas
+# desde la propia aplicacion -crear usuarios, cambiar roles, desactivar- y
+# Cognito no lo permite sin permisos que el laboratorio no concede. El contrato
+# del token es el mismo, de modo que delegar en Cognito sigue siendo posible sin
+# tocar el resto del sistema: lo unico que los demas servicios conocen es la
+# forma del token.
 
 source "$(dirname "${BASH_SOURCE[0]}")/comun.sh"
 
-paso "Grupo de usuarios de Cognito"
+paso "Aprovisionamiento de organizaciones y usuarios"
 
-ID_GRUPO="$(aws cognito-idp list-user-pools --max-results 60 --region "${REGION}" \
-  --query "UserPools[?Name=='${GRUPO_USUARIOS}'].Id | [0]" --output text)"
-
-if [[ "${ID_GRUPO}" == "None" || -z "${ID_GRUPO}" ]]; then
-  ID_GRUPO="$(aws cognito-idp create-user-pool \
-    --region "${REGION}" \
-    --pool-name "${GRUPO_USUARIOS}" \
-    --schema '[{"Name":"org_id","AttributeDataType":"String","Mutable":false,"Required":false,"StringAttributeConstraints":{"MinLength":"2","MaxLength":"64"}}]' \
-    --policies '{"PasswordPolicy":{"MinimumLength":12,"RequireUppercase":true,"RequireLowercase":true,"RequireNumbers":true,"RequireSymbols":false}}' \
-    --auto-verified-attributes email \
-    --username-attributes email \
-    --query UserPool.Id --output text)"
-  ok "grupo de usuarios creado: ${ID_GRUPO}"
-else
-  ok "grupo de usuarios ya existente: ${ID_GRUPO}"
+if ! command -v python >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
+  aviso "Se necesita Python para derivar las contrasenas y sembrar los maestros."
+  exit 1
 fi
 
-paso "Grupos de autorizacion"
+PYTHON="$(command -v python3 || command -v python)"
 
-for grupo in administrador despachador conductor auditor; do
-  if aws cognito-idp get-group --user-pool-id "${ID_GRUPO}" --group-name "${grupo}" \
-      --region "${REGION}" >/dev/null 2>&1; then
-    ok "grupo ya existente: ${grupo}"
-  else
-    aws cognito-idp create-group --user-pool-id "${ID_GRUPO}" --group-name "${grupo}" \
-      --region "${REGION}" --description "Grupo de autorizacion ${grupo} de ${PREFIJO}" >/dev/null
-    ok "grupo creado: ${grupo}"
-  fi
-done
+# Las claves de la semilla son de desarrollo. Antes de un despliegue con datos
+# reales deben sustituirse: se pasan por variable de entorno para no dejarlas
+# escritas en el repositorio.
+export RASTRO_ENTORNO=aws
+export AWS_REGION="${REGION}"
+export RASTRO_TABLA_ENVIOS="${TABLA_ENVIOS}"
+export RASTRO_TABLA_BITACORA="${TABLA_BITACORA}"
+export RASTRO_TABLA_MAESTROS="${TABLA_MAESTROS}"
+export RASTRO_BUCKET_EVIDENCIAS="${BUCKET_EVIDENCIAS}"
+export RASTRO_ACCOUNT_ID="${CUENTA}"
 
-paso "Cliente de aplicacion"
+# Sin endpoint: en AWS se habla con el servicio real y no con el equivalente
+# local. Las variables se limpian por si quedaron de una sesion de desarrollo.
+unset RASTRO_ENDPOINT_DYNAMODB RASTRO_ENDPOINT_S3 RASTRO_ENDPOINT_S3_PUBLICO
 
-ID_CLIENTE="$(aws cognito-idp list-user-pool-clients --user-pool-id "${ID_GRUPO}" \
-  --max-results 60 --region "${REGION}" \
-  --query "UserPoolClients[?ClientName=='${PREFIJO}-web'].ClientId | [0]" --output text)"
-
-if [[ "${ID_CLIENTE}" == "None" || -z "${ID_CLIENTE}" ]]; then
-  # Sin secreto de cliente: la interfaz es una aplicacion de pagina unica y no
-  # puede guardar un secreto. El flujo es de autenticacion de usuario, no de
-  # credenciales de cliente.
-  ID_CLIENTE="$(aws cognito-idp create-user-pool-client \
-    --user-pool-id "${ID_GRUPO}" \
-    --client-name "${PREFIJO}-web" \
-    --region "${REGION}" \
-    --no-generate-secret \
-    --explicit-auth-flows ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH \
-    --access-token-validity 1 --id-token-validity 1 --token-validity-units '{"AccessToken":"hours","IdToken":"hours"}' \
-    --query UserPoolClient.ClientId --output text)"
-  ok "cliente creado: ${ID_CLIENTE}"
+if [[ -n "${RASTRO_SIN_DATOS_SINTETICOS:-}" ]]; then
+  ok "siembra omitida por RASTRO_SIN_DATOS_SINTETICOS"
 else
-  ok "cliente ya existente: ${ID_CLIENTE}"
+  echo "  Derivando contrasenas con PBKDF2. Tarda unos segundos por usuario: es"
+  echo "  el proposito del algoritmo, no una lentitud del guion."
+  registrar_evidencia "aprovisionamiento" \
+    "${PYTHON}" "${RAIZ_PROYECTO}/deploy/local/preparar_entorno.py"
 fi
 
-paso "Usuarios sinteticos"
+paso "Comprobacion del directorio"
 
-# El sistema se pobla unicamente con datos sinteticos (apartado 3.3). Estos
-# usuarios existen para probar la matriz de autorizacion y el aislamiento entre
-# organizaciones: dos empresas distintas sobre la misma infraestructura.
-crear_usuario() {
-  local correo="$1" org="$2" grupo="$3" clave="$4"
+TOTAL_MAESTROS="$(aws dynamodb scan --table-name "${TABLA_MAESTROS}" --region "${REGION}" \
+  --select COUNT --query Count --output text 2>/dev/null || echo 0)"
+ok "registros en la tabla de maestros: ${TOTAL_MAESTROS}"
 
-  if aws cognito-idp admin-get-user --user-pool-id "${ID_GRUPO}" --username "${correo}" \
-      --region "${REGION}" >/dev/null 2>&1; then
-    ok "usuario ya existente: ${correo}"
-  else
-    aws cognito-idp admin-create-user \
-      --user-pool-id "${ID_GRUPO}" --username "${correo}" --region "${REGION}" \
-      --user-attributes Name=email,Value="${correo}" Name=email_verified,Value=true \
-                        Name=custom:org_id,Value="${org}" \
-      --message-action SUPPRESS >/dev/null
-    aws cognito-idp admin-set-user-password \
-      --user-pool-id "${ID_GRUPO}" --username "${correo}" --region "${REGION}" \
-      --password "${clave}" --permanent
-    ok "usuario creado: ${correo} (${org})"
-  fi
+if [[ "${TOTAL_MAESTROS}" == "0" ]]; then
+  aviso "El directorio esta vacio: nadie podra iniciar sesion."
+  aviso "Ejecute la siembra o cree al menos una organizacion con un administrador."
+fi
 
-  aws cognito-idp admin-add-user-to-group \
-    --user-pool-id "${ID_GRUPO}" --username "${correo}" --group-name "${grupo}" --region "${REGION}"
-}
-
-CLAVE_ANDES="${RASTRO_CLAVE_ANDES:-Andes.Rastro.2026}"
-CLAVE_SABANA="${RASTRO_CLAVE_SABANA:-Sabana.Rastro.2026}"
-
-crear_usuario "admin@andes.test"    org-andes  administrador "${CLAVE_ANDES}"
-crear_usuario "despacho@andes.test" org-andes  despachador   "${CLAVE_ANDES}"
-crear_usuario "carlos@andes.test"   org-andes  conductor     "${CLAVE_ANDES}"
-crear_usuario "auditor@andes.test"  org-andes  auditor       "${CLAVE_ANDES}"
-crear_usuario "despacho@sabana.test" org-sabana despachador  "${CLAVE_SABANA}"
-crear_usuario "carlos@sabana.test"   org-sabana conductor    "${CLAVE_SABANA}"
-
-EMISOR="https://cognito-idp.${REGION}.amazonaws.com/${ID_GRUPO}"
-JWKS="${EMISOR}/.well-known/jwks.json"
-
-# Los identificadores que genera el proveedor no se copian a mano a ningun sitio:
-# se dejan aqui para que la etapa final los recoja en el archivo de configuracion.
+# El emisor y la audiencia del token los fija el propio sistema. Se escriben
+# aqui para que la etapa de funciones los pase como variables de entorno, igual
+# que antes hacia con los identificadores de Cognito.
 mkdir -p "${RAIZ_PROYECTO}/config"
 cat > "${RAIZ_PROYECTO}/config/.identidad.env" <<ENV
-ID_GRUPO=${ID_GRUPO}
-ID_CLIENTE=${ID_CLIENTE}
-EMISOR=${EMISOR}
-JWKS=${JWKS}
+EMISOR=${RASTRO_JWT_EMISOR:-https://${NOMBRE_API}.${CUENTA}.rastro}
+AUDIENCIA=${RASTRO_JWT_AUDIENCIA:-rastro-web}
+PROVEEDOR=propio
 ENV
 
-paso "Identidad lista (emisor: ${EMISOR})"
+paso "Identidad lista"
+echo "  Proveedor: directorio propio en ${TABLA_MAESTROS}"
+echo "  Las contrasenas se almacenan derivadas con PBKDF2-HMAC-SHA256."
+echo
+echo "  IMPORTANTE: el secreto de firma del token debe fijarse con"
+echo "  RASTRO_JWT_SECRETO antes de desplegar las funciones. Sin el, se usa el"
+echo "  valor de desarrollo, que esta en el repositorio y no protege nada."

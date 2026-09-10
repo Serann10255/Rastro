@@ -34,6 +34,7 @@ class Config:
     account_id: str
     tabla_envios: str
     tabla_bitacora: str
+    tabla_maestros: str
     bucket_evidencias: str
     alias_llave: str
     endpoint_dynamodb: str | None
@@ -46,6 +47,8 @@ class Config:
     jwt_secreto_local: str | None
     url_publica_api: str
     vigencia_enlace_segundos: int
+    vigencia_token_segundos: int = 3600
+    vigencia_refresco_segundos: int = 43200
     urls_servicios: dict[str, str] = field(default_factory=dict)
 
     @property
@@ -106,6 +109,13 @@ def cargar_config() -> Config:
         tabla_bitacora=_valor(
             "RASTRO_TABLA_BITACORA", despliegue, "tabla_bitacora", f"{PREFIJO_RECURSOS}-bitacora"
         ),
+        # Datos maestros: empresas, usuarios, tiendas, clientes, transportistas.
+        # Tabla aparte de la de envios porque no crece con el volumen de
+        # operacion: mezclarlas haria que un listado de tiendas compitiera por
+        # capacidad con el trafico de eventos de rastreo.
+        tabla_maestros=_valor(
+            "RASTRO_TABLA_MAESTROS", despliegue, "tabla_maestros", f"{PREFIJO_RECURSOS}-maestros"
+        ),
         bucket_evidencias=bucket,
         alias_llave=_valor("RASTRO_ALIAS_LLAVE", despliegue, "alias_llave", ALIAS_LLAVE),
         endpoint_dynamodb=_valor("RASTRO_ENDPOINT_DYNAMODB", despliegue, "endpoint_dynamodb"),
@@ -124,7 +134,18 @@ def cargar_config() -> Config:
         jwt_emisor=_valor("RASTRO_JWT_EMISOR", despliegue, "jwt_emisor", "http://auth:8001"),
         jwt_audiencia=_valor("RASTRO_JWT_AUDIENCIA", despliegue, "jwt_audiencia", "rastro-web"),
         jwt_jwks_url=_valor("RASTRO_JWT_JWKS_URL", despliegue, "jwt_jwks_url"),
-        jwt_secreto_local=_valor("RASTRO_JWT_SECRETO", despliegue, "jwt_secreto_local", "rastro-secreto-local-solo-para-desarrollo-32b"),
+        jwt_secreto_local=_valor(
+            "RASTRO_JWT_SECRETO",
+            despliegue,
+            "jwt_secreto_local",
+            "rastro-secreto-local-solo-para-desarrollo-32b",
+        ),
+        vigencia_token_segundos=int(
+            _valor("RASTRO_VIGENCIA_TOKEN", despliegue, "vigencia_token_segundos", 3600)
+        ),
+        vigencia_refresco_segundos=int(
+            _valor("RASTRO_VIGENCIA_REFRESCO", despliegue, "vigencia_refresco_segundos", 43200)
+        ),
         url_publica_api=_valor("RASTRO_URL_API", despliegue, "url_publica_api", "http://localhost:8080"),
         vigencia_enlace_segundos=int(
             _valor("RASTRO_VIGENCIA_ENLACE", despliegue, "vigencia_enlace_segundos", 300)

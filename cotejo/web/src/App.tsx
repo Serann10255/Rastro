@@ -1,8 +1,22 @@
 /* Interfaz del programa de auditoría.
  *
- * Tres pantallas, que son los tres momentos del trabajo: ver contra qué criterio
- * se va a juzgar (catálogo), ejecutar y leer el resultado (ejecución), y
- * comprobar que otro obtiene lo mismo (comparación).
+ * Cuatro pantallas, que son los cuatro momentos del trabajo: ver contra qué
+ * criterio se va a juzgar (catálogo), ejecutar y leer el resultado (revisión),
+ * comprobar que otro obtiene lo mismo (repetición) y entender las palabras
+ * (diccionario).
+ *
+ * Regla de redacción de toda esta interfaz: primero la frase que se entiende
+ * sin haber estudiado auditoría, y pegado a ella el término del oficio. Ni una
+ * cosa ni la otra sobra. El término técnico es lo que un tercero espera leer en
+ * un informe y lo que se evalúa en la asignatura; la frase llana es lo que
+ * permite que alguien decida sobre un hallazgo sin necesitar un traductor. Una
+ * pantalla que solo trae la segunda no sirve como entregable, y una que solo
+ * trae la primera no se lee.
+ *
+ * Las dos versiones vienen del catálogo, no de aquí: si esta interfaz
+ * escribiera su propia explicación de cada control, la web y el informe
+ * acabarían diciendo cosas distintas del mismo control, y la del informe es la
+ * que vale.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -23,8 +37,36 @@ import type {
   PapelDeTrabajo,
   SesionAuditor,
 } from "@/api/cliente";
+import { LogotipoCotejo } from "@design/marca/cotejo";
+import { Icono } from "@design/marca/iconos";
 
-type Pestana = "catalogo" | "ejecucion" | "comparacion";
+type Pestana = "ejecucion" | "catalogo" | "comparacion" | "glosario";
+
+/* Cada conclusión, en la palabra que se entiende sin diccionario. El servidor
+ * manda la suya con cada papel y esa es la que manda; esto es el respaldo para
+ * cuando todavía no hay papel —el catálogo, por ejemplo— y la fuente del color
+ * y el icono, que no viajan por la API. */
+const RESPUESTAS: Record<
+  Conclusion,
+  { palabra: string; explicacion: string; icono: string }
+> = {
+  CONFORME: {
+    palabra: "BIEN",
+    explicacion: "Se probó y cumplió la regla que estaba escrita de antemano.",
+    icono: "verificado",
+  },
+  DESVIADO: {
+    palabra: "MAL",
+    explicacion: "Se probó y no cumplió. Esto se convierte en un hallazgo.",
+    icono: "alerta",
+  },
+  NO_EJECUTADA: {
+    palabra: "SIN REVISAR",
+    explicacion:
+      "Ni bien ni mal: no se pudo probar aquí. Queda pendiente, no aprobado.",
+    icono: "reloj",
+  },
+};
 
 export function App() {
   const [sesion, setSesion] = useState<SesionAuditor | null>(() => almacenSesion.leer());
@@ -34,11 +76,113 @@ export function App() {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Piezas compartidas                                                     */
+/* ---------------------------------------------------------------------- */
+
+/** El término del oficio, pegado a la frase que lo explica. */
+function Tecnicismo({ children }: { children: React.ReactNode }) {
+  return <span className="tecnicismo">{children}</span>;
+}
+
+/** La respuesta de un control: palabra llana grande, término técnico debajo. */
+function Respuesta({
+  conclusion,
+  palabra,
+  tamano = "normal",
+}: {
+  conclusion: Conclusion;
+  palabra?: string;
+  tamano?: "normal" | "grande";
+}) {
+  const base = RESPUESTAS[conclusion];
+  return (
+    <span
+      className={`respuesta respuesta--${tamano} conclusion-${conclusion}`}
+      title={base.explicacion}
+    >
+      <span className="respuesta__icono" aria-hidden="true">
+        <Icono nombre={base.icono} tamano={tamano === "grande" ? 20 : 15} />
+      </span>
+      <span className="respuesta__palabra">{palabra ?? base.palabra}</span>
+      <Tecnicismo>{conclusion.replace(/_/g, " ").toLowerCase()}</Tecnicismo>
+    </span>
+  );
+}
+
+function Campo({ termino, valor }: { termino: string; valor: React.ReactNode }) {
+  return (
+    <div className="hallazgo__campo">
+      <span className="hallazgo__termino">{termino}</span>
+      <span className="hallazgo__valor">{valor}</span>
+    </div>
+  );
+}
+
+function Metrica({
+  etiqueta,
+  valor,
+  nota,
+  color,
+}: {
+  etiqueta: string;
+  valor: React.ReactNode;
+  nota: string;
+  color?: string;
+}) {
+  return (
+    <div className="metrica" style={color ? ({ "--metrica-color": color } as never) : undefined}>
+      <span className="metrica__etiqueta">{etiqueta}</span>
+      <span className="metrica__valor">{valor}</span>
+      <span className="metrica__nota">{nota}</span>
+    </div>
+  );
+}
+
+/** Bloque plegado con el registro técnico. Cerrado por omisión: quien lo
+ *  necesita sabe que existe, y quien no, no tropieza con él. */
+function DetalleTecnico({
+  resumen = "Ver el registro técnico",
+  children,
+}: {
+  resumen?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="detalle-tecnico">
+      <summary className="detalle-tecnico__titulo">{resumen}</summary>
+      <div className="detalle-tecnico__cuerpo">{children}</div>
+    </details>
+  );
+}
+
+/* Banderas de interfaz. Se guardan por navegador y no en el servidor: son
+ * preferencias de lectura de una persona, no estado del trabajo de auditoría. */
+function leerBandera(clave: string): boolean {
+  try {
+    return localStorage.getItem(clave) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function escribirBandera(clave: string, valor: boolean) {
+  try {
+    if (valor) localStorage.setItem(clave, "1");
+    else localStorage.removeItem(clave);
+  } catch {
+    /* Almacenamiento bloqueado: la ayuda simplemente vuelve a aparecer. */
+  }
+}
+
+/* ---------------------------------------------------------------------- */
 /* Acceso                                                                 */
 /* ---------------------------------------------------------------------- */
 
 function Acceso({ onEntrar }: { onEntrar: (sesion: SesionAuditor) => void }) {
-  const [correo, setCorreo] = useState("auditor@andes.test");
+  // Sin cuenta prefijada: aunque esta interfaz se sirve en la maquina del
+  // auditor, escribir un correo valido en el formulario es publicar una cuenta
+  // que existe. Las credenciales estan en la documentacion de despliegue.
+  const [correo, setCorreo] = useState("");
   const [clave, setClave] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -54,7 +198,7 @@ function Acceso({ onEntrar }: { onEntrar: (sesion: SesionAuditor) => void }) {
       if (!sesion.usuario.grupos.includes("auditor")) {
         almacenSesion.borrar();
         setError(
-          "Esa cuenta no pertenece al grupo auditor. El almacén de papeles de trabajo concentra información sobre las debilidades del sistema y su lectura está restringida.",
+          "Esa cuenta no puede entrar aquí: hace falta ser auditor. Lo que se guarda en este programa es la lista de puntos débiles del sistema, y por eso solo la ve quien tiene que revisarlos.",
         );
         return;
       }
@@ -67,25 +211,33 @@ function Acceso({ onEntrar }: { onEntrar: (sesion: SesionAuditor) => void }) {
   };
 
   return (
-    <div className="aplicacion">
-      <header className="barra">
-        <div className="barra__interior">
-          <span className="marca">
-            <span className="marca__punto" aria-hidden="true" />
-            Cotejo
-            <span className="marca__lema">programa de auditoría de sistemas</span>
+    <div className="pantalla-acceso">
+      <main className="acceso">
+        <div className="acceso__marca">
+          <span className="marca__simbolo marca__simbolo--grande" aria-hidden="true">
+            <LogotipoCotejo tamano={30} id="marca-acceso" />
           </span>
+          <div>
+            <h1 className="acceso__titulo">Cotejo</h1>
+            <p className="acceso__lema">Comprueba si Rastro cumple lo que promete</p>
+          </div>
         </div>
-      </header>
 
-      <main className="contenido" style={{ maxWidth: "34rem" }}>
+        {salud.data?.que_es_esto && (
+          <section className="tarjeta">
+            <div className="tarjeta__cuerpo">
+              <p className="parrafo-guia">{salud.data.que_es_esto}</p>
+            </div>
+          </section>
+        )}
+
         <section className="tarjeta">
           <div className="tarjeta__cabecera">
             <div className="min-cero">
-              <h1 className="tarjeta__titulo">Acceso del auditor</h1>
+              <h2 className="tarjeta__titulo">Entrar</h2>
               <p className="tarjeta__ayuda">
-                La identidad la resuelve el proveedor del sistema auditado: el auditor es un usuario
-                de la organización con el grupo <strong>auditor</strong>.
+                Se entra con la misma cuenta del sistema auditado, la que tenga el rol de{" "}
+                <strong>auditor</strong>. Cotejo no tiene usuarios propios.
               </p>
             </div>
           </div>
@@ -97,6 +249,7 @@ function Acceso({ onEntrar }: { onEntrar: (sesion: SesionAuditor) => void }) {
                   className="campo__control"
                   type="email"
                   autoComplete="username"
+                  placeholder="usuario@empresa.test"
                   required
                   value={correo}
                   onChange={(evento) => setCorreo(evento.target.value)}
@@ -130,14 +283,14 @@ function Acceso({ onEntrar }: { onEntrar: (sesion: SesionAuditor) => void }) {
           <footer className="tarjeta__pie texto-xs texto-tenue">
             {salud.data ? (
               <>
-                Sistema auditado en <strong>{salud.data.url_auditada}</strong> · entorno{" "}
-                <strong>{salud.data.entorno}</strong> · {salud.data.controles_en_catalogo} controles
-                en el catálogo.
+                Ahora mismo revisa el sistema que está en{" "}
+                <strong>{salud.data.url_auditada}</strong> ({salud.data.entorno}), y tiene{" "}
+                <strong>{salud.data.controles_en_catalogo}</strong> cosas por comprobar.
               </>
             ) : salud.isError ? (
-              <>El programa de auditoría no responde. Compruebe que el servicio esté levantado.</>
+              <>El programa no responde. Comprueba que el servicio esté encendido.</>
             ) : (
-              <>Consultando el estado del programa…</>
+              <>Mirando si el programa está encendido…</>
             )}
           </footer>
         </section>
@@ -176,202 +329,218 @@ function Consola({ sesion, onSalir }: { sesion: SesionAuditor; onSalir: () => vo
   });
 
   return (
-    <div className="aplicacion">
-      <header className="barra">
-        <div className="barra__interior">
-          <span className="marca">
-            <span className="marca__punto" aria-hidden="true" />
-            Cotejo
-            <span className="marca__lema">auditoría de Rastro</span>
+    <div className="aplicacion aplicacion--con-lateral">
+      <header className="armazon">
+        <span className="marca armazon__marca">
+          <span className="marca__simbolo" aria-hidden="true">
+            <LogotipoCotejo tamano={22} id="marca-armazon" />
           </span>
-          <div className="crece" />
+          <span className="marca__texto">
+            <span className="marca__nombre">Cotejo</span>
+            <span className="marca__lema">Revisa a Rastro</span>
+          </span>
+        </span>
+
+        <nav className="navegacion" aria-label="Secciones">
+          <div className="navegacion__interior">
+            {(
+              [
+                ["ejecucion", "Revisión", "verificado"],
+                ["catalogo", "Qué se revisa", "auditoria"],
+                ["comparacion", "Repetir", "cadena"],
+                ["glosario", "Diccionario", "documento"],
+              ] as [Pestana, string, string][]
+            ).map(([clave, texto, icono]) => (
+              <button
+                key={clave}
+                className="navegacion__enlace"
+                aria-current={pestana === clave ? "page" : "false"}
+                onClick={() => setPestana(clave)}
+              >
+                <span className="navegacion__icono">
+                  <Icono nombre={icono} tamano={17} />
+                </span>
+                {texto}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        <div className="armazon__identidad">
           <span className="insignia-org">{sesion.usuario.org_id}</span>
-          <span className="texto-sm texto-suave">
-            <strong style={{ color: "var(--texto)" }}>{sesion.usuario.nombre}</strong> · auditor
+          <span className="identidad__persona">
+            <span className="identidad__nombre">{sesion.usuario.nombre}</span>
+            <span className="identidad__rol">auditor</span>
           </span>
+        </div>
+
+        <div className="armazon__acciones">
           <button className="boton boton--secundario" onClick={onSalir}>
             Salir
           </button>
         </div>
       </header>
 
-      <nav className="navegacion" aria-label="Secciones">
-        <div className="navegacion__interior">
-          {(
-            [
-              ["ejecucion", "Ejecución"],
-              ["catalogo", "Catálogo"],
-              ["comparacion", "Reproducibilidad"],
-            ] as [Pestana, string][]
-          ).map(([clave, texto]) => (
-            <button
-              key={clave}
-              className="navegacion__enlace"
-              aria-current={pestana === clave ? "page" : "false"}
-              onClick={() => setPestana(clave)}
-            >
-              {texto}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <main className="contenido">
-        <div className="aviso aviso--info">
-          <div className="aviso__cuerpo">
-            <strong className="aviso__titulo">Limitación de independencia</strong>
-            El equipo audita un sistema que él mismo construyó. Se aplica rotación interna, el
-            programa es determinista y un evaluador distinto puede reejecutarlo, pero este trabajo no
-            alcanza el grado de independencia de una revisión externa.
-          </div>
-        </div>
-
-        {pestana === "catalogo" && <VistaCatalogo catalogo={catalogo.data} cargando={catalogo.isPending} />}
-
-        {pestana === "ejecucion" && (
-          <VistaEjecucion
-            ejecucionId={ejecucionId}
-            ejecuciones={ejecuciones.data?.ejecuciones ?? []}
-            onElegir={setEjecucionId}
-            onEjecutar={() => ejecutar.mutate()}
-            ejecutando={ejecutar.isPending}
-            errorEjecucion={ejecutar.error}
-          />
-        )}
-
-        {pestana === "comparacion" && (
-          <VistaComparacion ejecuciones={ejecuciones.data?.ejecuciones ?? []} />
-        )}
-      </main>
-
-      <footer className="pie">
-        <span>Entorno {configuracionActual().entorno}</span>
-        <span>Los papeles de trabajo no se versionan: su valor depende de que permanezcan sin editar.</span>
-      </footer>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------- */
-/* Catálogo                                                               */
-/* ---------------------------------------------------------------------- */
-
-function VistaCatalogo({ catalogo, cargando }: { catalogo?: Catalogo; cargando: boolean }) {
-  if (cargando) return <div className="esqueleto" style={{ height: "20rem" }} />;
-  if (!catalogo) return null;
-
-  const porTipo = {
-    cumplimiento: catalogo.controles.filter((c) => c.tipo === "cumplimiento"),
-    sustantiva: catalogo.controles.filter((c) => c.tipo === "sustantiva"),
-    integridad: catalogo.controles.filter((c) => c.tipo === "integridad"),
-  };
-
-  return (
-    <>
-      <header className="encabezado-pagina">
-        <h1>Matriz de controles</h1>
-        <p className="encabezado-pagina__descripcion">
-          Versión {catalogo.version}. El catálogo se deriva de marcos de referencia reconocidos y no
-          de la apreciación del equipo, de modo que un control ausente pueda atribuirse a una
-          decisión de alcance y no a un olvido. El criterio se declara antes de ejecutar nada.
-        </p>
-      </header>
-
-      {(
-        [
-          ["cumplimiento", "Pruebas de cumplimiento", "Consultan la configuración de la infraestructura en modo lectura."],
-          ["sustantiva", "Pruebas sustantivas", "Ejercitan la aplicación con usuarios de prueba. Es la cobertura que ninguna herramienta disponible ofrece."],
-          ["integridad", "Prueba de integridad", "Recalcula criptográficamente la bitácora del sistema auditado."],
-        ] as const
-      ).map(([tipo, titulo, ayuda]) => (
-        <section className="tarjeta" key={tipo}>
-          <div className="tarjeta__cabecera">
-            <div className="min-cero">
-              <h2 className="tarjeta__titulo">{titulo}</h2>
-              <p className="tarjeta__ayuda">{ayuda}</p>
+      <div className="marco">
+        <main className="contenido">
+          <div className="aviso aviso--alerta">
+            <div className="aviso__cuerpo">
+              <strong className="aviso__titulo">Quien revisa aquí es quien construyó</strong>
+              Es el mismo equipo, así que esto no es una revisión de fuera. Se compensa como
+              se puede: el programa da el mismo resultado lo ejecute quien lo ejecute, y otra
+              persona puede repetirlo y comparar. Aun así se dice en cada pantalla, porque
+              callarlo sería lo grave.{" "}
+              <Tecnicismo>en auditoría: amenaza de autorrevisión</Tecnicismo>
             </div>
-            <span className="etiqueta">{porTipo[tipo].length}</span>
           </div>
-          <div className="tarjeta__cuerpo pila-sm">
-            {porTipo[tipo].map((control) => (
-              <article key={control.id} className={`control severidad-${control.severidad_si_desviado}`}>
-                <div className="control__cabecera">
-                  <span className="control__id">{control.id}</span>
-                  <span className={`etiqueta etiqueta--estado severidad-${control.severidad_si_desviado}`}>
-                    severidad {control.severidad_si_desviado}
-                  </span>
-                </div>
-                <p className="control__enunciado">{control.control}</p>
-                <p className="control__resumen">
-                  <strong>Criterio:</strong> {control.criterio}
-                </p>
-                <p className="control__resumen">
-                  <strong>Procedimiento:</strong> {control.procedimiento}
-                </p>
-                <p className="control__marco">Marco: {control.marco}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
 
-      <section className="tarjeta">
-        <div className="tarjeta__cabecera">
-          <div className="min-cero">
-            <h2 className="tarjeta__titulo">Hallazgos permanentes</h2>
-            <p className="tarjeta__ayuda">
-              No se automatizan porque el entorno impide corregir la desviación: una prueba que
-              siempre da el mismo resultado no aporta información. Omitirlos del informe sí
-              transmitiría una cobertura mayor que la real.
-            </p>
-          </div>
-        </div>
-        <div className="tarjeta__cuerpo pila-sm">
-          {catalogo.hallazgos_permanentes.map((hallazgo) => (
-            <article key={hallazgo.id} className={`hallazgo severidad-${hallazgo.severidad}`}>
-              <div className="control__cabecera">
-                <span className="control__id">{hallazgo.id}</span>
-                <span className={`etiqueta etiqueta--estado severidad-${hallazgo.severidad}`}>
-                  severidad {hallazgo.severidad}
-                </span>
-              </div>
-              <Campo termino="Condición" valor={hallazgo.condicion} />
-              <Campo termino="Criterio" valor={hallazgo.criterio} />
-              <Campo termino="Causa" valor={hallazgo.causa} />
-              <Campo termino="Efecto" valor={hallazgo.efecto} />
-              <Campo termino="Recomendación" valor={hallazgo.recomendacion} />
-              <Campo termino="Nota de alcance" valor={hallazgo.nota_de_alcance} />
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
+          {pestana === "ejecucion" && (
+            <VistaEjecucion
+              ejecucionId={ejecucionId}
+              ejecuciones={ejecuciones.data?.ejecuciones ?? []}
+              catalogo={catalogo.data}
+              onElegir={setEjecucionId}
+              onEjecutar={() => ejecutar.mutate()}
+              ejecutando={ejecutar.isPending}
+              errorEjecucion={ejecutar.error}
+            />
+          )}
 
-function Campo({ termino, valor }: { termino: string; valor: string }) {
-  return (
-    <div className="hallazgo__campo">
-      <span className="hallazgo__termino">{termino}</span>
-      <span className="hallazgo__valor">{valor}</span>
+          {pestana === "catalogo" && (
+            <VistaCatalogo catalogo={catalogo.data} cargando={catalogo.isPending} />
+          )}
+
+          {pestana === "comparacion" && (
+            <VistaComparacion ejecuciones={ejecuciones.data?.ejecuciones ?? []} />
+          )}
+
+          {pestana === "glosario" && (
+            <VistaGlosario catalogo={catalogo.data} cargando={catalogo.isPending} />
+          )}
+        </main>
+
+        <footer className="pie">
+          <span>Entorno {configuracionActual().entorno}</span>
+          <span>
+            Las pruebas guardadas no se editan nunca: su valor depende justamente de eso.
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }
 
 /* ---------------------------------------------------------------------- */
-/* Ejecución                                                              */
+/* Cómo funciona                                                          */
+/* ---------------------------------------------------------------------- */
+
+const CLAVE_AYUDA = "cotejo.ayuda-oculta";
+
+/** Los tres pasos del trabajo, para quien abre esto por primera vez.
+ *
+ *  Se puede ocultar, y se recuerda oculto. Una explicación que no se puede
+ *  cerrar acaba siendo ruido para quien ya la leyó. */
+function PanelComoFunciona({ queEsEsto }: { queEsEsto?: string }) {
+  const [oculto, setOculto] = useState(() => leerBandera(CLAVE_AYUDA));
+
+  if (oculto) {
+    return (
+      <div className="fila-entre">
+        <span className="texto-xs texto-tenue">¿Primera vez por aquí?</span>
+        <button
+          className="boton boton--sutil"
+          onClick={() => {
+            setOculto(false);
+            escribirBandera(CLAVE_AYUDA, false);
+          }}
+        >
+          Explicar cómo funciona
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <section className="tarjeta">
+      <div className="tarjeta__cabecera">
+        <div className="min-cero">
+          <h2 className="tarjeta__titulo">Cómo funciona esto</h2>
+          {queEsEsto && <p className="tarjeta__ayuda">{queEsEsto}</p>}
+        </div>
+        <button
+          className="boton boton--sutil"
+          onClick={() => {
+            setOculto(true);
+            escribirBandera(CLAVE_AYUDA, true);
+          }}
+        >
+          Ocultar
+        </button>
+      </div>
+      <div className="tarjeta__cuerpo">
+        <ol className="pasos">
+          <li className="paso">
+            <span className="paso__numero" aria-hidden="true">
+              1
+            </span>
+            <div>
+              <p className="paso__titulo">Primero se escribe qué se va a comprobar</p>
+              <p className="paso__texto">
+                Antes de tocar nada. Si la regla se escribiera después de ver el resultado,
+                siempre se podría acomodar para que quede bonito.{" "}
+                <Tecnicismo>en auditoría: criterio declarado</Tecnicismo>
+              </p>
+            </div>
+          </li>
+          <li className="paso">
+            <span className="paso__numero" aria-hidden="true">
+              2
+            </span>
+            <div>
+              <p className="paso__titulo">Después se usa el sistema de verdad</p>
+              <p className="paso__texto">
+                Cotejo entra como un conductor, como una empresa que no debería mirar, e
+                intenta hacer lo que no le toca, para ver qué contesta Rastro.{" "}
+                <Tecnicismo>en auditoría: prueba sustantiva</Tecnicismo>
+              </p>
+            </div>
+          </li>
+          <li className="paso">
+            <span className="paso__numero" aria-hidden="true">
+              3
+            </span>
+            <div>
+              <p className="paso__titulo">Y se guarda lo que pasó, con un sello</p>
+              <p className="paso__texto">
+                Se guarda la respuesta tal cual, sin resumir, y se le calcula un sello. Si
+                alguien cambiara una letra de ese archivo, el sello dejaría de cuadrar y se
+                notaría.{" "}
+                <Tecnicismo>en auditoría: papel de trabajo y huella</Tecnicismo>
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Revisión                                                               */
 /* ---------------------------------------------------------------------- */
 
 function VistaEjecucion({
   ejecucionId,
   ejecuciones,
+  catalogo,
   onElegir,
   onEjecutar,
   ejecutando,
   errorEjecucion,
 }: {
   ejecucionId: string | null;
-  ejecuciones: { ejecucion_id: string; cerrado_en: string; desviados: number; no_ejecutados: number }[];
+  ejecuciones: { ejecucion_id: string; cerrado_en: string; conformes: number; desviados: number; no_ejecutados: number }[];
+  catalogo?: Catalogo;
   onElegir: (id: string) => void;
   onEjecutar: () => void;
   ejecutando: boolean;
@@ -392,27 +561,32 @@ function VistaEjecucion({
     <>
       <header className="encabezado-pagina">
         <div className="fila-entre">
-          <h1>Ejecución del programa</h1>
-          <button className="boton" onClick={onEjecutar} disabled={ejecutando}>
-            {ejecutando ? "Ejecutando el catálogo…" : "Ejecutar el catálogo completo"}
+          <h1>Revisión</h1>
+          <button className="boton boton--grande" onClick={onEjecutar} disabled={ejecutando}>
+            {ejecutando ? "Revisando…" : "Revisar ahora"}
           </button>
         </div>
         <p className="encabezado-pagina__descripcion">
-          El catálogo completo se recorre en una sola invocación y sin intervención manual. Cada
-          prueba conserva el procedimiento, la salida literal, la marca de tiempo y la huella
-          criptográfica de su archivo de evidencia.
+          Al pulsar el botón, Cotejo comprueba de una sola vez las{" "}
+          {catalogo?.controles.length ?? 8} cosas de la lista, sin que nadie tenga que ir
+          una por una. Tarda unos segundos.
         </p>
       </header>
 
+      <PanelComoFunciona queEsEsto={catalogo?.que_es_esto} />
+
       {errorEjecucion && (
         <div className="aviso aviso--error" role="alert">
-          <div className="aviso__cuerpo">{errorEjecucion.message}</div>
+          <div className="aviso__cuerpo">
+            <strong className="aviso__titulo">No se pudo revisar</strong>
+            {errorEjecucion.message}
+          </div>
         </div>
       )}
 
       {ejecuciones.length > 1 && (
         <label className="campo">
-          <span className="campo__etiqueta">Ejecución</span>
+          <span className="campo__etiqueta">Revisión que se está viendo</span>
           <select
             className="campo__control"
             value={ejecucionId ?? ""}
@@ -420,30 +594,33 @@ function VistaEjecucion({
           >
             {ejecuciones.map((ejecucion) => (
               <option key={ejecucion.ejecucion_id} value={ejecucion.ejecucion_id}>
-                {fechaLegible(ejecucion.cerrado_en)} — {ejecucion.desviados} desviados,{" "}
-                {ejecucion.no_ejecutados} no ejecutados
+                {fechaLegible(ejecucion.cerrado_en)} — {ejecucion.conformes} bien,{" "}
+                {ejecucion.desviados} mal, {ejecucion.no_ejecutados} sin revisar
               </option>
             ))}
           </select>
         </label>
       )}
 
+      {ejecutando && <EnCurso catalogo={catalogo} />}
+
       {!ejecucionId && !ejecutando && (
         <section className="tarjeta">
           <div className="tarjeta__cuerpo">
             <div className="vacio">
-              <p className="vacio__titulo">Todavía no hay ejecuciones</p>
+              <p className="vacio__titulo">Todavía no se ha revisado nada</p>
               <p className="vacio__descripcion">
-                Ejecute el catálogo para producir los primeros papeles de trabajo.
+                Pulsa «Revisar ahora» y en unos segundos aparece aquí qué salió bien y qué
+                no.
               </p>
             </div>
           </div>
         </section>
       )}
 
-      {(detalle.isPending && ejecucionId) || ejecutando ? (
+      {!ejecutando && detalle.isPending && ejecucionId ? (
         <div className="esqueleto" style={{ height: "16rem" }} />
-      ) : detalle.data ? (
+      ) : !ejecutando && detalle.data ? (
         <ResultadoEjecucion
           ejecucion={detalle.data}
           ejecucionId={ejecucionId!}
@@ -470,6 +647,39 @@ function VistaEjecucion({
   );
 }
 
+/** Qué está pasando mientras se ejecuta.
+ *
+ *  Se enseña la lista de lo que se va a comprobar, sin marcar ninguna como
+ *  hecha: el programa responde de una vez y no informa de su avance, así que
+ *  fingir un progreso sería inventar. */
+function EnCurso({ catalogo }: { catalogo?: Catalogo }) {
+  return (
+    <section className="tarjeta">
+      <div className="tarjeta__cabecera">
+        <div className="min-cero">
+          <h2 className="tarjeta__titulo">Revisando ahora mismo…</h2>
+          <p className="tarjeta__ayuda">
+            Cotejo está usando Rastro de verdad: entra, intenta cosas que no debería poder
+            hacer y anota lo que le contesta. Suele tardar unos segundos.
+          </p>
+        </div>
+      </div>
+      <div className="tarjeta__cuerpo">
+        <ul className="pasos-carga">
+          {(catalogo?.controles ?? []).map((control) => (
+            <li className="paso-carga" key={control.id} data-estado="activo">
+              <span className="paso-carga__marca" aria-hidden="true">
+                {control.id.replace("C-", "")}
+              </span>
+              {control.pregunta}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function ResultadoEjecucion({
   ejecucion,
   ejecucionId,
@@ -489,81 +699,144 @@ function ResultadoEjecucion({
 }) {
   const { cobertura, controles, hallazgos, metadatos } = ejecucion;
   const propios = hallazgos.filter((h) => !h.permanente);
-  const permanentes = hallazgos.filter((h) => h.permanente);
+  const permanentes = hallazgos.filter((h) => !!h.permanente);
+
+  const total = cobertura.controles_del_catalogo;
+  const porcentaje = (parte: number) => (total ? (parte / total) * 100 : 0);
 
   return (
     <>
-      <div className="rejilla rejilla--2 rejilla--4">
-        <Metrica etiqueta="Cobertura" valor={cobertura.cobertura} nota="Controles con resultado" color="var(--acento)" />
-        <Metrica etiqueta="Conformes" valor={cobertura.conformes} nota="Cumplen el criterio" color="var(--exito)" />
-        <Metrica
-          etiqueta="Desviados"
-          valor={cobertura.desviados}
-          nota="Elevados a hallazgo"
-          color={cobertura.desviados ? "var(--peligro)" : undefined}
-        />
-        <Metrica
-          etiqueta="No ejecutados"
-          valor={cobertura.no_ejecutados}
-          nota="No comprobados en este entorno"
-          color={cobertura.no_ejecutados ? "var(--alerta)" : undefined}
-        />
-      </div>
+      <section className="veredicto">
+        <p className="veredicto__frase">
+          Revisamos <strong>{total}</strong> cosas que Rastro dice cumplir.{" "}
+          <strong className="veredicto__bien">{cobertura.conformes} salieron bien</strong>,{" "}
+          <strong className={cobertura.desviados ? "veredicto__mal" : undefined}>
+            {cobertura.desviados} salieron mal
+          </strong>{" "}
+          y{" "}
+          <strong className={cobertura.no_ejecutados ? "veredicto__pendiente" : undefined}>
+            {cobertura.no_ejecutados} quedaron sin revisar
+          </strong>
+          .
+        </p>
 
-      {cobertura.no_ejecutados > 0 && (
-        <div className="aviso aviso--alerta">
+        <div
+          className="barra-resultado"
+          role="img"
+          aria-label={`${cobertura.conformes} bien, ${cobertura.desviados} mal, ${cobertura.no_ejecutados} sin revisar, de ${total}`}
+        >
+          {cobertura.conformes > 0 && (
+            <span
+              className="barra-resultado__parte barra-resultado__parte--bien"
+              style={{ width: `${porcentaje(cobertura.conformes)}%` }}
+            />
+          )}
+          {cobertura.desviados > 0 && (
+            <span
+              className="barra-resultado__parte barra-resultado__parte--mal"
+              style={{ width: `${porcentaje(cobertura.desviados)}%` }}
+            />
+          )}
+          {cobertura.no_ejecutados > 0 && (
+            <span
+              className="barra-resultado__parte barra-resultado__parte--pendiente"
+              style={{ width: `${porcentaje(cobertura.no_ejecutados)}%` }}
+            />
+          )}
+        </div>
+
+        <p className="veredicto__nota">
+          Revisado el {fechaLegible(String(metadatos.iniciado_en ?? ""))} sobre el entorno{" "}
+          <strong>{String(metadatos.entorno ?? "")}</strong>, por{" "}
+          <strong>{String(metadatos.identidad_ejecucion ?? "")}</strong>.
+        </p>
+
+        <div className="fila">
+          <button className="boton boton--secundario" onClick={onVerInforme}>
+            Ver el informe completo
+          </button>
+          <button className="boton boton--secundario" onClick={onVerificar} disabled={verificando}>
+            {verificando ? "Comprobando…" : "¿Alguien tocó estas pruebas?"}
+          </button>
+        </div>
+      </section>
+
+      {verificacion && (
+        <div className={`aviso aviso--${verificacion.almacen_integro ? "exito" : "error"}`}>
           <div className="aviso__cuerpo">
-            <strong className="aviso__titulo">Un control no ejecutado no es un control conforme</strong>
-            {cobertura.no_ejecutados} control(es) no pudieron comprobarse en este entorno. Su
-            conclusión queda pendiente y el informe lo declara: presentar la ausencia de una
-            capacidad como conformidad sería el peor resultado posible de un trabajo de
-            aseguramiento.
+            <strong className="aviso__titulo">
+              {verificacion.almacen_integro
+                ? "Nadie las ha tocado"
+                : "Ojo: alguna prueba fue modificada después de guardarse"}
+            </strong>
+            {verificacion.almacen_integro ? (
+              <>
+                Se volvió a calcular el sello de {verificacion.papeles_verificados} pruebas
+                guardadas y sale el mismo que se anotó el día que se ejecutaron.{" "}
+                <Tecnicismo>en auditoría: almacén íntegro</Tecnicismo>
+              </>
+            ) : (
+              <>
+                El sello ya no cuadra en: {verificacion.discrepancias.map((d) => d.control_id).join(", ")}.
+                El almacén no impide que se edite un archivo; lo que hace es que se note.
+              </>
+            )}
           </div>
         </div>
       )}
 
+      {cobertura.no_ejecutados > 0 && (
+        <div className="aviso aviso--alerta">
+          <div className="aviso__cuerpo">
+            <strong className="aviso__titulo">
+              Lo que quedó sin revisar no está aprobado
+            </strong>
+            {cobertura.no_ejecutados} de las {total} no se pudieron comprobar aquí: son las
+            que miran piezas de la nube que en este computador no existen. Quedan pendientes
+            de ejecutarse contra la cuenta desplegada. Contarlas como buenas sería lo peor
+            que podría hacer un programa de auditoría, así que tienen su propia casilla.
+          </div>
+        </div>
+      )}
+
+      <div className="rejilla rejilla--2 rejilla--4">
+        <Metrica
+          etiqueta="Bien"
+          valor={cobertura.conformes}
+          nota="Se probó y cumplió"
+          color="var(--exito)"
+        />
+        <Metrica
+          etiqueta="Mal"
+          valor={cobertura.desviados}
+          nota="Se probó y no cumplió"
+          color={cobertura.desviados ? "var(--peligro)" : undefined}
+        />
+        <Metrica
+          etiqueta="Sin revisar"
+          valor={cobertura.no_ejecutados}
+          nota="No se pudo probar aquí"
+          color={cobertura.no_ejecutados ? "var(--alerta)" : undefined}
+        />
+        <Metrica
+          etiqueta="Se llegó a probar"
+          valor={cobertura.cobertura}
+          nota="En auditoría: cobertura"
+          color="var(--acento)"
+        />
+      </div>
+
       <section className="tarjeta">
         <div className="tarjeta__cabecera">
           <div className="min-cero">
-            <h2 className="tarjeta__titulo">Resultado por control</h2>
+            <h2 className="tarjeta__titulo">Una por una</h2>
             <p className="tarjeta__ayuda">
-              Ejecutada bajo la identidad <strong>{String(metadatos.identidad_ejecucion ?? "")}</strong> en el
-              entorno <strong>{String(metadatos.entorno ?? "")}</strong>. Pulse un control para ver su papel de
-              trabajo con la salida literal.
+              Toca cualquiera para ver exactamente qué se hizo y qué contestó Rastro,
+              palabra por palabra.
             </p>
-          </div>
-          <div className="fila">
-            <button className="boton boton--secundario" onClick={onVerInforme}>
-              Ver informe
-            </button>
-            <button className="boton boton--secundario" onClick={onVerificar} disabled={verificando}>
-              {verificando ? "Verificando…" : "Verificar almacén"}
-            </button>
           </div>
         </div>
         <div className="tarjeta__cuerpo pila-sm">
-          {verificacion && (
-            <div className={`aviso aviso--${verificacion.almacen_integro ? "exito" : "error"}`}>
-              <div className="aviso__cuerpo">
-                <strong className="aviso__titulo">
-                  {verificacion.almacen_integro ? "Almacén íntegro" : "Almacén no íntegro"}
-                </strong>
-                {verificacion.almacen_integro ? (
-                  <>
-                    {verificacion.papeles_verificados} papeles verificados: cada huella recalculada
-                    coincide con la registrada en el índice.
-                  </>
-                ) : (
-                  <>
-                    {verificacion.discrepancias
-                      .map((d) => `${d.control_id}: ${d.tipo}`)
-                      .join(" · ")}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
           {controles.map((papel) => (
             <button
               key={papel.control_id}
@@ -572,14 +845,15 @@ function ResultadoEjecucion({
             >
               <div className="control__cabecera">
                 <span className="control__id">{papel.control_id}</span>
-                <span className={`etiqueta etiqueta--estado conclusion-${papel.conclusion}`}>
-                  {papel.conclusion.replace(/_/g, " ")}
-                </span>
+                <Respuesta conclusion={papel.conclusion} palabra={papel.conclusion_llana} />
               </div>
-              <span className="control__enunciado">{papel.control}</span>
+              <span className="control__pregunta">{papel.pregunta || papel.control}</span>
               <span className="control__resumen">{papel.resumen}</span>
-              <span className="control__marco huella">
-                {papel.tipo} · huella {papel.huella_evidencia.slice(0, 16)}…
+              <span className="control__pie">
+                Ver qué se hizo y qué contestó
+                <span className="control__marco huella">
+                  sello {papel.huella_evidencia.slice(0, 12)}…
+                </span>
               </span>
             </button>
           ))}
@@ -589,10 +863,12 @@ function ResultadoEjecucion({
       <section className="tarjeta">
         <div className="tarjeta__cabecera">
           <div className="min-cero">
-            <h2 className="tarjeta__titulo">Hallazgos</h2>
+            <h2 className="tarjeta__titulo">Lo que hay que arreglar</h2>
             <p className="tarjeta__ayuda">
-              Cada hallazgo enuncia condición, criterio, causa y efecto, y remite al papel de trabajo
-              que lo sustenta. Sin esa referencia, un hallazgo es solo una afirmación.
+              Cada cosa se cuenta en cinco partes: qué pasa, con qué regla choca, por qué
+              pasa, qué daño puede causar y qué habría que hacer. Y siempre dice de qué
+              prueba salió: sin eso, sería solo una afirmación.{" "}
+              <Tecnicismo>en auditoría: hallazgo</Tecnicismo>
             </p>
           </div>
           <span className="etiqueta">{hallazgos.length}</span>
@@ -601,9 +877,17 @@ function ResultadoEjecucion({
           {propios.length === 0 && (
             <div className="aviso aviso--exito">
               <div className="aviso__cuerpo">
-                No se identificaron desviaciones en los controles ejecutados.
+                De lo que se pudo probar, nada salió mal.
               </div>
             </div>
+          )}
+          {permanentes.length > 0 && (
+            <p className="texto-sm texto-suave">
+              Las {permanentes.length} de abajo marcadas como «se sabe y no se puede
+              arreglar aquí» salen en todos los informes: el laboratorio de clase no permite
+              corregirlas. Se dicen igual, porque callarlas haría creer que se revisó más de
+              lo que se revisó.
+            </p>
           )}
           {[...propios, ...permanentes].map((hallazgo) => (
             <TarjetaHallazgo key={hallazgo.id} hallazgo={hallazgo} ejecucionId={ejecucionId} />
@@ -620,52 +904,89 @@ function TarjetaHallazgo({ hallazgo, ejecucionId }: { hallazgo: Hallazgo; ejecuc
       <div className="control__cabecera">
         <span className="control__id">
           {hallazgo.id}
-          {hallazgo.permanente && <span className="texto-xs texto-tenue"> · permanente</span>}
+          {hallazgo.permanente && (
+            <span className="texto-xs texto-tenue"> · se sabe y no se puede arreglar aquí</span>
+          )}
         </span>
         <span className={`etiqueta etiqueta--estado severidad-${hallazgo.severidad}`}>
-          severidad {hallazgo.severidad}
+          {hallazgo.severidad === "alta"
+            ? "grave"
+            : hallazgo.severidad === "media"
+              ? "importante"
+              : "menor"}
+          <Tecnicismo>severidad {hallazgo.severidad}</Tecnicismo>
         </span>
       </div>
-      <Campo termino="Control" valor={hallazgo.control_id} />
-      <Campo termino="Condición" valor={hallazgo.condicion} />
-      <Campo termino="Criterio" valor={hallazgo.criterio} />
-      <Campo termino="Causa" valor={hallazgo.causa} />
-      <Campo termino="Efecto" valor={hallazgo.efecto} />
-      <Campo termino="Recomendación" valor={hallazgo.recomendacion} />
-      <div className="hallazgo__campo">
-        <span className="hallazgo__termino">Papel de trabajo</span>
-        <span className="hallazgo__valor huella">
-          {ejecucionId}/{hallazgo.papel_de_trabajo}
-          {hallazgo.huella_evidencia && <> · huella {hallazgo.huella_evidencia.slice(0, 24)}…</>}
-        </span>
-      </div>
-    </article>
-  );
-}
 
-function Metrica({
-  etiqueta,
-  valor,
-  nota,
-  color,
-}: {
-  etiqueta: string;
-  valor: React.ReactNode;
-  nota: string;
-  color?: string;
-}) {
-  return (
-    <div className="metrica" style={color ? ({ "--metrica-color": color } as never) : undefined}>
-      <span className="metrica__etiqueta">{etiqueta}</span>
-      <span className="metrica__valor">{valor}</span>
-      <span className="metrica__nota">{nota}</span>
-    </div>
+      {hallazgo.en_simple && <p className="hallazgo__llano">{hallazgo.en_simple}</p>}
+
+      <Campo termino="Qué habría que hacer" valor={hallazgo.recomendacion} />
+
+      <DetalleTecnico>
+        <Campo termino="Control" valor={hallazgo.control_id} />
+        <Campo termino="Condición" valor={hallazgo.condicion} />
+        <Campo termino="Criterio" valor={hallazgo.criterio} />
+        <Campo termino="Causa" valor={hallazgo.causa} />
+        <Campo termino="Efecto" valor={hallazgo.efecto} />
+        <Campo
+          termino="Papel de trabajo"
+          valor={
+            <span className="huella">
+              {ejecucionId}/{hallazgo.papel_de_trabajo}
+              {hallazgo.huella_evidencia && <> · huella {hallazgo.huella_evidencia.slice(0, 24)}…</>}
+            </span>
+          }
+        />
+      </DetalleTecnico>
+    </article>
   );
 }
 
 /* ---------------------------------------------------------------------- */
 /* Papel de trabajo                                                       */
 /* ---------------------------------------------------------------------- */
+
+/* Lo que significa cada código de respuesta, dicho como se lo contarías a
+ * alguien. No se inventa nada: se describe el número que está en la evidencia. */
+const CODIGOS: Record<number, string> = {
+  200: "contestó que sí y entregó lo que se le pidió",
+  201: "creó lo que se le pidió",
+  204: "hizo lo que se le pidió y no tenía nada que devolver",
+  400: "rechazó la petición porque no es válida",
+  401: "pidió identificarse primero",
+  403: "dijo que ese usuario no tiene permiso",
+  404: "dijo que eso no existe",
+  409: "dijo que choca con algo que ya existe",
+  422: "dijo que los datos enviados no sirven",
+  500: "se rompió por dentro",
+};
+
+function explicarSalida(salida: unknown): string | null {
+  if (!salida || typeof salida !== "object") return null;
+  const dato = salida as Record<string, unknown>;
+  const partes: string[] = [];
+
+  if (typeof dato.codigo === "number") {
+    const texto = CODIGOS[dato.codigo];
+    partes.push(
+      texto
+        ? `Rastro ${texto} (código ${dato.codigo}).`
+        : `Rastro respondió con el código ${dato.codigo}.`,
+    );
+  }
+  if (typeof dato.registros_totales === "number") {
+    partes.push(`Se leyeron ${dato.registros_totales} anotaciones del cuaderno.`);
+  }
+  if (Array.isArray(dato.coincidencias)) {
+    const cuantas = dato.coincidencias.length;
+    partes.push(
+      cuantas === 0
+        ? "Ninguna anotación cuadra con lo que se buscaba."
+        : `${cuantas} ${cuantas === 1 ? "anotación cuadra" : "anotaciones cuadran"} con lo que se buscaba.`,
+    );
+  }
+  return partes.length ? partes.join(" ") : null;
+}
 
 function ModalPapel({
   ejecucionId,
@@ -687,7 +1008,7 @@ function ModalPapel({
     return () => document.removeEventListener("keydown", alPulsar);
   }, [onCerrar]);
 
-  const contenido = papel.data?.contenido as PapelDeTrabajo | undefined;
+  const contenido = papel.data?.contenido as unknown as PapelDeTrabajo | undefined;
 
   return (
     <div className="modal" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
@@ -695,13 +1016,16 @@ function ModalPapel({
         className="modal__panel"
         role="dialog"
         aria-modal="true"
-        aria-label={`Papel de trabajo ${controlId}`}
+        aria-label={`Prueba ${controlId}`}
         style={{ maxWidth: "52rem" }}
       >
         <div className="tarjeta__cabecera">
           <div className="min-cero">
-            <h2 className="tarjeta__titulo">Papel de trabajo {controlId}</h2>
-            <p className="tarjeta__ayuda">{contenido?.control}</p>
+            <h2 className="tarjeta__titulo">{contenido?.pregunta ?? `Prueba ${controlId}`}</h2>
+            <p className="tarjeta__ayuda">
+              {controlId} · esto es lo que quedó guardado de la prueba{" "}
+              <Tecnicismo>en auditoría: papel de trabajo</Tecnicismo>
+            </p>
           </div>
           <button className="boton boton--sutil" onClick={onCerrar} aria-label="Cerrar">
             ✕
@@ -711,58 +1035,101 @@ function ModalPapel({
         <div className="tarjeta__cuerpo pila-sm">
           {papel.isPending && <div className="esqueleto" style={{ height: "12rem" }} />}
 
-          {papel.data && (
+          {papel.data && contenido && (
             <>
               <div className={`aviso aviso--${papel.data.coincide ? "exito" : "error"}`}>
                 <div className="aviso__cuerpo">
                   <strong className="aviso__titulo">
                     {papel.data.coincide
-                      ? "La huella coincide con la registrada"
-                      : "La huella NO coincide: el archivo fue modificado"}
+                      ? "Este archivo no se ha tocado desde que se guardó"
+                      : "Este archivo fue modificado después de guardarse"}
                   </strong>
-                  <span className="huella">recalculada {papel.data.huella_recalculada}</span>
-                  <span className="huella">registrada {papel.data.huella_registrada ?? "—"}</span>
+                  {papel.data.coincide
+                    ? "El sello que sale al recalcularlo ahora es el mismo que se anotó al ejecutar la prueba. Si alguien hubiera cambiado una sola letra, no cuadraría."
+                    : "El sello que sale ahora no es el que se anotó. Alguien editó el archivo."}
+                  <span className="huella">ahora: {papel.data.huella_recalculada}</span>
+                  <span className="huella">se anotó: {papel.data.huella_registrada ?? "—"}</span>
                 </div>
               </div>
 
-              {contenido && (
-                <>
-                  <Campo termino="Marco de referencia" valor={contenido.marco} />
-                  <Campo termino="Tipo de prueba" valor={contenido.tipo} />
-                  <Campo termino="Procedimiento" valor={contenido.procedimiento} />
-                  <Campo termino="Criterio" valor={contenido.criterio} />
-                  <Campo termino="Evidencia esperada" valor={contenido.evidencia_esperada} />
-                  <Campo termino="Conclusión" valor={contenido.conclusion} />
-                  <Campo termino="Resultado" valor={contenido.resumen} />
-                  <Campo
-                    termino="Ejecutada"
-                    valor={`${fechaLegible(contenido.iniciado_en)} bajo ${contenido.identidad_ejecucion}`}
-                  />
+              <div className="bloque-llano">
+                <h3 className="bloque-llano__titulo">Qué se hizo</h3>
+                <p>{contenido.en_simple || contenido.procedimiento}</p>
+              </div>
 
-                  <div className="hallazgo__campo">
-                    <span className="hallazgo__termino">
-                      Observaciones ({contenido.observaciones.length}) — salida literal, sin editar
-                    </span>
-                    <div className="pila-sm">
-                      {contenido.observaciones.map((observacion, indice) => (
-                        <div key={indice}>
-                          <p className="texto-xs texto-suave romper-todo">
-                            <strong>{observacion.procedimiento}</strong>
-                          </p>
-                          {observacion.error && (
-                            <p className="texto-xs" style={{ color: "var(--peligro)" }}>
-                              {observacion.error}
-                            </p>
-                          )}
-                          <pre className="evidencia">
-                            {JSON.stringify(observacion.salida, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
+              <div className="bloque-llano">
+                <h3 className="bloque-llano__titulo">Qué contestó Rastro</h3>
+                <p>{contenido.resumen}</p>
+                <p className="bloque-llano__respuesta">
+                  <Respuesta
+                    conclusion={contenido.conclusion}
+                    palabra={contenido.conclusion_llana}
+                    tamano="grande"
+                  />
+                  <span className="texto-sm texto-suave">
+                    {contenido.conclusion_explicada ?? RESPUESTAS[contenido.conclusion].explicacion}
+                  </span>
+                </p>
+              </div>
+
+              {contenido.si_falla && contenido.conclusion !== "CONFORME" && (
+                <div className="bloque-llano">
+                  <h3 className="bloque-llano__titulo">Por qué importa</h3>
+                  <p>{contenido.si_falla}</p>
+                </div>
               )}
+
+              <div className="bloque-llano">
+                <h3 className="bloque-llano__titulo">
+                  Paso a paso, con lo que respondió tal cual
+                </h3>
+                <p className="texto-sm texto-suave">
+                  Sin resumir ni retocar: es lo que permite que otra persona revise si la
+                  conclusión es justa. <Tecnicismo>en auditoría: evidencia</Tecnicismo>
+                </p>
+                <div className="pila-sm">
+                  {contenido.observaciones.map((observacion, indice) => {
+                    const explicacion = explicarSalida(observacion.salida);
+                    return (
+                      <div key={indice} className="observacion">
+                        <p className="observacion__paso">
+                          <span className="observacion__numero" aria-hidden="true">
+                            {indice + 1}
+                          </span>
+                          <span className="mono romper-todo">{observacion.procedimiento}</span>
+                        </p>
+                        {explicacion && <p className="observacion__llano">{explicacion}</p>}
+                        {observacion.error && (
+                          <p className="texto-sm" style={{ color: "var(--peligro)" }}>
+                            No se pudo completar: {observacion.error}
+                          </p>
+                        )}
+                        {observacion.salida !== null && observacion.salida !== undefined && (
+                          <DetalleTecnico resumen="Ver la respuesta tal como llegó">
+                            <pre className="evidencia">
+                              {JSON.stringify(observacion.salida, null, 2)}
+                            </pre>
+                          </DetalleTecnico>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <DetalleTecnico resumen="Ver la ficha de auditoría de esta prueba">
+                <Campo termino="Control" valor={contenido.control} />
+                <Campo termino="Marco de referencia" valor={contenido.marco} />
+                <Campo termino="Tipo de prueba" valor={contenido.tipo} />
+                <Campo termino="Procedimiento" valor={contenido.procedimiento} />
+                <Campo termino="Criterio" valor={contenido.criterio} />
+                <Campo termino="Evidencia esperada" valor={contenido.evidencia_esperada} />
+                <Campo termino="Conclusión" valor={contenido.conclusion} />
+                <Campo
+                  termino="Ejecutada"
+                  valor={`${fechaLegible(contenido.iniciado_en)} bajo ${contenido.identidad_ejecucion}`}
+                />
+              </DetalleTecnico>
             </>
           )}
         </div>
@@ -777,17 +1144,29 @@ function ModalInforme({ ejecucionId, onCerrar }: { ejecucionId: string; onCerrar
     queryFn: () => api.informeTexto(ejecucionId),
   });
 
+  useEffect(() => {
+    const alPulsar = (evento: KeyboardEvent) => evento.key === "Escape" && onCerrar();
+    document.addEventListener("keydown", alPulsar);
+    return () => document.removeEventListener("keydown", alPulsar);
+  }, [onCerrar]);
+
   return (
     <div className="modal" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
       <div
         className="modal__panel"
         role="dialog"
         aria-modal="true"
-        aria-label="Informe de auditoría"
+        aria-label="Informe"
         style={{ maxWidth: "60rem" }}
       >
         <div className="tarjeta__cabecera">
-          <h2 className="tarjeta__titulo">Informe de auditoría</h2>
+          <div className="min-cero">
+            <h2 className="tarjeta__titulo">El informe completo</h2>
+            <p className="tarjeta__ayuda">
+              Empieza en palabras normales y sigue con el registro técnico. Es el mismo
+              archivo que se guarda junto a las pruebas.
+            </p>
+          </div>
           <button className="boton boton--sutil" onClick={onCerrar} aria-label="Cerrar">
             ✕
           </button>
@@ -805,7 +1184,179 @@ function ModalInforme({ ejecucionId, onCerrar }: { ejecucionId: string; onCerrar
 }
 
 /* ---------------------------------------------------------------------- */
-/* Reproducibilidad                                                       */
+/* Qué se revisa                                                          */
+/* ---------------------------------------------------------------------- */
+
+function VistaCatalogo({ catalogo, cargando }: { catalogo?: Catalogo; cargando: boolean }) {
+  if (cargando) return <div className="esqueleto" style={{ height: "20rem" }} />;
+  if (!catalogo) return null;
+
+  const grupos = [
+    {
+      tipo: "cumplimiento" as const,
+      titulo: "Se mira cómo está puesto",
+      ayuda:
+        "Comprobar la configuración sin tocar nada. Como revisar que la puerta tenga cerradura.",
+      tecnico: "pruebas de cumplimiento",
+    },
+    {
+      tipo: "sustantiva" as const,
+      titulo: "Se usa el sistema de verdad",
+      ayuda:
+        "Empujar la puerta para ver si de verdad está cerrada. Esto no lo hace ninguna herramienta automática de la nube: estas reglas viven en el código, no en la configuración.",
+      tecnico: "pruebas sustantivas",
+    },
+    {
+      tipo: "integridad" as const,
+      titulo: "Se comprueba que el historial no se pueda retocar",
+      ayuda: "Recalcular la cadena de sellos del cuaderno de Rastro.",
+      tecnico: "prueba de integridad",
+    },
+  ];
+
+  return (
+    <>
+      <header className="encabezado-pagina">
+        <h1>Qué se revisa</h1>
+        <p className="encabezado-pagina__descripcion">
+          Esta lista se escribe <strong>antes</strong> de revisar nada, y las reglas salen de
+          listas de buenas prácticas que ya existen y usa medio mundo, no de lo que a este
+          equipo le parezca. Así, si algo no está en la lista, es porque se decidió dejarlo
+          fuera y no porque se olvidara.{" "}
+          <Tecnicismo>en auditoría: matriz de controles, versión {catalogo.version}</Tecnicismo>
+        </p>
+      </header>
+
+      {grupos.map((grupo) => {
+        const controles = catalogo.controles.filter((c) => c.tipo === grupo.tipo);
+        if (!controles.length) return null;
+        return (
+          <section className="tarjeta" key={grupo.tipo}>
+            <div className="tarjeta__cabecera">
+              <div className="min-cero">
+                <h2 className="tarjeta__titulo">{grupo.titulo}</h2>
+                <p className="tarjeta__ayuda">
+                  {grupo.ayuda} <Tecnicismo>en auditoría: {grupo.tecnico}</Tecnicismo>
+                </p>
+              </div>
+              <span className="etiqueta">{controles.length}</span>
+            </div>
+            <div className="tarjeta__cuerpo pila-sm">
+              {controles.map((control) => (
+                <article
+                  key={control.id}
+                  className={`control control--estatico severidad-${control.severidad_si_desviado}`}
+                >
+                  <div className="control__cabecera">
+                    <span className="control__id">{control.id}</span>
+                    <span
+                      className={`etiqueta etiqueta--estado severidad-${control.severidad_si_desviado}`}
+                    >
+                      {control.severidad_si_desviado === "alta" ? "grave" : "importante"}
+                      <Tecnicismo>severidad {control.severidad_si_desviado}</Tecnicismo>
+                    </span>
+                  </div>
+                  <p className="control__pregunta">{control.pregunta}</p>
+                  <p className="control__resumen">{control.en_simple}</p>
+                  <p className="control__riesgo">
+                    <strong>Si fallara:</strong> {control.si_falla}
+                  </p>
+
+                  <DetalleTecnico>
+                    <Campo termino="Control" valor={control.control} />
+                    <Campo termino="Marco de referencia" valor={control.marco} />
+                    <Campo termino="Criterio de aceptación" valor={control.criterio} />
+                    <Campo termino="Procedimiento" valor={control.procedimiento} />
+                    <Campo termino="Evidencia esperada" valor={control.evidencia_esperada} />
+                  </DetalleTecnico>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      <section className="tarjeta">
+        <div className="tarjeta__cabecera">
+          <div className="min-cero">
+            <h2 className="tarjeta__titulo">Cosas que ya sabemos que están mal</h2>
+            <p className="tarjeta__ayuda">
+              Y que aquí no se pueden arreglar, porque el laboratorio de clase no lo permite.
+              No se prueban —una prueba que siempre da el mismo resultado no aporta nada— pero
+              se escriben en todos los informes: quitarlas haría creer que se revisó más de lo
+              que se revisó. <Tecnicismo>en auditoría: hallazgos permanentes</Tecnicismo>
+            </p>
+          </div>
+        </div>
+        <div className="tarjeta__cuerpo pila-sm">
+          {catalogo.hallazgos_permanentes.map((hallazgo) => (
+            <article key={hallazgo.id} className={`hallazgo severidad-${hallazgo.severidad}`}>
+              <div className="control__cabecera">
+                <span className="control__id">{hallazgo.id}</span>
+                <span className={`etiqueta etiqueta--estado severidad-${hallazgo.severidad}`}>
+                  {hallazgo.severidad === "alta" ? "grave" : "importante"}
+                  <Tecnicismo>severidad {hallazgo.severidad}</Tecnicismo>
+                </span>
+              </div>
+              <p className="hallazgo__llano">{hallazgo.en_simple}</p>
+              <Campo termino="Qué habría que hacer" valor={hallazgo.recomendacion} />
+              <DetalleTecnico>
+                <Campo termino="Condición" valor={hallazgo.condicion} />
+                <Campo termino="Criterio" valor={hallazgo.criterio} />
+                <Campo termino="Causa" valor={hallazgo.causa} />
+                <Campo termino="Efecto" valor={hallazgo.efecto} />
+                <Campo termino="Nota de alcance" valor={hallazgo.nota_de_alcance} />
+              </DetalleTecnico>
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Diccionario                                                            */
+/* ---------------------------------------------------------------------- */
+
+function VistaGlosario({ catalogo, cargando }: { catalogo?: Catalogo; cargando: boolean }) {
+  if (cargando) return <div className="esqueleto" style={{ height: "20rem" }} />;
+  if (!catalogo) return null;
+
+  return (
+    <>
+      <header className="encabezado-pagina">
+        <h1>Diccionario</h1>
+        <p className="encabezado-pagina__descripcion">
+          Las palabras del oficio, explicadas. No se sustituyen por otras más fáciles: son
+          las que espera leer quien reciba el informe. Pero nadie debería necesitar
+          aprendérselas para entender lo que dice una pantalla.
+        </p>
+      </header>
+
+      <section className="tarjeta">
+        <div className="tarjeta__cuerpo">
+          <dl className="glosario">
+            {catalogo.glosario.map((entrada) => (
+              <div className="glosario__entrada" key={entrada.termino}>
+                <dt className="glosario__termino">
+                  {entrada.termino}
+                  {entrada.tambien_llamado && (
+                    <span className="glosario__alias">también: {entrada.tambien_llamado}</span>
+                  )}
+                </dt>
+                <dd className="glosario__definicion">{entrada.en_simple}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Repetir                                                                */
 /* ---------------------------------------------------------------------- */
 
 function VistaComparacion({
@@ -837,12 +1388,14 @@ function VistaComparacion({
   return (
     <>
       <header className="encabezado-pagina">
-        <h1>Reproducibilidad</h1>
+        <h1>¿Sale lo mismo si lo repite otra persona?</h1>
         <p className="encabezado-pagina__descripcion">
-          Un tercero debe poder reejecutar el programa y obtener la misma clasificación para cada
-          control. Se comparan las conclusiones y no las huellas: cada ejecución tiene su propia
-          marca de tiempo y, por lo tanto, su propia huella. Lo que debe reproducirse es el juicio,
-          no el byte.
+          Debería. Si el resultado dependiera de quién ejecuta el programa, no sería una
+          medida: sería una opinión. Aquí se comparan dos revisiones y se mira si cada cosa
+          dio la misma respuesta. No se comparan los sellos, porque cada revisión se hace a
+          una hora distinta y por eso su sello es distinto; lo que tiene que repetirse es el
+          juicio, no el archivo.{" "}
+          <Tecnicismo>en auditoría: reproducibilidad</Tecnicismo>
         </p>
       </header>
 
@@ -850,10 +1403,10 @@ function VistaComparacion({
         <section className="tarjeta">
           <div className="tarjeta__cuerpo">
             <div className="vacio">
-              <p className="vacio__titulo">Hacen falta al menos dos ejecuciones</p>
+              <p className="vacio__titulo">Hacen falta dos revisiones para comparar</p>
               <p className="vacio__descripcion">
-                Ejecute el catálogo una segunda vez, idealmente desde otra sesión, para comprobar que
-                el resultado se reproduce.
+                Vuelve a «Revisión» y pulsa «Revisar ahora» una segunda vez. Vale mucho más
+                si la segunda la ejecuta otra persona del equipo.
               </p>
             </div>
           </div>
@@ -862,23 +1415,23 @@ function VistaComparacion({
         <section className="tarjeta">
           <div className="tarjeta__cuerpo pila-sm">
             <div className="rejilla rejilla--2">
-              <SelectorEjecucion etiqueta="Ejecución A" valor={a} onCambio={setA} ejecuciones={ejecuciones} />
-              <SelectorEjecucion etiqueta="Ejecución B" valor={b} onCambio={setB} ejecuciones={ejecuciones} />
+              <SelectorEjecucion etiqueta="Primera revisión" valor={a} onCambio={setA} ejecuciones={ejecuciones} />
+              <SelectorEjecucion etiqueta="Segunda revisión" valor={b} onCambio={setB} ejecuciones={ejecuciones} />
             </div>
 
             {identidades.a && identidades.b && identidades.a === identidades.b && (
               <div className="aviso aviso--alerta">
                 <div className="aviso__cuerpo">
-                  Ambas ejecuciones se hicieron bajo la misma identidad. La comprobación de
-                  reproducibilidad tiene más valor cuando la segunda la ejecuta un integrante
-                  distinto del que desarrolló el ejecutor.
+                  Las dos las ejecutó la misma persona. Comparar sirve igual, pero prueba
+                  mucho menos: lo que se quiere demostrar es que el resultado no depende de
+                  quién lo ejecute.
                 </div>
               </div>
             )}
 
             <div className="acciones">
               <button className="boton" onClick={() => comparar.mutate()} disabled={!a || !b || a === b}>
-                Comparar
+                Comparar las dos
               </button>
             </div>
 
@@ -892,19 +1445,32 @@ function VistaComparacion({
               <div className={`aviso aviso--${resultado.reproducible ? "exito" : "error"}`}>
                 <div className="aviso__cuerpo">
                   <strong className="aviso__titulo">
-                    {resultado.reproducible ? "Reproducible" : "No reproducible"}
+                    {resultado.reproducible ? "Sale lo mismo las dos veces" : "No sale lo mismo"}
                   </strong>
-                  {resultado.coincidencias} de {resultado.controles_comparados} controles clasifican
-                  igual.
+                  {resultado.coincidencias} de {resultado.controles_comparados} cosas dieron
+                  la misma respuesta.
                   {resultado.diferencias.length > 0 && (
-                    <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
-                      {resultado.diferencias.map((diferencia) => (
-                        <li key={diferencia.control_id}>
-                          {diferencia.control_id}: {diferencia.ejecucion_a} vs{" "}
-                          {diferencia.ejecucion_b}
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      <span>
+                        {" "}
+                        Una diferencia no significa que el programa esté mal: puede que Rastro
+                        haya cambiado entre una revisión y otra. Hay que abrir las dos pruebas
+                        antes de concluir.
+                      </span>
+                      <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
+                        {resultado.diferencias.map((diferencia) => (
+                          <li key={diferencia.control_id}>
+                            {diferencia.control_id}:{" "}
+                            {RESPUESTAS[diferencia.ejecucion_a as Conclusion]?.palabra ??
+                              diferencia.ejecucion_a}{" "}
+                            la primera vez,{" "}
+                            {RESPUESTAS[diferencia.ejecucion_b as Conclusion]?.palabra ??
+                              diferencia.ejecucion_b}{" "}
+                            la segunda
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   )}
                 </div>
               </div>
@@ -931,10 +1497,10 @@ function SelectorEjecucion({
     <label className="campo">
       <span className="campo__etiqueta">{etiqueta}</span>
       <select className="campo__control" value={valor} onChange={(evento) => onCambio(evento.target.value)}>
-        <option value="">Elija una ejecución</option>
+        <option value="">Elige una revisión</option>
         {ejecuciones.map((ejecucion) => (
           <option key={ejecucion.ejecucion_id} value={ejecucion.ejecucion_id}>
-            {fechaLegible(ejecucion.cerrado_en)} · {ejecucion.identidad_ejecucion}
+            {fechaLegible(ejecucion.cerrado_en)} · la ejecutó {ejecucion.identidad_ejecucion}
           </option>
         ))}
       </select>

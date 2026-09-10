@@ -99,7 +99,18 @@ def test_la_interfaz_solo_ofrece_las_transiciones_alcanzables(
     cuerpo = pila["tracking"].get(f"/envios/{envio_id}/transiciones", headers=conductor).json()
 
     assert cuerpo["estado_actual"] == Estado.ASIGNADO.value
-    assert set(cuerpo["transiciones"]) == {Estado.RECOLECTADO.value, Estado.INCIDENCIA.value}
+    assert cuerpo["codigo_estado"] == 20
+    # Desde ASIGNADO se puede avanzar, reportar incidencia o cancelar: el
+    # paquete todavia no salio, de modo que anularlo sigue teniendo sentido.
+    assert set(cuerpo["transiciones"]) == {
+        Estado.RECOLECTADO.value,
+        Estado.INCIDENCIA.value,
+        Estado.CANCELADO.value,
+    }
+    # El detalle dice cuales exigen despachador, para que la interfaz no lo
+    # deduzca con reglas propias que se desincronizarian del servidor.
+    exigen = {t["estado"] for t in cuerpo["detalle_transiciones"] if t["exige_despachador"]}
+    assert exigen == {Estado.CANCELADO.value}
 
 
 # --------------------------------------------------------------------------- #
@@ -199,18 +210,46 @@ def test_el_conductor_reporta_la_incidencia_pero_no_puede_reanudar(
     assert reanudacion.status_code == 403
 
 
-def test_el_despachador_autoriza_la_reanudacion_tras_la_incidencia(
-    pila, despachador, conductor, envio_creado
+def test_el_coordinador_autoriza_la_reanudacion_tras_la_incidencia(
+    pila, despachador, coordinador, conductor, envio_creado
 ):
+    """Autorizar un envio detenido dejo de ser del despachador.
+
+    Despachar es registrar y asignar; levantar un envio parado es una decision
+    sobre el trabajo de otro, y por eso corresponde al coordinador o al
+    administrador. La separacion que importa -que no lo autorice quien lo
+    reporto- se mantiene.
+    """
     envio_id = envio_creado["envio_id"]
     _asignar(pila, despachador, envio_id)
     _registrar(pila, conductor, envio_id, Estado.RECOLECTADO.value)
     _registrar(pila, conductor, envio_id, Estado.INCIDENCIA.value, nota="Direccion no existe")
 
+    assert _registrar(pila, despachador, envio_id, Estado.EN_TRANSITO.value).status_code == 403
+
     reanudacion = _registrar(
-        pila, despachador, envio_id, Estado.EN_TRANSITO.value, nota="Direccion corregida"
+        pila, coordinador, envio_id, Estado.EN_TRANSITO.value, nota="Direccion corregida"
     )
 
     assert reanudacion.status_code == 201
     assert reanudacion.json()["envio"]["estado"] == Estado.EN_TRANSITO.value
     assert reanudacion.json()["envio"]["estado_previo_incidencia"] is None
+
+
+def test_el_administrador_puede_cambiar_el_estado_de_un_envio(
+    pila, despachador, administrador, envio_creado
+):
+    """Lo que faltaba: el administrador no podia mover un envio.
+
+    Es responsable de la operacion y hay situaciones -un mensajero sin senal, un
+    cierre a mano al final del dia- en las que tiene que poder hacerlo el.
+    """
+    envio_id = envio_creado["envio_id"]
+    _asignar(pila, despachador, envio_id)
+
+    respuesta = _registrar(
+        pila, administrador, envio_id, Estado.RECOLECTADO.value, nota="Cierre manual"
+    )
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["envio"]["estado"] == Estado.RECOLECTADO.value

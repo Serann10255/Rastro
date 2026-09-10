@@ -1,0 +1,164 @@
+{
+  "_nota": "Modulos del sistema tal como se aprovisionan a cada organizacion. La interfaz los lee de la tabla de maestros, nunca de una lista escrita en la pantalla: dar de alta un modulo no puede exigir recompilar el sitio, y dos empresas pueden tener modulos distintos.",
+  "_apagados": "Un modulo con 'disponible': false tiene que decir por que. Un modulo ausente sin motivo parece un olvido; con motivo es una decision que se puede discutir.",
+  "modulos": [
+    {
+      "clave": "ordenes",
+      "destacado": true,
+      "nombre": "Órdenes",
+      "descripcion": "Registro, seguimiento y guías de los envíos",
+      "icono": "paquete",
+      "ruta": "/envios",
+      "grupos": ["administrador", "despachador", "conductor"],
+      "orden": 10,
+      "disponible": true,
+      "contador": "envios_abiertos"
+    },
+    {
+      "clave": "registrar",
+      "nombre": "Registrar",
+      "descripcion": "Alta de un envío o de un lote completo desde archivo",
+      "icono": "mas",
+      "ruta": "/envios/nuevo",
+      "grupos": ["administrador", "despachador"],
+      "orden": 20,
+      "disponible": true
+    },
+    {
+      "clave": "guias",
+      "nombre": "Guías",
+      "descripcion": "Etiquetas imprimibles con código de barras",
+      "icono": "etiqueta",
+      "ruta": "/envios/guias",
+      "grupos": ["administrador", "despachador", "conductor"],
+      "orden": 30,
+      "disponible": true
+    },
+    {
+      "clave": "rastreo",
+      "nombre": "Rastreo público",
+      "descripcion": "Consulta del avance sin cuenta, para el destinatario",
+      "icono": "rastro",
+      "ruta": "/rastreo",
+      "grupos": ["administrador", "despachador", "conductor", "auditor"],
+      "orden": 40,
+      "disponible": true
+    },
+    {
+      "clave": "tiendas",
+      "nombre": "Tiendas",
+      "descripcion": "Tiendas, almacenes y estaciones de la red",
+      "icono": "tienda",
+      "ruta": "/maestros/tiendas",
+      "grupos": ["administrador", "despachador"],
+      "orden": 50,
+      "disponible": true,
+      "contador": "tiendas"
+    },
+    {
+      "clave": "clientes",
+      "nombre": "Clientes",
+      "descripcion": "Empresas y personas que despachan envíos",
+      "icono": "clientes",
+      "ruta": "/maestros/clientes",
+      "grupos": ["administrador", "despachador"],
+      "orden": 60,
+      "disponible": true,
+      "contador": "clientes"
+    },
+    {
+      "clave": "transportistas",
+      "nombre": "Transportistas",
+      "descripcion": "Flota propia y terceros que mueven la carga",
+      "icono": "camion",
+      "ruta": "/maestros/transportistas",
+      "grupos": ["administrador", "despachador"],
+      "orden": 70,
+      "disponible": true,
+      "contador": "transportistas"
+    },
+    {
+      "clave": "estados",
+      "nombre": "Estados",
+      "descripcion": "Catálogo de estados con su código de intercambio",
+      "icono": "estados",
+      "ruta": "/operaciones/estados",
+      "grupos": ["administrador", "despachador", "conductor", "auditor"],
+      "orden": 80,
+      "disponible": true,
+      "contador": "estados"
+    },
+    {
+      "clave": "usuarios",
+      "destacado": true,
+      "nombre": "Usuarios",
+      "descripcion": "Cuentas, roles y accesos de la empresa",
+      "icono": "usuarios",
+      "ruta": "/administracion",
+      "grupos": ["administrador"],
+      "orden": 90,
+      "disponible": true
+    },
+    {
+      "clave": "roles",
+      "nombre": "Roles y permisos",
+      "descripcion": "Qué puede hacer cada rol; cree los suyos si hace falta",
+      "icono": "auditoria",
+      "ruta": "/administracion/roles",
+      "grupos": ["administrador", "auditor"],
+      "orden": 95,
+      "disponible": true
+    },
+    {
+      "clave": "bitacora",
+      "destacado": true,
+      "nombre": "Bitácora",
+      "descripcion": "Registro encadenado de toda la actividad",
+      "icono": "bitacora",
+      "ruta": "/bitacora",
+      "grupos": ["auditor"],
+      "orden": 100,
+      "disponible": true
+    },
+    {
+      "clave": "rutas",
+      "nombre": "Rutas",
+      "descripcion": "Planificación de rutas de última milla",
+      "icono": "mapa",
+      "grupos": ["administrador", "despachador"],
+      "orden": 200,
+      "disponible": false,
+      "motivo": "La optimización de rutas está excluida del alcance del proyecto: exige datos de tráfico y dispositivos que el presupuesto del laboratorio no cubre."
+    },
+    {
+      "clave": "recolecciones",
+      "nombre": "Recolecciones",
+      "descripcion": "Solicitudes de recogida en origen",
+      "icono": "recoleccion",
+      "grupos": ["administrador", "despachador"],
+      "orden": 210,
+      "disponible": false,
+      "motivo": "Pendiente. El ciclo actual arranca cuando el envío ya está registrado; la recogida se coordina hoy por fuera del sistema."
+    },
+    {
+      "clave": "manifiestos",
+      "nombre": "Manifiestos",
+      "descripcion": "Documentos de despacho por ruta",
+      "icono": "documento",
+      "grupos": ["administrador", "despachador"],
+      "orden": 220,
+      "disponible": false,
+      "motivo": "Pendiente. Depende de rutas: un manifiesto es la carga de una ruta, y las rutas no están en el alcance."
+    },
+    {
+      "clave": "facturacion",
+      "nombre": "Facturación",
+      "descripcion": "Liquidación del servicio prestado",
+      "icono": "factura",
+      "grupos": ["administrador"],
+      "orden": 230,
+      "disponible": false,
+      "motivo": "Fuera de alcance. No forma parte del problema planteado y arrastraría obligaciones tributarias que el proyecto no asume."
+    }
+  ]
+}

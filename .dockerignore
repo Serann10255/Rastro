@@ -1,0 +1,30 @@
+# Qué NO se envía al construir una imagen.
+#
+# Existe porque las interfaces se construyen con el repositorio entero como
+# contexto —necesitan `design/`, que está fuera de cada aplicación—. Sin este
+# archivo, cada construcción enviaría al demonio el entorno virtual, los
+# node_modules y el historial de git: cientos de megabytes que ninguna imagen
+# usa, en cada cambio de una línea de CSS.
+
+.git
+.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+**/tsconfig.tsbuildinfo
+
+# Resultados de ejecuciones y despliegues: son datos, no fuentes.
+cotejo/papeles
+evidencias-despliegue
+migracion
+config/deployment.json
+config/.identidad.env
+config/.api.env
+seed/envios-creados.json
+
+# Documentación y entregables: no forman parte de ninguna imagen.
+documentacion
+*.md
+!README.md

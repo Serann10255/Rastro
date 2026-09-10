@@ -12,11 +12,13 @@ cuenta ni decide por sí mismo si una operación está permitida.
 |---|---|---|
 | `claves.py` | Construcción de claves. Exige el identificador de organización | REQ-06 |
 | `repository.py` | Acceso a datos con filtro obligatorio por organización | REQ-06 |
-| `state_machine.py` | Transiciones válidas del ciclo de vida | REQ-03 |
-| `authz.py` | Matriz de autorización de cuatro grupos por diez operaciones | REQ-07 |
+| `state_machine.py` | Catálogo de nueve estados con código y transiciones válidas | REQ-03 |
+| `authz.py` | Matriz de autorización de cuatro grupos por dieciséis operaciones | REQ-07 |
 | `audit.py` | Encadenamiento por funciones hash y verificador | REQ-08 |
 | `storage.py` | Enlaces prefirmados acotados al prefijo de la organización | REQ-05 |
-| `security.py` | Validación del token; emisor local equivalente a Cognito | — |
+| `security.py` | Emisión y validación de tokens de acceso y de refresco | — |
+| `passwords.py` | Derivación y verificación de contraseñas (PBKDF2) | — |
+| `maestros.py` | Directorio de usuarios, empresa y catálogos de la organización | REQ-06 |
 | `config.py` | Configuración en ejecución, sin identificadores literales | REQ-09 |
 | `dominio.py` | Operaciones compartidas; único camino para cargar un envío | REQ-06 |
 | `http.py` | Plomería HTTP: errores, identidad, autorización con registro | REQ-07 |
@@ -43,7 +45,7 @@ la respuesta se pierda.
 ## Dependencias y relaciones
 
 - **Depende de**: `fastapi`, `pydantic`, `boto3`, `pyjwt`. Nada del proyecto.
-- **Depende de él**: los seis microservicios, la preparación del entorno local y
+- **Depende de él**: los ocho microservicios, la preparación del entorno local y
   la prueba de integridad de Cotejo, que reutiliza el mismo verificador.
 
 El grafo es deliberadamente plano: la capa común no conoce a los servicios.
@@ -63,6 +65,32 @@ control de aislamiento no se duplica.
 **Descartado: validar el token solo en la puerta de enlace.** Cada servicio lo
 vuelve a validar. Cuesta unos milisegundos y hace que el sistema no dependa de
 un único control ni del supuesto SU-01, todavía sin confirmar.
+
+**Los estados llevan código numérico en saltos de diez.** El catálogo asigna
+10, 20, … 90 y no 1, 2, 3. Los huecos permiten insertar un estado intermedio sin
+renumerar lo existente, que es lo que rompería a la vez a todos los sistemas que
+ya intercambian archivos con estos códigos. El código y el nombre salen siempre
+del mismo catálogo, nunca escritos a mano en un servicio.
+
+**Los estados de cierre se añadieron sin tocar el flujo principal.** `DEVUELTO`
+y `CANCELADO` son salidas nuevas; las transiciones existentes quedaron
+intactas, y de 98 pruebas solo fallaron dos, por la razón correcta: `DEVUELTO`
+es ahora una salida legítima de una incidencia. Véase
+[ADR-006](../../decisiones/adr-006-ampliacion-de-alcance-a-tms.md).
+
+**Cancelar y devolver no salen de cualquier estado.** `ORIGENES_CANCELACION` se
+limita a los envíos que aún no se han recogido y `ORIGENES_DEVOLUCION` a los que
+ya están en la calle. Un envío entregado no se cancela: se devuelve, y eso es
+otro envío. Permitir cancelar desde cualquier punto convertiría la máquina de
+estados en un campo de texto libre.
+
+**El coste de derivación de contraseñas es configurable por entorno.** A 600 000
+iteraciones la suite pasa de segundos a minutos, y una suite lenta es una suite
+que nadie ejecuta. `RASTRO_PBKDF2_ITERACIONES` la baja a 1 000 en las pruebas.
+Es seguro porque lo que se verifica es el mecanismo —que no se almacena en
+claro, que la verificación funciona, que el formato permite migrar— y no el
+coste, que es un parámetro. Fuera de las pruebas se queda en el valor por
+omisión.
 
 **Escritura condicional en la bitácora.** El documento declara la concurrencia
 como limitación aceptada. La implementación la acota con

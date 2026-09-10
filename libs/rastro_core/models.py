@@ -27,6 +27,9 @@ class Identidad(BaseModel):
     email: str = ""
     org_id: str
     grupos: tuple[str, ...] = ()
+    #: Identificador de la sesion que emitio el token. Permite revocarla y
+    #: distinguirla de las demas sesiones abiertas del mismo usuario.
+    sid: str = ""
 
     @property
     def grupos_validos(self) -> frozenset[Grupo]:
@@ -58,6 +61,29 @@ class CrearEnvioSolicitud(BaseModel):
     destino: Direccion
     destinatario: Destinatario
     descripcion: str = Field(default="", max_length=300)
+
+    # -- Datos de operacion -------------------------------------------------
+    #: Referencia del cliente. No la genera el sistema y puede repetirse entre
+    #: clientes distintos, de modo que no sirve como identificador: sirve para
+    #: que el cliente encuentre su envio con el numero que el maneja.
+    orden_compra: str = Field(default="", max_length=80)
+    tienda_id: str = Field(default="", max_length=40)
+    cliente_id: str = Field(default="", max_length=40)
+    transportista_id: str = Field(default="", max_length=40)
+    peso_kg: float = Field(default=0, ge=0, le=5000)
+    valor_declarado: float = Field(default=0, ge=0)
+    bultos: int = Field(default=1, ge=1, le=500)
+    #: Fecha comprometida con el cliente. El sistema no la calcula: la fija
+    #: quien vende el servicio, y sirve para saber que envios van tarde.
+    fecha_estimada: str = Field(default="", max_length=32)
+    observaciones: str = Field(default="", max_length=500)
+
+
+class CrearLoteSolicitud(BaseModel):
+    """Registro masivo. Es la operacion habitual de un cliente corporativo,
+    que despacha decenas de envios de una vez y no uno a uno."""
+
+    envios: list[CrearEnvioSolicitud] = Field(min_length=1, max_length=500)
 
 
 class AsignarConductorSolicitud(BaseModel):
@@ -96,6 +122,7 @@ class Evento(BaseModel):
     envio_id: str
     org_id: str
     estado: Estado
+    codigo_estado: int = 10
     estado_anterior: Estado | None = None
     ts: str
     actor_sub: str
@@ -109,6 +136,7 @@ class Evento(BaseModel):
         """REQ-04: el destinatario ve el avance, no la identidad del operario."""
         return {
             "estado": str(self.estado),
+            "codigo_estado": self.codigo_estado,
             "ts": self.ts,
             "nota": self.nota,
             "tiene_evidencia": self.evidencia_id is not None,
@@ -119,6 +147,9 @@ class Envio(BaseModel):
     envio_id: str
     org_id: str
     estado: Estado
+    #: Codigo numerico del estado. Se guarda ademas del nombre porque es lo que
+    #: viaja en los archivos de intercambio, donde un nombre en texto es fragil.
+    codigo_estado: int = 10
     estado_previo_incidencia: Estado | None = None
     creado_en: str
     actualizado_en: str
@@ -131,12 +162,29 @@ class Envio(BaseModel):
     descripcion: str = ""
     evidencias: tuple[str, ...] = ()
 
+    # -- Datos de operacion -------------------------------------------------
+    orden_compra: str = ""
+    tienda_id: str = ""
+    tienda_nombre: str = ""
+    cliente_id: str = ""
+    cliente_nombre: str = ""
+    transportista_id: str = ""
+    transportista_nombre: str = ""
+    estacion_actual: str = ""
+    peso_kg: float = 0
+    valor_declarado: float = 0
+    bultos: int = 1
+    fecha_estimada: str = ""
+    observaciones: str = ""
+
     def vista_publica(self) -> dict:
         return {
             "envio_id": self.envio_id,
             "estado": str(self.estado),
+            "codigo_estado": self.codigo_estado,
             "creado_en": self.creado_en,
             "actualizado_en": self.actualizado_en,
+            "fecha_estimada": self.fecha_estimada,
             "destino_ciudad": self.destino.ciudad,
             "destinatario_nombre": _enmascarar_nombre(self.destinatario.nombre),
         }

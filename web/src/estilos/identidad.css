@@ -1,0 +1,29 @@
+/* Identidad visual de Rastro.
+ *
+ * Lo único que esta aplicación no comparte con Cotejo. El sistema de diseño
+ * -espacio, tipografía, componentes, tema claro y oscuro- vive en `design/` y
+ * es el mismo para las dos: así se parecen porque están construidas igual, no
+ * porque alguien las haya copiado.
+ *
+ * El azul y el cian son de recorrido: el color del movimiento, del trayecto que
+ * va de un punto a otro. Cotejo usa el índigo del examen, que es lo contrario:
+ * quedarse quieto mirando.
+ */
+
+:root {
+  --marca-1: #1d4f91;
+  --marca-2: #17a2b8;
+  --marca-contraste: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --marca-1: #4a90e2;
+    --marca-2: #2fc4dd;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --marca-1: #4a90e2;
+  --marca-2: #2fc4dd;
+}

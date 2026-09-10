@@ -1,0 +1,52 @@
+/* Identidad visual de Cotejo.
+ *
+ * Comparte con Rastro todo el sistema de diseño (`design/`) y cambia solo el
+ * color de marca y el acento. Son dos proyectos distintos que el mismo usuario
+ * abre el mismo día: que parezcan productos sin relación sería un problema de
+ * producto, y que fueran indistinguibles sería peor, porque uno audita al otro.
+ *
+ * El índigo es del examen: el color de detenerse a mirar. Rastro usa el azul y
+ * el cian del recorrido, que es justamente lo contrario.
+ */
+
+:root {
+  --marca-1: #4c3d9c;
+  --marca-2: #8b5cf6;
+  --marca-contraste: #ffffff;
+
+  --acento: #4c3d9c;
+  --acento-fuerte: #3a2f7a;
+  --acento-suave: #eeebfa;
+  --acento-borde: #cdc4f0;
+
+  --info: #4c3d9c;
+  --info-suave: #eeebfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --marca-1: #a78bfa;
+    --marca-2: #c4a5fd;
+
+    --acento: #a78bfa;
+    --acento-fuerte: #c4a5fd;
+    --acento-suave: #241f3d;
+    --acento-borde: #3f3568;
+
+    --info: #a78bfa;
+    --info-suave: #241f3d;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --marca-1: #a78bfa;
+  --marca-2: #c4a5fd;
+
+  --acento: #a78bfa;
+  --acento-fuerte: #c4a5fd;
+  --acento-suave: #241f3d;
+  --acento-borde: #3f3568;
+
+  --info: #a78bfa;
+  --info-suave: #241f3d;
+}

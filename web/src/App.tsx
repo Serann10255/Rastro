@@ -8,12 +8,17 @@ import { useSesion } from "@/api/sesion";
 import { Estructura } from "@/componentes/Estructura";
 import { Aviso, Boton, Tarjeta, Vacio } from "@/componentes/ui";
 import { Acceso } from "@/paginas/Acceso";
+import { Administracion } from "@/paginas/Administracion";
 import { Bitacora } from "@/paginas/Bitacora";
 import { EnvioDetalle } from "@/paginas/EnvioDetalle";
 import { EnvioNuevo } from "@/paginas/EnvioNuevo";
 import { Envios } from "@/paginas/Envios";
+import { Guias } from "@/paginas/Guias";
+import { Maestros } from "@/paginas/Maestros";
+import { CatalogoEstados, Operaciones } from "@/paginas/Operaciones";
 import { Panel } from "@/paginas/Panel";
 import { Rastreo } from "@/paginas/Rastreo";
+import { Roles } from "@/paginas/Roles";
 import type { Grupo } from "@/tipos";
 
 export function App() {
@@ -27,6 +32,9 @@ export function App() {
         <Route element={<RutaProtegida />}>
           <Route element={<Estructura />}>
             <Route path="/panel" element={<Panel />} />
+
+            {/* Órdenes. El orden importa: las rutas fijas van antes que la
+                paramétrica, o «nuevo» se interpretaría como un identificador. */}
             <Route
               path="/envios"
               element={
@@ -43,7 +51,55 @@ export function App() {
                 </ExigeGrupo>
               }
             />
+            <Route
+              path="/envios/guias"
+              element={
+                <ExigeGrupo grupos={["administrador", "despachador"]}>
+                  <Guias />
+                </ExigeGrupo>
+              }
+            />
             <Route path="/envios/:envioId" element={<EnvioDetalle />} />
+
+            {/* Operaciones y catálogos. */}
+            <Route
+              path="/operaciones"
+              element={
+                <ExigeGrupo grupos={["administrador", "despachador"]}>
+                  <Operaciones />
+                </ExigeGrupo>
+              }
+            />
+            <Route path="/operaciones/estados" element={<CatalogoEstados />} />
+
+            {/* Datos maestros: una sola pantalla por recurso. */}
+            <Route
+              path="/maestros/:recurso"
+              element={
+                <ExigeGrupo grupos={["administrador", "despachador"]}>
+                  <Maestros />
+                </ExigeGrupo>
+              }
+            />
+
+            <Route
+              path="/administracion/roles"
+              element={
+                <ExigeGrupo grupos={["administrador", "auditor"]}>
+                  <Roles />
+                </ExigeGrupo>
+              }
+            />
+
+            <Route
+              path="/administracion"
+              element={
+                <ExigeGrupo grupos={["administrador", "auditor"]}>
+                  <Administracion />
+                </ExigeGrupo>
+              }
+            />
+
             <Route
               path="/bitacora"
               element={
@@ -70,7 +126,7 @@ function RutaProtegida() {
 
   if (!autenticado) {
     // Se recuerda a dónde iba para devolverlo allí tras entrar: perder el
-    // destino obliga a repetir la navegación y, con sesiones de cuatro horas,
+    // destino obliga a repetir la navegación y, con sesiones que caducan,
     // eso ocurre varias veces al día.
     return <Navigate to="/acceso" replace state={{ desde: ubicacion.pathname + ubicacion.search }} />;
   }

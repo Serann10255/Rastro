@@ -48,7 +48,7 @@ PY
 
   (cd "${destino}" && zip -qr "${DIR_TRABAJO}/${servicio}.zip" .)
 
-  local variables="Variables={RASTRO_ENTORNO=aws,RASTRO_TABLA_ENVIOS=${TABLA_ENVIOS},RASTRO_TABLA_BITACORA=${TABLA_BITACORA},RASTRO_BUCKET_EVIDENCIAS=${BUCKET_EVIDENCIAS},RASTRO_ALIAS_LLAVE=${ALIAS_LLAVE},RASTRO_ACCOUNT_ID=${CUENTA},RASTRO_JWT_EMISOR=${EMISOR},RASTRO_JWT_AUDIENCIA=${ID_CLIENTE},RASTRO_JWT_JWKS_URL=${JWKS},RASTRO_VIGENCIA_ENLACE=300}"
+  local variables="Variables={RASTRO_ENTORNO=aws,RASTRO_TABLA_ENVIOS=${TABLA_ENVIOS},RASTRO_TABLA_BITACORA=${TABLA_BITACORA},RASTRO_TABLA_MAESTROS=${TABLA_MAESTROS},RASTRO_BUCKET_EVIDENCIAS=${BUCKET_EVIDENCIAS},RASTRO_ALIAS_LLAVE=${ALIAS_LLAVE},RASTRO_ACCOUNT_ID=${CUENTA},RASTRO_JWT_EMISOR=${EMISOR},RASTRO_JWT_AUDIENCIA=${AUDIENCIA},RASTRO_JWT_SECRETO=${SECRETO_JWT},RASTRO_VIGENCIA_ENLACE=300,RASTRO_VIGENCIA_TOKEN=3600,RASTRO_VIGENCIA_REFRESCO=43200}"
 
   if existe_funcion "${nombre}"; then
     aws lambda update-function-code --region "${REGION}" \
@@ -84,12 +84,26 @@ else
   exit 1
 fi
 
+# Secreto de firma del token. Si no se fija, se usa el valor de desarrollo, que
+# esta en el repositorio y por lo tanto no protege nada: cualquiera que lo lea
+# puede firmar un token de administrador de cualquier organizacion.
+SECRETO_JWT="${RASTRO_JWT_SECRETO:-}"
+if [[ -z "${SECRETO_JWT}" ]]; then
+  aviso "RASTRO_JWT_SECRETO no esta definido."
+  aviso "Genere uno y expórtelo antes de desplegar:"
+  aviso "    export RASTRO_JWT_SECRETO=\$(openssl rand -base64 48)"
+  aviso "Guardelo: si cambia, todas las sesiones abiertas dejan de valer."
+  exit 1
+fi
+if [[ "${#SECRETO_JWT}" -lt 32 ]]; then
+  aviso "El secreto debe tener al menos 32 caracteres."
+  exit 1
+fi
+ok "secreto de firma configurado (${#SECRETO_JWT} caracteres)"
+
+# El servicio de identidad si se despliega: el sistema tiene su propio
+# directorio de usuarios y administra las cuentas desde la aplicacion.
 for servicio in "${SERVICIOS[@]}"; do
-  # El emisor local no se despliega en AWS: alli lo sustituye Cognito.
-  if [[ "${servicio}" == "auth" ]]; then
-    ok "servicio auth omitido: en AWS lo sustituye Amazon Cognito"
-    continue
-  fi
   desplegar_funcion "${servicio}"
 done
 

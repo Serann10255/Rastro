@@ -17,7 +17,15 @@ from pathlib import Path
 
 import yaml
 
-from .modelos import Conclusion, Hallazgo, PapelDeTrabajo, Severidad, marca_tiempo
+from .modelos import (
+    LLANO_EXPLICADO,
+    Conclusion,
+    Hallazgo,
+    PapelDeTrabajo,
+    Severidad,
+    en_palabras,
+    marca_tiempo,
+)
 
 ORDEN_SEVERIDAD = {Severidad.ALTA: 0, Severidad.MEDIA: 1, Severidad.BAJA: 2}
 
@@ -45,6 +53,9 @@ def construir_hallazgos(
                 recomendacion=_recomendacion(control),
                 papel_de_trabajo=papel.archivo_evidencia,
                 huella_evidencia=papel.huella_evidencia,
+                # Lo que este hallazgo significa para quien no lee informes de
+                # auditoria: el dano que el control existia para evitar.
+                en_simple=control.si_falla,
             )
         )
 
@@ -74,6 +85,7 @@ def _permanentes(catalogo: dict) -> list[Hallazgo]:
                 recomendacion=" ".join(entrada["recomendacion"].split()),
                 papel_de_trabajo=f"catalogo/controles.yaml#{entrada['id']}",
                 permanente=True,
+                en_simple=" ".join(str(entrada.get("en_simple", "")).split()),
             )
         )
     return salida
@@ -158,7 +170,39 @@ def redactar(
     lineas.append(f"Identidad de ejecucion: {metadatos['identidad_ejecucion']}")
     lineas.append(f"Catalogo: version {metadatos['version_catalogo']}")
 
-    titulo("1. Alcance y cobertura")
+    # El informe abre en lenguaje llano y sigue en el tecnico. El orden no es
+    # cosmetico: quien decide sobre un hallazgo no suele ser quien lo escribio,
+    # y un informe que exige vocabulario para llegar a la primera conclusion se
+    # queda sin leer.
+    titulo("1. En palabras simples")
+    lineas.append("Que es esto")
+    lineas.append(
+        _parrafo(
+            metadatos.get("que_es_esto")
+            or "Cotejo comprueba si el sistema auditado cumple de verdad lo que promete.",
+            ancho,
+        )
+    )
+    lineas.append("")
+    lineas.append("Que salio")
+    lineas.append(_parrafo(frase_de_resultado(metadatos, cobertura), ancho))
+    lineas.append("")
+    lineas.append("Como se leen las tres respuestas")
+    for conclusion in (Conclusion.CONFORME, Conclusion.DESVIADO, Conclusion.NO_EJECUTADA):
+        etiqueta = f"{en_palabras(conclusion)} ({conclusion})"
+        explicacion = _envolver_a(LLANO_EXPLICADO[conclusion], ancho - 30, 30)
+        lineas.append(f"  {etiqueta:<28}{explicacion}")
+    lineas.append("")
+    lineas.append(
+        _parrafo(
+            "Las tres son distintas a proposito. Lo que no se pudo revisar no "
+            "esta aprobado: esta pendiente, y se cuenta aparte para que nadie "
+            "lea mas cobertura de la que hubo.",
+            ancho,
+        )
+    )
+
+    titulo("2. Alcance y cobertura")
     lineas.append(f"Controles del catalogo:      {cobertura['controles_del_catalogo']}")
     lineas.append(f"Controles con resultado:     {cobertura['controles_con_resultado']}")
     lineas.append(f"  Conformes:                 {cobertura['conformes']}")
@@ -174,34 +218,45 @@ def redactar(
             if papel.conclusion is Conclusion.NO_EJECUTADA:
                 lineas.append(f"  - {papel.control_id}: {papel.resumen}")
 
-    titulo("2. Resultado por control")
+    titulo("3. Resultado por control")
     for papel in papeles:
-        lineas.append(f"[{papel.conclusion}] {papel.control_id} ({papel.tipo})")
-        lineas.append(f"    Control:   {_envolver(papel.control, 68)}")
-        lineas.append(f"    Marco:     {papel.marco}")
-        lineas.append(f"    Criterio:  {_envolver(papel.criterio, 68)}")
-        lineas.append(f"    Resultado: {_envolver(papel.resumen, 68)}")
-        lineas.append(f"    Papel:     {papel.archivo_evidencia}")
-        lineas.append(f"    Huella:    {papel.huella_evidencia}")
+        lineas.append(
+            f"[{en_palabras(papel.conclusion)}] {papel.control_id} ({papel.tipo}) "
+            f"| conclusion: {papel.conclusion}"
+        )
+        if papel.pregunta:
+            lineas.append(_campo("Pregunta", papel.pregunta))
+        if papel.en_simple:
+            lineas.append(_campo("Que hicimos", papel.en_simple))
+        lineas.append(_campo("Que paso", papel.resumen))
+        if papel.si_falla and papel.conclusion is not Conclusion.CONFORME:
+            lineas.append(_campo("Por que importa", papel.si_falla))
+        lineas.append(_campo("Control", papel.control))
+        lineas.append(_campo("Marco", papel.marco))
+        lineas.append(_campo("Criterio", papel.criterio))
+        lineas.append(_campo_crudo("Papel", papel.archivo_evidencia))
+        lineas.append(_campo_crudo("Huella", papel.huella_evidencia))
         lineas.append("")
 
-    titulo("3. Hallazgos")
+    titulo("4. Hallazgos")
     if not hallazgos:
         lineas.append("No se identificaron desviaciones en los controles ejecutados.")
     for hallazgo in hallazgos:
         marca = " (permanente)" if hallazgo.permanente else ""
         lineas.append(f"{hallazgo.id} | severidad {hallazgo.severidad}{marca} | {hallazgo.control_id}")
-        lineas.append(f"    Condicion:      {_envolver(hallazgo.condicion, 64)}")
-        lineas.append(f"    Criterio:       {_envolver(hallazgo.criterio, 64)}")
-        lineas.append(f"    Causa:          {_envolver(hallazgo.causa, 64)}")
-        lineas.append(f"    Efecto:         {_envolver(hallazgo.efecto, 64)}")
-        lineas.append(f"    Recomendacion:  {_envolver(hallazgo.recomendacion, 64)}")
-        lineas.append(f"    Papel:          {hallazgo.papel_de_trabajo}")
+        if hallazgo.en_simple:
+            lineas.append(_campo("En simple", hallazgo.en_simple))
+        lineas.append(_campo("Condicion", hallazgo.condicion))
+        lineas.append(_campo("Criterio", hallazgo.criterio))
+        lineas.append(_campo("Causa", hallazgo.causa))
+        lineas.append(_campo("Efecto", hallazgo.efecto))
+        lineas.append(_campo("Recomendacion", hallazgo.recomendacion))
+        lineas.append(_campo_crudo("Papel", hallazgo.papel_de_trabajo))
         if hallazgo.huella_evidencia:
-            lineas.append(f"    Huella:         {hallazgo.huella_evidencia}")
+            lineas.append(_campo_crudo("Huella", hallazgo.huella_evidencia))
         lineas.append("")
 
-    titulo("4. Limitaciones declaradas")
+    titulo("5. Limitaciones declaradas")
     lineas.append(
         "Independencia. El equipo audita un sistema que el mismo construyo, lo que"
     )
@@ -239,10 +294,71 @@ def redactar(
 
 
 def _envolver(texto: str, ancho: int) -> str:
+    return _envolver_a(texto, ancho, _SANGRIA)
+
+
+def _envolver_a(texto: str, ancho: int, sangria: int) -> str:
     import textwrap
 
     lineas = textwrap.wrap(texto, ancho) or [""]
-    return ("\n" + " " * 20).join(lineas)
+    return ("\n" + " " * sangria).join(lineas)
+
+
+#: Los campos se alinean a esta columna, que es donde continua el texto
+#: envuelto. Cuando el termino y su valor no estan alineados, leer el informe
+#: exige seguir la linea con el dedo.
+_SANGRIA = 21
+
+
+def _campo(termino: str, valor: str) -> str:
+    etiqueta = f"{termino}:"
+    return f"    {etiqueta:<{_SANGRIA - 4}}{_envolver(valor, 78 - _SANGRIA)}"
+
+
+def _campo_crudo(termino: str, valor: str) -> str:
+    """Igual que `_campo` pero sin envolver.
+
+    Una ruta o una huella partida en dos lineas deja de poder copiarse, que es
+    lo unico para lo que estan en el informe.
+    """
+    etiqueta = f"{termino}:"
+    return f"    {etiqueta:<{_SANGRIA - 4}}{valor}"
+
+
+def _parrafo(texto: str, ancho: int) -> str:
+    import textwrap
+
+    return "\n".join(textwrap.wrap(texto, ancho) or [""])
+
+
+def frase_de_resultado(metadatos: dict, cobertura: dict) -> str:
+    """El resultado en una frase que se pueda leer en voz alta.
+
+    Es la unica linea del informe que alguien va a repetir de memoria, asi que
+    dice las tres cifras juntas: sin la tercera, "5 de 5 bien" suena a examen
+    perfecto cuando en realidad quedaron tres preguntas sin responder.
+    """
+
+    def cosas(cantidad: int) -> str:
+        return "1 cosa" if cantidad == 1 else f"{cantidad} cosas"
+
+    total = cobertura["controles_del_catalogo"]
+    sin_revisar = cobertura["no_ejecutados"]
+    frase = (
+        f"Revisamos {cosas(total)} que {metadatos.get('sistema_auditado', 'el sistema')} "
+        f"dice cumplir. Salieron bien {cobertura['conformes']}, salieron mal "
+        f"{cobertura['desviados']} y quedaron sin revisar {sin_revisar}."
+    )
+    if sin_revisar:
+        frase += (
+            f" Lo que quedo sin revisar no esta aprobado: en el entorno "
+            f"'{metadatos.get('entorno', 'actual')}' no existen las piezas que "
+            "esas pruebas miran, y hace falta ejecutarlas contra la cuenta "
+            "desplegada."
+        )
+    if cobertura["desviados"]:
+        frase += " Lo que salio mal esta abajo, con lo que habria que hacer."
+    return frase
 
 
 def escribir(

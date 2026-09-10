@@ -26,6 +26,8 @@ from rastro_core.models import RegistrarEventoSolicitud
 from rastro_core.state_machine import (
     ESTADOS_QUE_EXIGEN_EVIDENCIA,
     Estado,
+    codigo_de,
+    definicion,
     requiere_autorizacion_despachador,
     transiciones_permitidas,
     validar_transicion,
@@ -53,13 +55,28 @@ async def consultar_transiciones(envio_id: str, ctx: Contexto = Depends(contexto
     estado = Estado(envio["estado"])
     previo = envio.get("estado_previo_incidencia")
 
+    alcanzables = sorted(
+        transiciones_permitidas(estado, estado_previo=previo), key=lambda e: codigo_de(e)
+    )
     return {
         "envio_id": envio_id,
         "estado_actual": str(estado),
+        "codigo_estado": codigo_de(estado),
         "estado_previo_incidencia": previo,
-        "transiciones": sorted(
-            str(e) for e in transiciones_permitidas(estado, estado_previo=previo)
-        ),
+        "transiciones": [str(e) for e in alcanzables],
+        # El detalle lleva el codigo y si cada destino exige despachador, para
+        # que la interfaz no tenga que deducirlo con reglas propias que se
+        # desincronizarian del servidor.
+        "detalle_transiciones": [
+            {
+                "estado": str(e),
+                "codigo": codigo_de(e),
+                "etiqueta": definicion(e).etiqueta,
+                "final": definicion(e).final,
+                "exige_despachador": requiere_autorizacion_despachador(estado, e),
+            }
+            for e in alcanzables
+        ],
         "exige_autorizacion_despachador": requiere_autorizacion_despachador(estado),
     }
 
@@ -108,6 +125,7 @@ async def registrar_evento(
     ctx.repositorio.agregar_evento(evento)
 
     envio["estado"] = str(solicitud.estado)
+    envio["codigo_estado"] = codigo_de(solicitud.estado)
     envio["actualizado_en"] = marca_tiempo()
     if solicitud.estado is Estado.INCIDENCIA:
         # Se conserva el estado desde el que se entro para poder reanudar.
@@ -122,7 +140,9 @@ async def registrar_evento(
         resultado=Resultado.ALLOW,
         detalle={
             "estado_anterior": str(estado_actual),
+            "codigo_anterior": codigo_de(estado_actual),
             "estado": str(solicitud.estado),
+            "codigo_estado": codigo_de(solicitud.estado),
             "evento_id": evento["evento_id"],
             "con_ubicacion": solicitud.ubicacion is not None,
         },
@@ -131,15 +151,16 @@ async def registrar_evento(
 
 
 def _cargar_para_evento(ctx: Contexto, envio_id: str, estado_destino: Estado) -> dict:
-    """Aplica la autorizacion que corresponde segun de donde salga la transicion.
+    """Aplica la autorizacion que corresponde segun la transicion.
 
-    Reanudar un envio detenido por una incidencia es la operacion mas sensible
-    del proceso y por eso exige despachador: el conductor reporta el incidente,
-    otro rol autoriza continuar. Es una separacion de funciones deliberada.
+    Hay dos operaciones que el mensajero no decide por su cuenta: reanudar un
+    envio detenido por una incidencia -el conductor reporta, otro rol autoriza-
+    y cerrarlo por devolucion o cancelacion, que tienen efecto comercial sobre
+    el cliente. Es una separacion de funciones deliberada.
     """
     envio_previo = cargar_envio(ctx, envio_id, Operacion.EVENTO_REGISTRAR)
 
-    if requiere_autorizacion_despachador(Estado(envio_previo["estado"])):
+    if requiere_autorizacion_despachador(Estado(envio_previo["estado"]), estado_destino):
         ctx.exigir(
             Operacion.EVENTO_REANUDAR,
             recurso=f"envio/{envio_id}",

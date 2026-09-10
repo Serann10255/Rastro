@@ -15,6 +15,7 @@ import {
   useCargaDeEvidencia,
   useEnvio,
   useEvidencias,
+  useMensajeros,
   useRegistrarEvento,
   useTransiciones,
 } from "@/api/consultas";
@@ -35,17 +36,17 @@ import {
   fechaRelativa,
   textoEstado,
 } from "@/componentes/ui";
-import type { Estado, Evento, Ubicacion } from "@/tipos";
+import type { Estado, Evento, TransicionDetalle, Ubicacion } from "@/tipos";
 
 export function EnvioDetalle() {
   const { envioId = "" } = useParams();
   const ubicacion = useLocation();
   const recienCreado = (ubicacion.state as { recienCreado?: boolean } | null)?.recienCreado;
 
-  const { tieneGrupo } = useSesion();
+  const { puede } = useSesion();
   const detalle = useEnvio(envioId);
   const transiciones = useTransiciones(envioId);
-  const evidencias = useEvidencias(envioId, tieneGrupo("administrador", "despachador", "auditor"));
+  const evidencias = useEvidencias(envioId, puede("evidencia:descargar"));
 
   if (detalle.isPending) {
     return (
@@ -88,7 +89,7 @@ export function EnvioDetalle() {
               {envio.destino.ciudad}
             </p>
           </div>
-          <EtiquetaEstado estado={envio.estado} conPunto />
+          <EtiquetaEstado estado={envio.estado} codigo={envio.codigo_estado} conPunto />
         </div>
       </header>
 
@@ -104,7 +105,20 @@ export function EnvioDetalle() {
           <Tarjeta
             titulo="Identificador de rastreo"
             ayuda="Aleatorio y no consecutivo, para que nadie pueda recorrer los envíos de la empresa desde el punto público."
-            acciones={<BotonCopiar texto={envio.envio_id} />}
+            acciones={
+              <>
+                <BotonCopiar texto={envio.envio_id} />
+                {puede("envio:asignar") && (
+                  <Link
+                    to="/envios/guias"
+                    state={{ envios: [envio.envio_id] }}
+                    className="boton boton--secundario"
+                  >
+                    Generar guía
+                  </Link>
+                )}
+              </>
+            }
           >
             <p className="mono" style={{ fontSize: "var(--t-base)" }}>
               {envio.envio_id}
@@ -129,6 +143,18 @@ export function EnvioDetalle() {
               <Dato termino="Destino" valor={`${envio.destino.linea}${envio.destino.referencia ? ` · ${envio.destino.referencia}` : ""}`} />
               <Dato termino="Destinatario" valor={`${envio.destinatario.nombre}${envio.destinatario.telefono ? ` · ${envio.destinatario.telefono}` : ""}`} />
               <Dato termino="Mensajero" valor={envio.conductor_nombre || "sin asignar"} />
+              <Dato termino="Cliente" valor={envio.cliente_nombre || "—"} />
+              <Dato termino="Tienda de origen" valor={envio.tienda_nombre || "—"} />
+              <Dato termino="Estación actual" valor={envio.estacion_actual || "—"} />
+              <Dato termino="Transportista" valor={envio.transportista_nombre || "por asignar"} />
+              <Dato termino="Orden de compra" valor={envio.orden_compra || "—"} />
+              <Dato
+                termino="Carga"
+                valor={`${envio.bultos ?? 1} bulto${(envio.bultos ?? 1) === 1 ? "" : "s"}${
+                  envio.peso_kg ? ` · ${envio.peso_kg} kg` : ""
+                }`}
+              />
+              <Dato termino="Entrega estimada" valor={envio.fecha_estimada || "sin fecha comprometida"} />
               <Dato termino="Descripción" valor={envio.descripcion || "—"} />
               <Dato termino="Registrado" valor={`${fechaLegible(envio.creado_en)} por ${envio.creado_por}`} />
             </dl>
@@ -143,18 +169,18 @@ export function EnvioDetalle() {
             </Aviso>
           )}
 
-          {envio.estado === "CREADO" && tieneGrupo("administrador", "despachador") && (
+          {envio.estado === "CREADO" && puede("envio:asignar") && (
             <PanelAsignacion envioId={envioId} />
           )}
 
-          {tieneGrupo("conductor") && envio.estado !== "ENTREGADO" && (
+          {puede("evento:registrar") && envio.estado !== "ENTREGADO" && (
             <PanelEvidencia envioId={envioId} evidenciasConfirmadas={envio.evidencias ?? []} />
           )}
 
           {puedeRegistrar ? (
             <PanelPuntoDeControl
               envioId={envioId}
-              transiciones={transiciones.data?.transiciones ?? []}
+              transiciones={transiciones.data?.detalle_transiciones ?? []}
               evidenciasConfirmadas={envio.evidencias ?? []}
             />
           ) : (
@@ -170,7 +196,7 @@ export function EnvioDetalle() {
             </Tarjeta>
           )}
 
-          {tieneGrupo("administrador", "despachador", "auditor") && (
+          {puede("evidencia:descargar") && (
             <Tarjeta
               titulo="Evidencias de entrega"
               ayuda="Almacenadas cifradas. El conductor las carga; consultarlas corresponde a otros roles."
@@ -232,7 +258,10 @@ function LineaDeTiempo({ eventos }: { eventos: Evento[] }) {
     <ol className="linea">
       {eventos.map((evento) => (
         <li key={evento.evento_id} className={`linea__paso estado-${evento.estado}`}>
-          <span className="linea__estado">{textoEstado(evento.estado)}</span>
+          <span className="linea__estado">
+            <span className="codigo-estado">{evento.codigo_estado ?? ""}</span>{" "}
+            {textoEstado(evento.estado)}
+          </span>
           <span className="linea__meta">
             {fechaLegible(evento.ts)} · {fechaRelativa(evento.ts)}
           </span>
@@ -257,15 +286,14 @@ function LineaDeTiempo({ eventos }: { eventos: Evento[] }) {
 /* Asignación                                                             */
 /* ---------------------------------------------------------------------- */
 
-const CONDUCTORES_CONOCIDOS = [
-  { sub: "u-andes-cond-1", nombre: "Carlos Nieto" },
-  { sub: "u-andes-cond-2", nombre: "Camila Ortiz" },
-  { sub: "u-sabana-cond", nombre: "Santiago Bravo" },
-];
-
 function PanelAsignacion({ envioId }: { envioId: string }) {
   const { avisar } = useNotificaciones();
   const asignar = useAsignarConductor(envioId);
+  /* Los mensajeros salen del directorio de la organización. Antes había tres
+   * escritos aquí con su identificador: el día que entrara uno nuevo, nadie iba
+   * a recompilar el sitio para que apareciera, y los de la otra empresa se veían
+   * igual aunque asignarlos fuera imposible. */
+  const { data: equipo, isPending, error } = useMensajeros();
   const [sub, setSub] = useState("");
   const [nombre, setNombre] = useState("");
 
@@ -279,38 +307,53 @@ function PanelAsignacion({ envioId }: { envioId: string }) {
     }
   };
 
-  const elegir = (conductor: (typeof CONDUCTORES_CONOCIDOS)[number]) => {
-    setSub(conductor.sub);
-    setNombre(conductor.nombre);
-  };
+  const mensajeros = equipo?.mensajeros ?? [];
 
   return (
     <Tarjeta titulo="Asignar mensajero" ayuda="Transición CREADO → ASIGNADO. La valida la máquina de estados.">
       <form onSubmit={enviar} className="pila-sm">
-        <div className="fila">
-          {CONDUCTORES_CONOCIDOS.map((conductor) => (
-            <Boton
-              key={conductor.sub}
-              type="button"
-              variante={sub === conductor.sub ? "primario" : "secundario"}
-              onClick={() => elegir(conductor)}
-            >
-              {conductor.nombre}
-            </Boton>
-          ))}
-        </div>
+        {isPending && <p className="texto-sm texto-suave">Cargando mensajeros…</p>}
+
+        {error ? (
+          <Aviso tono="alerta">
+            No fue posible leer el equipo. Puede escribir el identificador del mensajero a mano.
+          </Aviso>
+        ) : null}
+
+        {!isPending && !error && mensajeros.length === 0 && (
+          <Aviso tono="alerta" titulo="La empresa no tiene mensajeros activos">
+            Cree una cuenta con el rol <strong>conductor</strong> en Administración antes de
+            asignar. Sin conductor, el envío no puede salir de CREADO.
+          </Aviso>
+        )}
+
+        {mensajeros.length > 0 && (
+          <div className="fila">
+            {mensajeros.map((mensajero) => (
+              <Boton
+                key={mensajero.sub}
+                type="button"
+                variante={sub === mensajero.sub ? "primario" : "secundario"}
+                onClick={() => {
+                  setSub(mensajero.sub);
+                  setNombre(mensajero.nombre);
+                }}
+              >
+                {mensajero.nombre}
+              </Boton>
+            ))}
+          </div>
+        )}
 
         <Campo
           etiqueta="Identificador del mensajero"
           required
-          placeholder="u-andes-cond-1"
           value={sub}
           onChange={(evento) => setSub(evento.target.value)}
-          ayuda="Debe coincidir con el sujeto del token del conductor."
+          ayuda="Se rellena al elegir arriba. Debe coincidir con el sujeto del token del conductor."
         />
         <Campo
           etiqueta="Nombre"
-          placeholder="Carlos Nieto"
           value={nombre}
           onChange={(evento) => setNombre(evento.target.value)}
         />
@@ -434,13 +477,13 @@ function PanelPuntoDeControl({
   evidenciasConfirmadas,
 }: {
   envioId: string;
-  transiciones: Estado[];
+  transiciones: TransicionDetalle[];
   evidenciasConfirmadas: string[];
 }) {
   const { avisar } = useNotificaciones();
   const registrar = useRegistrarEvento(envioId);
 
-  const [estado, setEstado] = useState<Estado | null>(transiciones[0] ?? null);
+  const [estado, setEstado] = useState<Estado | null>(transiciones[0]?.estado ?? null);
   const [nota, setNota] = useState("");
   const [adjuntarUbicacion, setAdjuntarUbicacion] = useState(true);
 
@@ -486,14 +529,23 @@ function PanelPuntoDeControl({
           <div className="selector-estado" role="group" aria-labelledby="etiqueta-estado">
             {transiciones.map((destino) => (
               <button
-                key={destino}
+                key={destino.estado}
                 type="button"
-                className={`opcion-estado estado-${destino}`}
-                aria-pressed={estado === destino}
-                onClick={() => setEstado(destino)}
+                className={`opcion-estado estado-${destino.estado}`}
+                aria-pressed={estado === destino.estado}
+                onClick={() => setEstado(destino.estado)}
               >
                 <span className="punto-estado" aria-hidden="true" />
-                {textoEstado(destino)}
+                <span className="min-cero">
+                  <span style={{ display: "block" }}>
+                    <span className="codigo-estado">{destino.codigo}</span> {destino.etiqueta}
+                  </span>
+                  {destino.final && (
+                    <span className="campo__ayuda" style={{ display: "block" }}>
+                      Cierra el envío: no admite más cambios
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>

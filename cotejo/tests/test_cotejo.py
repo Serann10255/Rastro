@@ -53,7 +53,75 @@ def test_el_catalogo_cubre_las_tres_clases_de_prueba():
 def test_los_hallazgos_permanentes_declaran_por_que_no_se_automatizan():
     for entrada in cargar_catalogo().get("hallazgos_permanentes", []):
         assert entrada["nota_de_alcance"], f"{entrada['id']} sin nota de alcance"
+        assert entrada["en_simple"], f"{entrada['id']} sin version en lenguaje llano"
         assert Severidad(entrada["severidad"])
+
+
+# --------------------------------------------------------------------------- #
+# Lenguaje llano
+# --------------------------------------------------------------------------- #
+#
+# Un hallazgo que no se entiende no se corrige, y un control que solo sabe
+# decirse en vocabulario tecnico no se puede discutir con quien decide. Que la
+# version llana viva en el catalogo, y no en cada interfaz, es lo que impide que
+# la consola y la web acaben diciendo cosas distintas del mismo control.
+
+
+def test_todo_control_se_explica_sin_vocabulario_tecnico():
+    for control in cargar_catalogo()["controles"]:
+        assert control.pregunta, f"{control.id} sin pregunta en lenguaje llano"
+        assert control.en_simple, f"{control.id} sin explicacion de que se hace"
+        assert control.si_falla, f"{control.id} sin explicacion de por que importa"
+        assert control.pregunta.endswith("?"), f"{control.id}: la pregunta no pregunta"
+
+
+def test_un_catalogo_sin_lenguaje_llano_se_rechaza(tmp_path: Path):
+    """Se exige como el criterio, y por la misma razon: escribirlo despues
+    permitiria acomodarlo al resultado."""
+    import yaml
+
+    catalogo = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "catalogo" / "controles.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    del catalogo["controles"][0]["en_simple"]
+    ruta = tmp_path / "sin-llano.yaml"
+    ruta.write_text(yaml.safe_dump(catalogo), encoding="utf-8")
+
+    with pytest.raises(ErrorCatalogo, match="en_simple"):
+        cargar_catalogo(ruta)
+
+
+def test_el_glosario_define_las_tres_conclusiones():
+    """Las tres respuestas son el vocabulario minimo para leer un informe."""
+    glosario = cargar_catalogo().get("glosario", [])
+    terminos = {entrada["termino"].lower() for entrada in glosario}
+    assert {"conforme", "desviado", "no ejecutada"} <= terminos
+    for entrada in glosario:
+        assert entrada.get("en_simple"), f"{entrada['termino']} sin definicion llana"
+
+
+def test_el_papel_de_trabajo_conserva_su_version_llana(tmp_path, catalogo):
+    """El papel debe poder leerse solo, sin el catalogo de su epoca al lado."""
+    resultados = {c.id: _conforme() for c in catalogo["controles"]}
+    almacen, _ = _ejecutar_con(resultados, tmp_path, "ej-llano")
+
+    por_id = {c.id: c for c in catalogo["controles"]}
+    for papel in almacen.papeles:
+        assert papel.pregunta == por_id[papel.control_id].pregunta
+        assert papel.en_simple == por_id[papel.control_id].en_simple
+        assert papel.como_dict()["conclusion_llana"] == "BIEN"
+
+        # Y en el archivo, no solo en memoria. El archivo se escribe con un
+        # diccionario explicito, de modo que un campo nuevo del modelo no llega
+        # solo: es exactamente el defecto que esta prueba existe para atrapar.
+        guardado = json.loads(
+            (almacen.base / papel.archivo_evidencia).read_text(encoding="utf-8")
+        )
+        assert guardado["pregunta"] == por_id[papel.control_id].pregunta
+        assert guardado["en_simple"] == por_id[papel.control_id].en_simple
+        assert guardado["si_falla"] == por_id[papel.control_id].si_falla
 
 
 def test_un_catalogo_que_nombra_una_prueba_inexistente_se_rechaza(tmp_path: Path):
@@ -312,6 +380,37 @@ def test_el_informe_declara_los_controles_que_no_pudo_comprobar(tmp_path, catalo
     assert "Un control no ejecutado no es un control conforme" in texto
     assert "el registro no existe en este entorno" in texto
     assert "amenaza de autorrevision" in texto
+
+
+def test_el_informe_abre_en_lenguaje_llano_y_conserva_el_tecnico(tmp_path, catalogo):
+    """Quien decide sobre un hallazgo no suele ser quien lo escribio.
+
+    El informe tiene que servir a los dos: la primera conclusion se lee sin
+    vocabulario, y el registro tecnico sigue entero mas abajo.
+    """
+    resultados = {c.id: _conforme() for c in catalogo["controles"]}
+    resultados["C-01"] = ResultadoPrueba.no_ejecutada("no hay registro en este entorno")
+
+    almacen, metadatos = _ejecutar_con(resultados, tmp_path, "ej-12")
+    metadatos["ejecucion_id"] = almacen.ejecucion_id
+    texto = redactar(
+        metadatos,
+        cobertura(almacen, catalogo),
+        almacen.papeles,
+        construir_hallazgos(almacen.papeles, catalogo),
+    )
+
+    # La capa llana.
+    assert "EN PALABRAS SIMPLES" in texto
+    assert "Revisamos 8 cosas" in texto
+    assert "quedaron sin revisar 1" in texto
+    assert "[BIEN]" in texto and "[SIN REVISAR]" in texto
+    assert "Pregunta:" in texto and "Que hicimos:" in texto
+
+    # Y el registro tecnico, intacto.
+    assert "CONFORME" in texto and "NO_EJECUTADA" in texto
+    assert "Criterio:" in texto and "Marco:" in texto
+    assert "COBIT 2019" in texto
 
 
 def test_una_prueba_que_lanza_una_excepcion_no_detiene_la_ejecucion(tmp_path, catalogo):

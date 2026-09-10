@@ -5,30 +5,17 @@
  * seria trabajo sin retorno-, pero el color de acento cambia. La distincion
  * importa: el auditor debe saber sin dudarlo si esta mirando el sistema o el
  * programa que lo evalua.
+ *
+ * El color de marca NO se define aqui: vive en `identidad.css`, que es lo unico
+ * propio de cada aplicacion. Este archivo solo tiene componentes que existen en
+ * Cotejo y en ningun otro sitio: la respuesta de un control, el veredicto de
+ * una revision, el papel de trabajo, el diccionario.
+ *
+ * Toda la interfaz se escribe en dos registros: la frase llana y, pegado a
+ * ella, el termino del oficio. Eso tiene consecuencias visuales, y son las que
+ * se resuelven aqui: el termino tecnico va mas pequeno y mas tenue que la frase
+ * que acompana, siempre, para que la vista lea primero lo que se entiende.
  */
-
-:root {
-  --acento: #5b3a8e;
-  --acento-fuerte: #472d70;
-  --acento-suave: #efe9f8;
-  --acento-borde: #cdbce6;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) {
-    --acento: #b79bea;
-    --acento-fuerte: #cdb8f3;
-    --acento-suave: #241a38;
-    --acento-borde: #402f60;
-  }
-}
-
-:root[data-tema="oscuro"] {
-  --acento: #b79bea;
-  --acento-fuerte: #cdb8f3;
-  --acento-suave: #241a38;
-  --acento-borde: #402f60;
-}
 
 /* -- Conclusiones de control ------------------------------------------- */
 
@@ -70,6 +57,151 @@
   --estado-borde: var(--borde);
 }
 
+/* -- El termino del oficio, pegado a la frase que lo explica ------------ */
+
+/* Va detras y en menor jerarquia. No es letra pequena de contrato: es la
+ * palabra que hay que usar al hablar con quien recibe el informe, y por eso no
+ * se esconde en un tooltip que en un movil no existe. */
+.tecnicismo {
+  display: inline-block;
+  margin-left: var(--e-2);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--texto-tenue);
+  overflow-wrap: anywhere;
+}
+
+.tecnicismo::before {
+  content: "· ";
+}
+
+/* -- La respuesta de un control ---------------------------------------- */
+
+.respuesta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+  padding: var(--e-1) var(--e-3);
+  border: 1px solid var(--estado-borde, var(--borde));
+  border-radius: var(--r-completo);
+  background: var(--estado-fondo, var(--fondo-sutil));
+  color: var(--estado-color, var(--texto));
+  max-width: 100%;
+}
+
+.respuesta__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.respuesta__palabra {
+  font-size: var(--t-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.respuesta--grande {
+  padding: var(--e-2) var(--e-4);
+}
+
+.respuesta--grande .respuesta__palabra {
+  font-size: var(--t-lg);
+}
+
+/* El termino tecnico dentro de la insignia hereda el color del estado, que ya
+ * es suficientemente tenue; volver a atenuarlo lo dejaria ilegible. */
+.respuesta .tecnicismo {
+  color: inherit;
+  opacity: 0.75;
+  font-style: normal;
+  margin-left: 0;
+}
+
+.etiqueta .tecnicismo {
+  color: inherit;
+  opacity: 0.75;
+  font-style: normal;
+  margin-left: var(--e-1);
+}
+
+/* -- Veredicto de una revision ----------------------------------------- */
+
+/* Lo primero que se ve al terminar una revision. Dice las tres cifras juntas
+ * en una frase: "5 de 8 bien" suena a examen aprobado cuando en realidad
+ * quedaron tres preguntas sin responder. */
+.veredicto {
+  display: grid;
+  gap: var(--e-4);
+  padding: var(--e-5);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.veredicto__frase {
+  margin: 0;
+  font-size: var(--t-lg);
+  line-height: 1.5;
+  color: var(--texto);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .veredicto__frase {
+    font-size: var(--t-xl);
+  }
+}
+
+.veredicto__bien {
+  color: var(--exito);
+}
+
+.veredicto__mal {
+  color: var(--peligro);
+}
+
+.veredicto__pendiente {
+  color: var(--alerta);
+}
+
+.veredicto__nota {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.barra-resultado {
+  display: flex;
+  gap: 2px;
+  height: 0.75rem;
+  border-radius: var(--r-completo);
+  overflow: hidden;
+  background: var(--fondo-sutil);
+}
+
+.barra-resultado__parte {
+  display: block;
+  min-width: 2px;
+}
+
+.barra-resultado__parte--bien {
+  background: var(--exito);
+}
+
+.barra-resultado__parte--mal {
+  background: var(--peligro);
+}
+
+.barra-resultado__parte--pendiente {
+  background: var(--alerta);
+}
+
 /* -- Tarjeta de control ------------------------------------------------ */
 
 .control {
@@ -90,6 +222,15 @@
   box-shadow: var(--sombra-2);
 }
 
+/* En el catalogo la tarjeta no lleva a ninguna parte: no debe parecer que si. */
+.control--estatico {
+  cursor: default;
+}
+
+.control--estatico:hover {
+  box-shadow: none;
+}
+
 .control__cabecera {
   display: flex;
   align-items: center;
@@ -105,6 +246,17 @@
   color: var(--estado-color, var(--texto));
 }
 
+/* La pregunta es el titulo de la tarjeta. Antes lo era el enunciado del
+ * control, que esta escrito para un informe y no para leerse de un vistazo. */
+.control__pregunta {
+  margin: 0;
+  font-size: var(--t-md);
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
 .control__enunciado {
   font-size: var(--t-sm);
   font-weight: 600;
@@ -112,14 +264,34 @@
 }
 
 .control__resumen {
+  margin: 0;
   font-size: var(--t-sm);
   color: var(--texto-suave);
   overflow-wrap: anywhere;
 }
 
+.control__riesgo {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.control__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+  font-size: var(--t-xs);
+  color: var(--acento);
+  font-weight: 600;
+}
+
 .control__marco {
   font-size: var(--t-xs);
   color: var(--texto-tenue);
+  font-weight: 400;
   overflow-wrap: anywhere;
 }
 
@@ -127,12 +299,21 @@
 
 .hallazgo {
   display: grid;
-  gap: var(--e-2);
+  gap: var(--e-3);
   padding: var(--e-4);
   border: 1px solid var(--borde);
   border-left: 3px solid var(--estado-color, var(--borde-fuerte));
   border-radius: var(--r-md);
   background: var(--superficie);
+}
+
+/* El hallazgo contado en una frase, antes de las cinco partes formales. */
+.hallazgo__llano {
+  margin: 0;
+  font-size: var(--t-md);
+  line-height: 1.55;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 .hallazgo__campo {
@@ -153,12 +334,233 @@
   overflow-wrap: anywhere;
 }
 
+/* -- Bloque plegado con el registro tecnico ---------------------------- */
+
+/* Cerrado por omision. Quien lo necesita sabe que esta ahi; quien no, no
+ * tropieza con el. Ninguna informacion se pierde por plegarla: se pierde por
+ * ponerla delante de quien no la puede leer. */
+.detalle-tecnico {
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  background: var(--superficie-hundida);
+}
+
+.detalle-tecnico__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: var(--tactil);
+  padding: 0 var(--e-3);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--texto-suave);
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--r-md);
+}
+
+.detalle-tecnico__titulo::-webkit-details-marker {
+  display: none;
+}
+
+.detalle-tecnico__titulo::before {
+  content: "▸";
+  font-size: var(--t-xs);
+  transition: transform var(--transicion);
+}
+
+.detalle-tecnico[open] > .detalle-tecnico__titulo::before {
+  transform: rotate(90deg);
+}
+
+.detalle-tecnico__titulo:hover {
+  color: var(--texto);
+}
+
+.detalle-tecnico__cuerpo {
+  display: grid;
+  gap: var(--e-3);
+  padding: 0 var(--e-3) var(--e-3);
+}
+
+/* -- Pasos numerados (como funciona esto) ------------------------------ */
+
+.pasos {
+  display: grid;
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: paso;
+}
+
+.paso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+}
+
+.paso__numero {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-completo);
+  background: var(--acento-suave);
+  color: var(--acento);
+  font-size: var(--t-sm);
+  font-weight: 800;
+}
+
+.paso__titulo {
+  margin: 0 0 2px;
+  font-size: var(--t-base);
+  font-weight: 650;
+  text-wrap: pretty;
+}
+
+.paso__texto {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* -- Bloques del papel de trabajo -------------------------------------- */
+
+.bloque-llano {
+  display: grid;
+  gap: var(--e-2);
+  padding: var(--e-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  background: var(--superficie);
+}
+
+.bloque-llano > p {
+  margin: 0;
+  font-size: var(--t-base);
+  line-height: 1.6;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.bloque-llano__titulo {
+  margin: 0;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-tenue);
+}
+
+.bloque-llano__respuesta {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+
+.parrafo-guia {
+  margin: 0;
+  font-size: var(--t-base);
+  line-height: 1.6;
+  color: var(--texto-suave);
+  text-wrap: pretty;
+}
+
+/* -- Un paso de la prueba, con su salida literal ----------------------- */
+
+.observacion {
+  display: grid;
+  gap: var(--e-2);
+  padding: var(--e-3);
+  border-radius: var(--r-md);
+  background: var(--superficie-hundida);
+  border: 1px solid var(--borde);
+}
+
+.observacion__paso {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--texto-suave);
+  min-width: 0;
+}
+
+.observacion__numero {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-completo);
+  background: var(--borde);
+  color: var(--texto);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.observacion__llano {
+  margin: 0;
+  font-size: var(--t-base);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* -- Diccionario ------------------------------------------------------- */
+
+.glosario {
+  display: grid;
+  gap: var(--e-4);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .glosario {
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+  }
+}
+
+.glosario__entrada {
+  display: grid;
+  gap: var(--e-1);
+  padding-left: var(--e-3);
+  border-left: 3px solid var(--acento-borde);
+}
+
+.glosario__termino {
+  font-size: var(--t-base);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.glosario__alias {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--texto-tenue);
+}
+
+.glosario__definicion {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  line-height: 1.55;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
 /* -- Evidencia literal ------------------------------------------------- */
 
 .evidencia {
   margin: 0;
   padding: var(--e-3);
-  background: var(--superficie-hundida);
+  background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-md);
   font-family: var(--fuente-mono);
@@ -186,6 +588,7 @@
 }
 
 .huella {
+  display: block;
   font-family: var(--fuente-mono);
   font-size: var(--t-xs);
   overflow-wrap: anywhere;

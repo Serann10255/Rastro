@@ -1,6 +1,6 @@
 # Visión general de la arquitectura
 
-Fecha: 2026-09-10 · Versión: 0.1
+Fecha: 2026-09-10 · Versión: 0.2
 
 ## Qué resuelve el sistema
 
@@ -18,6 +18,12 @@ Lo que diferencia la propuesta de un registro convencional son dos controles:
 1. Una **máquina de estados** que rechaza transiciones inválidas.
 2. Una **bitácora encadenada por funciones hash** que permite detectar
    alteraciones posteriores.
+
+Sobre esa base, el sistema creció hasta cubrir la operación diaria de una
+empresa de transporte —cuentas administrables, catálogos, tablero, registro
+masivo y guías—. La ampliación, con lo que entra y lo que sigue excluido, está
+en [ADR-006](../decisiones/adr-006-ampliacion-de-alcance-a-tms.md); los nueve
+requisitos preliminares se mantienen íntegros.
 
 ## Por qué microservicios sin servidor
 
@@ -38,10 +44,11 @@ instancia, plataforma comercial). La decisión y su justificación están en
 ## Componentes
 
 ```
-                      ┌──────────────────────────────┐
-   Despachador ─┐     │  Interfaz web (sitio estático)│
-   Conductor  ──┼────▶│  mobile-first, sin compilación│
-   Auditor    ──┘     └──────────────┬───────────────┘
+                      ┌───────────────────────────────┐
+   Despachador ─┐     │  Interfaz web (sitio estático) │
+   Conductor  ──┼────▶│  React · mobile-first          │
+   Auditor    ──┤     │  configuración en ejecución    │
+   Administrador┘     └──────────────┬────────────────┘
                                      │ token de sesión
                                      ▼
                       ┌──────────────────────────────┐
@@ -49,34 +56,35 @@ instancia, plataforma comercial). La decisión y su justificación están en
    (sin cuenta)       │  API Gateway · nginx en local │
                       └──────────────┬───────────────┘
                                      │
-      ┌────────────┬─────────────┬───┴────────┬─────────────┬────────────┐
-      ▼            ▼             ▼            ▼             ▼            ▼
-   ┌──────┐   ┌─────────┐   ┌─────────┐  ┌──────────┐  ┌────────┐  ┌─────────┐
-   │ auth │   │shipments│   │tracking │  │ evidence │  │ public │  │  audit  │
-   └──────┘   └────┬────┘   └────┬────┘  └────┬─────┘  └───┬────┘  └────┬────┘
-                   └─────────────┴────────────┴────────────┴───────────┘
+   ┌──────────┬──────────┬───────────┼──────────┬──────────┬──────────┬─────────┐
+   ▼          ▼          ▼           ▼          ▼          ▼          ▼         ▼
+┌──────┐ ┌─────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌───────┐ ┌────────┐ ┌─────────┐
+│ auth │ │shipments│ │tracking│ │evidence │ │ public │ │ audit │ │masters │ │dashboard│
+└───┬──┘ └────┬────┘ └───┬────┘ └────┬────┘ └───┬────┘ └───┬───┘ └───┬────┘ └────┬────┘
+    └─────────┴──────────┴───────────┴──────────┴──────────┴─────────┴───────────┘
                                      │
                         ┌────────────▼─────────────┐
                         │   libs/rastro_core        │
                         │   capa común de control   │
                         └────────────┬─────────────┘
                                      │
-              ┌──────────────┬───────┴────────┬──────────────────┐
-              ▼              ▼                ▼                  ▼
-      ┌──────────────┐ ┌──────────┐  ┌────────────────┐  ┌──────────────┐
-      │ tabla envíos │ │ bitácora │  │ evidencias S3  │  │  CloudTrail  │
-      │  + eventos   │ │encadenada│  │  cifradas KMS  │  │  (actividad) │
-      └──────────────┘ └──────────┘  └────────────────┘  └──────────────┘
+        ┌──────────────┬─────────────┼──────────────┬──────────────────┐
+        ▼              ▼             ▼              ▼                  ▼
+┌──────────────┐ ┌──────────┐ ┌────────────┐ ┌────────────────┐ ┌──────────────┐
+│ tabla envíos │ │ bitácora │ │  maestros  │ │ evidencias S3  │ │  CloudTrail  │
+│  + eventos   │ │encadenada│ │ + usuarios │ │  cifradas KMS  │ │  (actividad) │
+└──────────────┘ └──────────┘ └────────────┘ └────────────────┘ └──────────────┘
 ```
 
-Las cinco funciones comparten un mismo rol de ejecución (`LabRole`), condición
+Las ocho funciones comparten un mismo rol de ejecución (`LabRole`), condición
 impuesta por el entorno y declarada como limitación conocida: véase
 [`decisiones/adr-004-rol-compartido.md`](../decisiones/adr-004-rol-compartido.md).
 
 ## Por qué una capa común y no un servicio por completo aislado
 
 Los microservicios de Rastro no son independientes en su acceso a datos, y eso
-es deliberado. Todos pasan por `libs/rastro_core`, que concentra cuatro cosas:
+es deliberado. Todos pasan por `libs/rastro_core`, donde vive cada control una
+sola vez:
 
 | Módulo | Control que implementa | Requisito |
 |---|---|---|
@@ -84,10 +92,12 @@ es deliberado. Todos pasan por `libs/rastro_core`, que concentra cuatro cosas:
 | `state_machine.py` | Transiciones válidas del ciclo de vida | REQ-03 |
 | `authz.py` + `http.py` | Matriz de autorización y registro del rechazo | REQ-07 |
 | `audit.py` | Encadenamiento por funciones hash | REQ-08 |
+| `passwords.py` + `security.py` | Derivación de contraseñas, emisión y validación de la sesión | — |
+| `maestros.py` | Directorio de usuarios y catálogos, con el mismo filtro por organización | REQ-06 |
 
 La razón es el riesgo R-05: *una sola consulta sin filtrar por organización
 basta para exponer los datos de una empresa a otra*. Si cada servicio
-construyera sus propias consultas, el aislamiento habría que verificarlo seis
+construyera sus propias consultas, el aislamiento habría que verificarlo ocho
 veces y bastaría un descuido en una de ellas. Con una única capa, el control se
 implementa una vez y se prueba una vez.
 
@@ -96,7 +106,9 @@ escala y falla por su cuenta, y en AWS cada uno es una función Lambda distinta.
 
 ## Recorrido de una solicitud
 
-1. El usuario se autentica y recibe un token con sus grupos y su organización.
+1. El usuario se autentica con su correo y contraseña. El servicio de identidad
+   verifica la contraseña contra su forma derivada y emite dos tokens: uno de
+   acceso, corto y con los grupos, y uno de refresco, revocable.
 2. La interfaz envía ese token a la puerta de enlace, que valida firma, vigencia
    y emisor antes de invocar el servicio.
 3. El servicio **vuelve a validar el token** —no depende de un único control— y

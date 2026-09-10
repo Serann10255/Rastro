@@ -10,11 +10,18 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // El mismo sistema de diseño que usa Rastro. Cotejo es otro proyecto,
+      // pero se presenta ante el mismo usuario: que parezcan dos productos sin
+      // relación es un problema de producto, no de estilo.
+      "@design": fileURLToPath(new URL("../../design", import.meta.url)),
+    },
   },
   server: {
     port: 5175,
     host: true,
+    fs: { allow: [fileURLToPath(new URL(".", import.meta.url)), fileURLToPath(new URL("../../design", import.meta.url))] },
     proxy: {
       // El programa de auditoria; el prefijo evita chocar con las rutas de Rastro.
       "/cotejo": {

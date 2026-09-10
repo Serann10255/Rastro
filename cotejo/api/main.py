@@ -109,8 +109,19 @@ async def salud() -> dict:
         "url_auditada": ctx.url_api,
         "controles_en_catalogo": controles,
         "catalogo": estado_catalogo,
+        # Qué hace este programa, en una frase. Va en el estado y no detrás del
+        # acceso porque la pantalla de entrada también tiene que explicarse:
+        # describe el programa, no las debilidades del sistema auditado.
+        "que_es_esto": _que_es_esto(),
         "ts": marca_tiempo(),
     }
+
+
+def _que_es_esto() -> str:
+    try:
+        return " ".join(str(cargar_catalogo().get("que_es_esto", "")).split())
+    except ErrorCatalogo:
+        return ""
 
 
 @app.get("/catalogo", tags=["catalogo"], summary="Matriz de controles")
@@ -121,10 +132,22 @@ async def obtener_catalogo(_: dict = Depends(auditor)) -> dict:
         "version": catalogo.get("version"),
         "sistema_auditado": catalogo.get("sistema_auditado"),
         "fecha_catalogo": str(catalogo.get("fecha_catalogo", "")),
+        "que_es_esto": " ".join(str(catalogo.get("que_es_esto", "")).split()),
+        # El diccionario viaja con el catálogo y no se escribe en la interfaz:
+        # una definición copiada en la web envejece en cuanto alguien afina la
+        # del catálogo, y entonces la pantalla y el informe dicen cosas
+        # distintas de la misma palabra.
+        "glosario": [
+            {clave: " ".join(str(valor).split()) for clave, valor in entrada.items()}
+            for entrada in catalogo.get("glosario", [])
+        ],
         "controles": [
             {
                 "id": control.id,
                 "control": control.control,
+                "pregunta": control.pregunta,
+                "en_simple": control.en_simple,
+                "si_falla": control.si_falla,
                 "marco": control.marco,
                 "tipo": str(control.tipo),
                 "prueba": control.prueba,
@@ -210,6 +233,10 @@ async def crear_ejecucion(
     """
     catalogo = cargar_catalogo()
     ctx = Contexto.desde_entorno()
+    # Quien pide la ejecución desde aquí tuvo que autenticarse para llegar, así
+    # que consta en el papel de trabajo. Desde la línea de comandos no se sabe
+    # más que el usuario del sistema operativo, y en un contenedor ni eso.
+    ctx.identidad_declarada = f"{quien['email']} (interfaz web)"
     try:
         almacen, metadatos = ejecutar(ctx, catalogo, solo=(solicitud.solo if solicitud else None))
     finally:
@@ -345,12 +372,19 @@ def _base_segura(ejecucion_id: str) -> Path:
 
 
 def _regenerar_texto(datos: dict[str, Any]) -> str:
+    import dataclasses
+
     from cotejo.modelos import Conclusion, Hallazgo, PapelDeTrabajo, Severidad, TipoPrueba
 
+    # El papel guardado lleva campos derivados (la conclusión en palabra llana,
+    # por ejemplo) que no son campos del modelo: se calculan al presentarlo. Se
+    # filtra por los campos declarados para que añadir uno derivado mañana no
+    # rompa la regeneración de un informe escrito hoy.
+    campos = {campo.name for campo in dataclasses.fields(PapelDeTrabajo)}
     papeles = [
         PapelDeTrabajo(
             **{
-                **control,
+                **{clave: valor for clave, valor in control.items() if clave in campos},
                 "tipo": TipoPrueba(control["tipo"]),
                 "conclusion": Conclusion(control["conclusion"]),
             }

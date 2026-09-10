@@ -14,16 +14,44 @@ export default defineConfig({
     // El mismo alias que declara tsconfig.json. Sin esto, el compilador de tipos
     // resuelve las rutas pero el empaquetador no, y el fallo solo aparece al
     // construir para producción.
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // El sistema de diseño vive fuera de la aplicación, en `design/`, y lo
+      // comparten las dos interfaces. Es la única forma de que Rastro y Cotejo
+      // no se separen visualmente: una copia por aplicación diverge en cuanto
+      // alguien corrige un color en una sola.
+      "@design": fileURLToPath(new URL("../design", import.meta.url)),
+    },
   },
   server: {
     port: 5173,
     host: true,
+    // Vite solo sirve archivos dentro de la raíz del proyecto; el sistema de
+    // diseño está un nivel más arriba y hay que permitirlo explícitamente.
+    fs: { allow: [fileURLToPath(new URL(".", import.meta.url)), fileURLToPath(new URL("../design", import.meta.url))] },
     // En desarrollo la interfaz llama a rutas relativas y Vite las reenvia a la
     // puerta de enlace, de modo que no hay diferencia de origen entre el
     // entorno de desarrollo y el sitio publicado.
+    // La lista es la misma que reparte la puerta de enlace. Si aqui falta un
+    // prefijo, la ruta responde el index.html de Vite en lugar de la API y el
+    // sintoma es un error de JSON invalido que no señala su causa.
     proxy: Object.fromEntries(
-      ["/auth", "/envios", "/publico", "/bitacora"].map((ruta) => [
+      [
+        "/auth",
+        "/usuarios",
+        "/empresa",
+        "/equipo",
+        "/roles",
+        "/envios",
+        "/publico",
+        "/bitacora",
+        "/tablero",
+        "/catalogos",
+        "/tiendas",
+        "/clientes",
+        "/transportistas",
+        "/salud",
+      ].map((ruta) => [
         ruta,
         { target: process.env.RASTRO_URL_API ?? "http://localhost:8080", changeOrigin: true },
       ]),

@@ -1,4 +1,5 @@
-/* Contexto de sesión: quién está usando el sistema y qué puede hacer.
+/* Contexto de sesión: quién está usando el sistema, en nombre de qué empresa y
+ * qué puede hacer.
  *
  * La interfaz oculta lo que un rol no puede hacer, pero eso es comodidad y no
  * control: la autorización la decide el servidor en cada operación. Cualquiera
@@ -8,79 +9,108 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { almacenSesion, api, registrarManejadorDeSesionExpirada } from "@/api/cliente";
-import type { Grupo, Sesion, Usuario } from "@/tipos";
+import { almacenSesion, api, registrarManejadorDeSesion } from "@/api/cliente";
+import type { Empresa, Grupo, Sesion, Usuario } from "@/tipos";
 
 interface ValorSesion {
   sesion: Sesion | null;
   usuario: Usuario | null;
+  empresa: Empresa | null;
   autenticado: boolean;
-  entrar: (usuario: string, clave: string) => Promise<Sesion>;
-  salir: (motivo?: string) => void;
+  entrar: (correo: string, clave: string) => Promise<Sesion>;
+  salir: (motivo?: string, todas?: boolean) => Promise<void>;
   tieneGrupo: (...grupos: Grupo[]) => boolean;
-  /** Segundos que le quedan al token, o null si no hay sesión. */
-  segundosRestantes: number | null;
+  /** Si la sesión tiene el permiso. Es lo que decide qué ofrecer.
+   *
+   *  Preguntar por el nombre del rol dejó de servir cuando los roles pasaron a
+   *  ser configurables: un rol que la empresa cree mañana no aparece en ninguna
+   *  lista escrita en una pantalla, pero sus permisos sí llegan aquí. */
+  puede: (...operaciones: string[]) => boolean;
   motivoDeSalida: string | null;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
 
-/** Margen con el que se avisa antes de que el token caduque. */
-const UMBRAL_AVISO_SEGUNDOS = 5 * 60;
-
 export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Sesion | null>(() => almacenSesion.leer());
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [permisos, setPermisos] = useState<string[]>([]);
   const [motivoDeSalida, setMotivoDeSalida] = useState<string | null>(null);
-  const [ahora, setAhora] = useState(() => Date.now());
 
-  const salir = useCallback((motivo?: string) => {
-    almacenSesion.borrar();
-    setSesion(null);
-    setMotivoDeSalida(motivo ?? null);
-  }, []);
-
-  // El cliente avisa cuando el backend rechaza el token: las credenciales del
-  // laboratorio duran cuatro horas y caducar a media jornada es lo normal.
+  // El cliente avisa cuando renueva la sesión sola o cuando el servidor la
+  // rechaza. Sin este puente, la interfaz seguiría mostrando al usuario de una
+  // sesión que ya no existe.
   useEffect(() => {
-    registrarManejadorDeSesionExpirada(() => {
-      setSesion(null);
-      setMotivoDeSalida("La sesión expiró. Vuelva a entrar.");
+    registrarManejadorDeSesion((nueva) => {
+      setSesion(nueva);
+      if (!nueva) {
+        setEmpresa(null);
+        setPermisos([]);
+        setMotivoDeSalida("La sesión expiró. Vuelva a entrar.");
+      }
     });
   }, []);
 
-  // Cuenta atrás para poder avisar antes de que caduque, en vez de dejar que el
-  // usuario lo descubra al perder un formulario a medio llenar.
+  /* Los datos de la empresa se cargan una vez por sesión. Se piden al servidor
+   * y no se guardan en el token: si estuvieran en el token, cambiar el nombre
+   * de la empresa no surtiría efecto hasta el siguiente inicio de sesión. */
   useEffect(() => {
     if (!sesion) return;
-    const temporizador = window.setInterval(() => setAhora(Date.now()), 30_000);
-    return () => window.clearInterval(temporizador);
+    let vigente = true;
+    api
+      .yo()
+      .then((datos) => {
+        if (!vigente) return;
+        setEmpresa(datos.empresa);
+        setPermisos(datos.permisos ?? []);
+      })
+      .catch(() => {
+        /* Si falla, la interfaz funciona igual: solo falta el nombre de la
+         * empresa en la barra, y insistir no lo arreglaría. */
+      });
+    return () => {
+      vigente = false;
+    };
   }, [sesion]);
 
-  const entrar = useCallback(async (usuario: string, clave: string) => {
-    const nueva = await api.entrar(usuario, clave);
+  const entrar = useCallback(async (correo: string, clave: string) => {
+    const nueva = await api.entrar(correo.trim(), clave);
     setSesion(nueva);
     setMotivoDeSalida(null);
-    setAhora(Date.now());
     return nueva;
   }, []);
 
-  const valor = useMemo<ValorSesion>(() => {
-    const segundosRestantes = sesion
-      ? Math.max(0, Math.round((sesion.emitida_en + sesion.vigencia_segundos * 1000 - ahora) / 1000))
-      : null;
+  const salir = useCallback(async (motivo?: string, todas = false) => {
+    try {
+      // Se revoca en el servidor antes de borrar el token local: al revés, ya
+      // no habría con qué autenticar la petición de cierre.
+      await api.salir(todas);
+    } catch {
+      /* Sin conexión el cierre local sigue teniendo sentido. */
+    }
+    almacenSesion.borrar();
+    setSesion(null);
+    setEmpresa(null);
+    setPermisos([]);
+    setMotivoDeSalida(motivo ?? null);
+  }, []);
 
-    return {
+  const valor = useMemo<ValorSesion>(
+    () => ({
       sesion,
       usuario: sesion?.usuario ?? null,
+      empresa,
       autenticado: Boolean(sesion),
       entrar,
       salir,
-      segundosRestantes,
       motivoDeSalida,
       tieneGrupo: (...grupos: Grupo[]) =>
         Boolean(sesion && grupos.some((grupo) => sesion.usuario.grupos.includes(grupo))),
-    };
-  }, [sesion, entrar, salir, ahora, motivoDeSalida]);
+      puede: (...operaciones: string[]) =>
+        operaciones.some((operacion) => permisos.includes(operacion)),
+    }),
+    [sesion, empresa, permisos, entrar, salir, motivoDeSalida],
+  );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;
 }
@@ -89,9 +119,4 @@ export function useSesion(): ValorSesion {
   const valor = useContext(ContextoSesion);
   if (!valor) throw new Error("useSesion debe usarse dentro de ProveedorSesion.");
   return valor;
-}
-
-export function useAvisoDeCaducidad(): boolean {
-  const { segundosRestantes } = useSesion();
-  return segundosRestantes !== null && segundosRestantes > 0 && segundosRestantes <= UMBRAL_AVISO_SEGUNDOS;
 }

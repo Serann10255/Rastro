@@ -1,9 +1,9 @@
 /* Pantalla de acceso.
  *
- * Muestra las cuentas sintéticas porque el sistema se puebla únicamente con
- * datos sintéticos y su propósito es que un evaluador pueda recorrer los cuatro
- * roles y las dos organizaciones sin pedirle credenciales a nadie. En un
- * despliegue con datos reales este bloque no existiría.
+ * No lista cuentas ni las rellena: las credenciales las administra el
+ * administrador de cada empresa desde el propio sistema. Mostrar usuarios y
+ * contraseñas en la pantalla de entrada convertiría el control de acceso en una
+ * formalidad, y es de las cosas que sobreviven a la puesta en producción.
  */
 
 import { useState } from "react";
@@ -14,52 +14,7 @@ import { useSesion } from "@/api/sesion";
 import { mensajeDeError } from "@/componentes/notificaciones";
 import { SelectorTema } from "@/componentes/Estructura";
 import { Aviso, Boton, Campo, Tarjeta } from "@/componentes/ui";
-
-interface CuentaDemo {
-  correo: string;
-  clave: string;
-  rol: string;
-  organizacion: string;
-  descripcion: string;
-}
-
-const CUENTAS: CuentaDemo[] = [
-  {
-    correo: "despacho@andes.test",
-    clave: "Andes.2026",
-    rol: "Despachador",
-    organizacion: "Mensajería Andes",
-    descripcion: "Registra envíos y asigna mensajeros",
-  },
-  {
-    correo: "carlos@andes.test",
-    clave: "Andes.2026",
-    rol: "Conductor",
-    organizacion: "Mensajería Andes",
-    descripcion: "Registra puntos de control y carga evidencia",
-  },
-  {
-    correo: "auditor@andes.test",
-    clave: "Andes.2026",
-    rol: "Auditor",
-    organizacion: "Mensajería Andes",
-    descripcion: "Consulta la bitácora sin poder modificarla",
-  },
-  {
-    correo: "admin@andes.test",
-    clave: "Andes.2026",
-    rol: "Administrador",
-    organizacion: "Mensajería Andes",
-    descripcion: "Mayor nivel de privilegio",
-  },
-  {
-    correo: "despacho@sabana.test",
-    clave: "Sabana.2026",
-    rol: "Despachador",
-    organizacion: "Envíos Sabana",
-    descripcion: "Otra empresa sobre la misma infraestructura",
-  },
-];
+import { LogotipoRastro } from "@design/marca/rastro";
 
 export function Acceso() {
   const { autenticado, entrar, motivoDeSalida } = useSesion();
@@ -80,7 +35,7 @@ export function Acceso() {
     setError(null);
     setEnviando(true);
     try {
-      await entrar(correo.trim(), clave);
+      await entrar(correo, clave);
       navegar(destino, { replace: true });
     } catch (fallo) {
       setError(mensajeDeError(fallo));
@@ -89,48 +44,47 @@ export function Acceso() {
     }
   };
 
-  const usarCuenta = (cuenta: CuentaDemo) => {
-    setCorreo(cuenta.correo);
-    setClave(cuenta.clave);
-    setError(null);
-  };
-
   return (
-    <div className="contenido" style={{ maxWidth: "62rem", paddingBlock: "var(--e-6)" }}>
-      <div className="fila-entre">
-        <div className="marca" style={{ fontSize: "var(--t-xl)" }}>
-          <span className="marca__punto" aria-hidden="true" />
-          Rastro
-          <span className="marca__lema">trazabilidad verificable de envíos</span>
+    <div className="pantalla-acceso">
+      <main className="acceso">
+        <div className="acceso__marca">
+          <span className="marca__simbolo marca__simbolo--grande" aria-hidden="true">
+            <LogotipoRastro tamano={30} id="marca-acceso" />
+          </span>
+          <div>
+            <h1 className="acceso__titulo">Rastro</h1>
+            <p className="acceso__lema">Trazabilidad verificable de envíos</p>
+          </div>
+          <div className="crece" />
+          <SelectorTema />
         </div>
-        <SelectorTema />
-      </div>
 
-      <div className="doble-panel">
-        <Tarjeta
-          titulo="Entrar"
-          ayuda="Cada operación se autoriza en el servidor según el grupo del usuario y su organización."
-        >
-          {motivoDeSalida && (
+        <Tarjeta>
+          {/* El aviso de la salida anterior desaparece en cuanto hay un error
+              del intento actual: dos mensajes distintos sobre el mismo
+              formulario se leen como contradictorios, y el que importa es el
+              que acaba de ocurrir. */}
+          {motivoDeSalida && !error ? (
             <div style={{ marginBottom: "var(--e-4)" }}>
               <Aviso tono="alerta">{motivoDeSalida}</Aviso>
             </div>
-          )}
+          ) : null}
 
-          <form onSubmit={enviar} className="pila-sm">
+          <form onSubmit={enviar} className="pila-sm" autoComplete="on">
             <Campo
               etiqueta="Correo"
               type="email"
-              name="usuario"
+              name="correo"
               autoComplete="username"
               inputMode="email"
               required
-              placeholder="despacho@andes.test"
+              autoFocus
+              placeholder="nombre@empresa.com"
               value={correo}
               onChange={(evento) => setCorreo(evento.target.value)}
             />
             <Campo
-              etiqueta="Clave"
+              etiqueta="Contraseña"
               type="password"
               name="clave"
               autoComplete="current-password"
@@ -153,35 +107,21 @@ export function Acceso() {
           </form>
 
           <p className="texto-sm texto-suave" style={{ marginTop: "var(--e-4)" }}>
-            ¿Espera un envío?{" "}
-            <a href="/rastreo">Consulte su avance con el identificador</a>, sin necesidad de cuenta.
+            ¿No tiene cuenta? El administrador de su empresa la crea desde el sistema.
           </p>
         </Tarjeta>
 
-        <Tarjeta
-          titulo="Cuentas de prueba"
-          ayuda="El sistema opera únicamente con datos sintéticos. Las dos organizaciones comparten infraestructura y no deben verse entre sí."
-        >
-          <ul className="lista">
-            {CUENTAS.map((cuenta) => (
-              <li key={cuenta.correo}>
-                <button type="button" className="envio" onClick={() => usarCuenta(cuenta)}>
-                  <span className="envio__linea">
-                    <span className="envio__destinatario">{cuenta.rol}</span>
-                    <span className="etiqueta">{cuenta.organizacion}</span>
-                  </span>
-                  <span className="envio__detalle">{cuenta.descripcion}</span>
-                  <span className="envio__id">{cuenta.correo}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className="texto-xs texto-tenue" style={{ marginTop: "var(--e-3)" }}>
-            Pulse una cuenta para rellenar el formulario. Entorno{" "}
-            <strong>{configuracionActual().entorno}</strong>.
+        <Tarjeta>
+          <p className="texto-sm texto-suave" style={{ margin: 0 }}>
+            ¿Espera un envío? <a href="/rastreo">Consulte su avance con el identificador</a>, sin
+            necesidad de cuenta.
           </p>
         </Tarjeta>
-      </div>
+
+        <p className="texto-xs texto-tenue" style={{ textAlign: "center" }}>
+          Entorno {configuracionActual().entorno} · región {configuracionActual().region}
+        </p>
+      </main>
     </div>
   );
 }

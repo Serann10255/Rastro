@@ -92,6 +92,14 @@
 
   --superposicion: rgb(16 24 40 / 45%);
 
+  /* -- Marca ------------------------------------------------------------- */
+  /* Cada aplicación las redefine en su `identidad.css`. Aquí van valores por
+   * omisión para que un componente compartido nunca se quede sin color si se
+   * monta fuera de las dos interfaces. */
+  --marca-1: #1d4f91;
+  --marca-2: #17a2b8;
+  --marca-contraste: #ffffff;
+
   color-scheme: light;
 }
 
@@ -221,4 +229,14 @@
   --estado-color: var(--peligro);
   --estado-fondo: var(--peligro-suave);
   --estado-borde: var(--peligro-borde);
+}
+
+/* Los dos cierres que no son entrega. Van en gris y no en rojo: un envío
+ * devuelto o cancelado no es un fallo del sistema, es un desenlace previsto, y
+ * pintarlo de alarma haría que el rojo dejara de significar «hay que actuar». */
+.estado-DEVUELTO,
+.estado-CANCELADO {
+  --estado-color: var(--texto-suave);
+  --estado-fondo: var(--fondo-sutil);
+  --estado-borde: var(--borde-fuerte);
 }

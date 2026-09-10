@@ -64,6 +64,12 @@ class AlmacenPapeles:
             "ejecucion_id": self.ejecucion_id,
             "control_id": papel.control_id,
             "control": papel.control,
+            # El control en lenguaje llano se copia en el archivo y no se
+            # resuelve al mostrarlo: un papel de trabajo debe poder leerse solo,
+            # anos despues, sin el catalogo de su epoca al lado.
+            "pregunta": papel.pregunta,
+            "en_simple": papel.en_simple,
+            "si_falla": papel.si_falla,
             "marco": papel.marco,
             "tipo": str(papel.tipo),
             "procedimiento": papel.procedimiento,

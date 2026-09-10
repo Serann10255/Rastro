@@ -51,10 +51,22 @@ export function fechaRelativa(iso: string | undefined): string {
 // Etiquetas
 // --------------------------------------------------------------------------- //
 
-export function EtiquetaEstado({ estado, conPunto = false }: { estado: Estado; conPunto?: boolean }) {
+export function EtiquetaEstado({
+  estado,
+  codigo,
+  conPunto = false,
+}: {
+  estado: Estado;
+  /** Código numérico del catálogo. Se muestra porque es lo que viaja en los
+   *  archivos de intercambio con transportistas: quien concilia un archivo
+   *  necesita ver el mismo número que aparece en él. */
+  codigo?: number;
+  conPunto?: boolean;
+}) {
   return (
     <span className={`etiqueta etiqueta--estado estado-${estado}`}>
       {conPunto && <span className="punto-estado" aria-hidden="true" />}
+      {codigo !== undefined && <span style={{ opacity: 0.7 }}>{codigo}</span>}
       {textoEstado(estado)}
     </span>
   );
@@ -438,5 +450,117 @@ export function BotonCopiar({ texto, etiqueta = "Copiar" }: { texto: string; eti
     <Boton variante="sutil" type="button" onClick={copiar} title={`${etiqueta}: ${texto}`}>
       {etiqueta}
     </Boton>
+  );
+}
+
+// --------------------------------------------------------------------------- //
+// Confirmación de acciones irreversibles
+// --------------------------------------------------------------------------- //
+
+/* Se pide confirmación solo para lo que no se puede deshacer. Pedirla para todo
+ * enseña a pulsar «sí» sin leer, y entonces deja de proteger de nada. */
+export function Confirmacion({
+  abierto,
+  titulo,
+  descripcion,
+  textoConfirmar = "Eliminar",
+  cargando = false,
+  onConfirmar,
+  onCancelar,
+}: {
+  abierto: boolean;
+  titulo: string;
+  descripcion: ReactNode;
+  textoConfirmar?: string;
+  cargando?: boolean;
+  onConfirmar: () => void;
+  onCancelar: () => void;
+}) {
+  return (
+    <Modal titulo={titulo} abierto={abierto} onCerrar={onCancelar}>
+      <div className="tarjeta__cabecera">
+        <h2 className="tarjeta__titulo">{titulo}</h2>
+      </div>
+      <div className="tarjeta__cuerpo pila-sm">
+        <p className="texto-sm texto-suave">{descripcion}</p>
+        <div className="acciones">
+          <Boton variante="peligro" onClick={onConfirmar} cargando={cargando}>
+            {textoConfirmar}
+          </Boton>
+          <Boton variante="secundario" onClick={onCancelar}>
+            Cancelar
+          </Boton>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// --------------------------------------------------------------------------- //
+// Tabla responsive de datos maestros
+// --------------------------------------------------------------------------- //
+
+export interface ColumnaTabla<T> {
+  clave: string;
+  titulo: string;
+  /** Contenido de la celda. Se pasa el registro entero para poder componer. */
+  render: (registro: T) => ReactNode;
+  /** Las columnas de texto largo envuelven; las cortas no. */
+  envuelve?: boolean;
+}
+
+/** Tabla con desplazamiento propio y acciones por fila.
+ *
+ * En móvil se desplaza dentro de su contenedor, nunca en la página. Se prefiere
+ * una tabla a un listado de tarjetas porque los datos maestros se consultan
+ * para comparar entre sí -qué tiendas hay en qué ciudad- y comparar exige
+ * columnas alineadas.
+ */
+export function TablaDatos<T>({
+  columnas,
+  registros,
+  claveDe,
+  acciones,
+  vacio,
+}: {
+  columnas: ColumnaTabla<T>[];
+  registros: T[];
+  claveDe: (registro: T) => string;
+  acciones?: (registro: T) => ReactNode;
+  vacio: ReactNode;
+}) {
+  if (registros.length === 0) return <>{vacio}</>;
+
+  return (
+    <div className="tabla-contenedor">
+      <table className="tabla">
+        <thead>
+          <tr>
+            {columnas.map((columna) => (
+              <th key={columna.clave} scope="col">
+                {columna.titulo}
+              </th>
+            ))}
+            {acciones && (
+              <th scope="col">
+                <span className="solo-lectores">Acciones</span>
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {registros.map((registro) => (
+            <tr key={claveDe(registro)}>
+              {columnas.map((columna) => (
+                <td key={columna.clave} className={columna.envuelve ? "envuelve" : undefined}>
+                  {columna.render(registro)}
+                </td>
+              ))}
+              {acciones && <td>{acciones(registro)}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
