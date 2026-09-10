@@ -1,0 +1,210 @@
+# Matriz de controles del sistema auditado (Rastro).
+#
+# El catalogo se deriva de marcos de referencia reconocidos y no de la
+# apreciacion del equipo, de modo que un control ausente pueda atribuirse a una
+# decision de alcance y no a un olvido.
+#
+# Cada control declara cuatro cosas antes de ejecutarse: contra que marco se
+# juzga, que tipo de prueba lo comprueba, cual es el criterio de aceptacion y
+# que evidencia debe quedar. Declararlas antes es lo que impide que el criterio
+# se acomode al resultado.
+
+version: "0.1"
+sistema_auditado: Rastro
+fecha_catalogo: "2026-09-10"
+
+controles:
+
+  # ------------------------------------------------------------------ #
+  # Pruebas de cumplimiento: configuracion de la infraestructura
+  # ------------------------------------------------------------------ #
+
+  - id: C-01
+    control: El registro de actividad esta activo y con validacion de integridad de sus archivos.
+    marco: CIS AWS Foundations Benchmark; NIST SP 800-92 (Kent y Souppaya, 2006)
+    tipo: cumplimiento
+    prueba: cumplimiento.registro_de_actividad
+    procedimiento: >-
+      Consultar el estado del registro de actividad de la cuenta con
+      cloudtrail describe-trails y cloudtrail get-trail-status.
+    criterio: >-
+      El registro existe, esta entregando eventos y tiene habilitada la
+      validacion de integridad de los archivos de registro.
+    evidencia_esperada: >-
+      Salida de la consulta de estado del registro, con el indicador de
+      validacion habilitado.
+    severidad_si_desviado: alta
+
+  - id: C-02
+    control: >-
+      Las evidencias se cifran en reposo con una llave administrada por el
+      responsable, con rotacion habilitada.
+    marco: ISO/IEC 27001:2022, A.8.24
+    tipo: cumplimiento
+    prueba: cumplimiento.cifrado_de_evidencias
+    procedimiento: >-
+      Consultar la configuracion de cifrado por omision del contenedor, el
+      estado de rotacion de la llave referenciada por alias, y las propiedades
+      de cifrado de un objeto efectivamente almacenado.
+    criterio: >-
+      El contenedor cifra por omision con la llave del proyecto, la rotacion de
+      la llave esta habilitada y el objeto almacenado declara cifrado aws:kms.
+    evidencia_esperada: >-
+      Estado de rotacion de la llave y propiedades de cifrado de un objeto
+      almacenado.
+    severidad_si_desviado: alta
+
+  - id: C-03
+    control: El contenedor de evidencias no admite acceso publico.
+    marco: CIS AWS Foundations Benchmark
+    tipo: cumplimiento
+    prueba: cumplimiento.acceso_publico_bloqueado
+    procedimiento: >-
+      Consultar la configuracion de bloqueo de acceso publico del contenedor
+      con s3api get-public-access-block.
+    criterio: >-
+      Los cuatro indicadores de bloqueo de acceso publico estan activos.
+    evidencia_esperada: Configuracion de bloqueo de acceso publico del contenedor.
+    severidad_si_desviado: alta
+
+  - id: C-04
+    control: El contenedor de evidencias conserva versiones anteriores de cada objeto.
+    marco: ISO/IEC 27001:2022, A.8.13
+    tipo: cumplimiento
+    prueba: cumplimiento.versionado_activo
+    procedimiento: >-
+      Consultar el estado de versionado del contenedor con
+      s3api get-bucket-versioning.
+    criterio: El versionado del contenedor esta en estado Enabled.
+    evidencia_esperada: Estado de versionado del contenedor.
+    severidad_si_desviado: media
+
+  # ------------------------------------------------------------------ #
+  # Pruebas sustantivas: comportamiento efectivo de la aplicacion
+  # ------------------------------------------------------------------ #
+  #
+  # Son la cobertura que ninguna herramienta disponible ofrece: estas reglas
+  # viven en el codigo y no en la configuracion, de modo que leer parametros no
+  # dice nada sobre ellas. Hay que ejercitar el sistema.
+
+  - id: C-05
+    control: >-
+      Cada operacion esta restringida a los roles autorizados y el intento
+      rechazado queda registrado.
+    marco: COBIT 2019, DSS05; OWASP Top 10:2021 A01
+    tipo: sustantiva
+    prueba: sustantiva.autorizacion_por_rol
+    procedimiento: >-
+      Autenticarse como usuario del grupo conductor e invocar la operacion de
+      creacion de envios, reservada a despachador y administrador. Consultar
+      despues la bitacora con el rol auditor y buscar el registro del intento.
+    criterio: >-
+      La respuesta es 403 y existe en la bitacora un registro con el actor, su
+      grupo, la accion, el recurso y resultado DENY.
+    evidencia_esperada: >-
+      Codigo de respuesta obtenido y registro correspondiente de la bitacora.
+    severidad_si_desviado: alta
+
+  - id: C-06
+    control: >-
+      Un usuario no accede a envios, eventos ni evidencias de una organizacion
+      distinta a la suya.
+    marco: COBIT 2019, DSS05; OWASP Top 10:2021 A01
+    tipo: sustantiva
+    prueba: sustantiva.aislamiento_entre_organizaciones
+    procedimiento: >-
+      Crear un envio como despachador de la organizacion A. Autenticarse como
+      despachador de la organizacion B y solicitar ese envio por su
+      identificador, en cada una de las rutas de lectura del sistema.
+    criterio: >-
+      Toda ruta responde como si el recurso no existiera (404) y no 403, para no
+      confirmar su existencia. El intento queda registrado con resultado DENY.
+    evidencia_esperada: >-
+      Respuesta de cada ruta y registro del intento en la bitacora de la
+      organizacion solicitante.
+    severidad_si_desviado: alta
+
+  - id: C-07
+    control: El sistema rechaza las transiciones de estado no contempladas en su modelo.
+    marco: COBIT 2019, DSS06
+    tipo: sustantiva
+    prueba: sustantiva.transiciones_invalidas
+    procedimiento: >-
+      Sobre un envio en estado CREADO, solicitar la transicion directa a
+      ENTREGADO. Repetir con otras transiciones que el modelo no contempla.
+    criterio: >-
+      La respuesta es 400 y el intento queda registrado en la bitacora con
+      resultado DENY y motivo transicion_invalida.
+    evidencia_esperada: Codigo de respuesta y registro correspondiente.
+    severidad_si_desviado: media
+
+  # ------------------------------------------------------------------ #
+  # Prueba de integridad
+  # ------------------------------------------------------------------ #
+
+  - id: C-08
+    control: >-
+      La bitacora permite detectar la alteracion o eliminacion de cualquiera de
+      sus registros.
+    marco: Schneier y Kelsey (1999); Haber y Stornetta (1991)
+    tipo: integridad
+    prueba: integridad.cadena_de_bitacora
+    procedimiento: >-
+      Descargar la bitacora, recalcular la cadena de funciones hash y comprobar
+      que el encadenamiento cierra. Despues, sobre una copia de trabajo,
+      introducir una alteracion controlada y comprobar que el verificador senala
+      el punto de ruptura.
+    criterio: >-
+      El verificador informa cadena valida sobre la bitacora integra y senala la
+      secuencia exacta de la ruptura sobre la copia alterada. Comprobar solo lo
+      primero no demuestra que el verificador sirva.
+    evidencia_esperada: >-
+      Salida del verificador antes y despues de la alteracion controlada.
+    severidad_si_desviado: alta
+
+# ------------------------------------------------------------------------ #
+# Fuera del alcance automatizado, declarado y no omitido
+# ------------------------------------------------------------------------ #
+
+hallazgos_permanentes:
+  - id: H-PERM-01
+    condicion: >-
+      Las funciones del sistema auditado comparten un unico rol de ejecucion con
+      permisos amplios (LabRole) en lugar de disponer cada una de un rol
+      restringido a lo que necesita.
+    criterio: >-
+      Principio de minimo privilegio del pilar de seguridad del marco de buenas
+      practicas del proveedor (Amazon Web Services, 2024).
+    causa: >-
+      El entorno educativo no permite crear roles de identidad y acceso
+      (restriccion RE-01 del documento del sistema auditado).
+    efecto: >-
+      El compromiso de cualquier funcion otorgaria al atacante permisos muy
+      superiores a los que esa funcion requiere.
+    severidad: alta
+    recomendacion: >-
+      En un despliegue productivo, un rol por funcion con politicas acotadas a
+      la tabla, el prefijo del contenedor y la llave que cada una utiliza.
+    nota_de_alcance: >-
+      No se automatiza porque el entorno impide corregir la desviacion: una
+      prueba que siempre reporta el mismo resultado no aporta informacion.
+      Se documenta como hallazgo permanente en todo informe.
+
+  - id: H-PERM-02
+    condicion: >-
+      El programa de auditoria se ejecuta con el mismo rol compartido del
+      laboratorio, que dispone de permisos de escritura sobre los recursos que
+      audita.
+    criterio: >-
+      ITAF, normas de desempeno sobre independencia y objetividad (ISACA, 2020).
+    causa: Misma restriccion RE-01 del entorno.
+    efecto: >-
+      El auditor tiene tecnicamente la capacidad de modificar la evidencia que
+      evalua, lo que debilita el valor probatorio de los papeles de trabajo.
+    severidad: media
+    recomendacion: >-
+      Ejecutar el programa con credenciales de solo lectura y almacenar los
+      papeles de trabajo en una cuenta distinta de la auditada.
+    nota_de_alcance: >-
+      Se declara como condicion del trabajo y no como una condicion aceptable
+      de diseno.

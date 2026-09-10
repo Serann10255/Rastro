@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: rastro
+Version: 0.1.0
+Summary: Rastro: sistema de trazabilidad verificable de envios (microservicios)
+Requires-Python: >=3.11
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn[standard]>=0.30
+Requires-Dist: pydantic>=2.7
+Requires-Dist: boto3>=1.34
+Requires-Dist: pyjwt[crypto]>=2.8
+Requires-Dist: httpx>=0.27
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: python-multipart>=0.0.9
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"

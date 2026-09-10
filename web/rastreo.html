@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Consulte el avance de su envio con su identificador de rastreo.">
+  <title>Rastro · consulta de envio</title>
+  <link rel="stylesheet" href="./assets/estilos.css">
+</head>
+<body>
+
+<header class="barra">
+  <div class="barra__marca">
+    Rastro <small>consulta de envio</small>
+  </div>
+  <div class="barra__sesion">
+    <a class="boton boton--secundario" href="./index.html"
+       style="text-decoration: none; display: inline-flex; align-items: center;">Acceso de operacion</a>
+  </div>
+</header>
+
+<main class="contenido">
+
+  <section class="tarjeta">
+    <h1 class="tarjeta__titulo">Consultar un envio</h1>
+    <p class="tarjeta__ayuda">
+      Escriba el identificador de rastreo que le entregaron. No hace falta
+      crear una cuenta.
+    </p>
+
+    <form id="formulario-consulta" class="campos">
+      <label class="campo">
+        <span>Identificador de rastreo</span>
+        <input id="entrada-envio" name="envio_id" type="text" required
+               autocomplete="off" spellcheck="false"
+               placeholder="00000000-0000-4000-8000-000000000000"
+               style="font-family: ui-monospace, Consolas, monospace;">
+      </label>
+      <div class="acciones">
+        <button class="boton" type="submit">Consultar</button>
+      </div>
+    </form>
+
+    <p id="aviso" class="aviso" hidden></p>
+  </section>
+
+  <section id="resultado" class="tarjeta" hidden>
+    <div id="resumen"></div>
+    <h2 class="tarjeta__titulo">Avance</h2>
+    <ol id="linea" class="linea"></ol>
+    <p class="envio__dato" id="consultado"></p>
+  </section>
+
+</main>
+
+<footer class="contenido">
+  <p class="envio__dato">
+    Se muestra el avance del envio. Los datos de operacion de la empresa y la
+    identidad de sus empleados no forman parte de esta consulta.
+  </p>
+</footer>
+
+<script type="module">
+  /* Punto de consulta publico (REQ-04).
+   *
+   * Es el unico punto del sistema que responde sin token. Su proteccion no es
+   * la autenticacion sino el identificador aleatorio: un consecutivo se
+   * recorreria en minutos, un UUID v4 no. */
+  import { api, cargarConfiguracion, ErrorApi, formatearFecha } from "./assets/api.js";
+
+  const $ = (s) => document.querySelector(s);
+  const escapar = (t) =>
+    String(t ?? "").replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
+
+  function avisar(mensaje, tipo = "error") {
+    const caja = $("#aviso");
+    caja.textContent = mensaje;
+    caja.className = `aviso aviso--${tipo}`;
+    caja.hidden = !mensaje;
+  }
+
+  async function consultar(envioId) {
+    avisar("");
+    try {
+      const datos = await api.consultaPublica(envioId.trim());
+      pintar(datos);
+      history.replaceState(null, "", `?envio=${encodeURIComponent(envioId.trim())}`);
+    } catch (error) {
+      $("#resultado").hidden = true;
+      if (error instanceof ErrorApi && error.estado === 422) {
+        avisar("El identificador no tiene el formato esperado. Revise que este completo.");
+      } else if (error instanceof ErrorApi && error.estado === 404) {
+        avisar("No encontramos un envio con ese identificador.");
+      } else {
+        avisar(error.message || "No fue posible consultar el envio.");
+      }
+    }
+  }
+
+  function pintar({ envio, eventos, consultado_en }) {
+    $("#resumen").innerHTML = `
+      <div class="envio__cabecera">
+        <h2 class="tarjeta__titulo">${escapar(envio.destinatario_nombre)}</h2>
+        <span class="etiqueta etiqueta--${escapar(envio.estado)}">${escapar(envio.estado.replace(/_/g, " "))}</span>
+      </div>
+      <p class="envio__id">${escapar(envio.envio_id)}</p>
+      <p class="envio__dato">Ciudad de destino: ${escapar(envio.destino_ciudad)}</p>`;
+
+    $("#linea").innerHTML = eventos
+      .map(
+        (evento) => `
+        <li class="linea__paso linea__paso--${escapar(evento.estado)}">
+          <strong>${escapar(evento.estado.replace(/_/g, " "))}</strong>
+          <span class="linea__fecha">${escapar(formatearFecha(evento.ts))}</span>
+          ${evento.nota ? `<span class="envio__dato">${escapar(evento.nota)}</span>` : ""}
+          ${evento.tiene_evidencia ? '<span class="linea__fecha">Con evidencia de entrega registrada</span>' : ""}
+        </li>`
+      )
+      .join("");
+
+    $("#consultado").textContent = `Consultado el ${formatearFecha(consultado_en)}`;
+    $("#resultado").hidden = false;
+  }
+
+  $("#formulario-consulta").addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    consultar($("#entrada-envio").value);
+  });
+
+  await cargarConfiguracion();
+
+  // Permite compartir un enlace directo al avance de un envio.
+  const inicial = new URLSearchParams(location.search).get("envio");
+  if (inicial) {
+    $("#entrada-envio").value = inicial;
+    consultar(inicial);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,512 @@
+/* Interfaz de Rastro.
+ *
+ * Mobile-first, segun las reglas del proyecto: los estilos base son los de la
+ * pantalla pequena y se amplian hacia arriba con min-width. La condicion real
+ * del usuario principal es un telefono de gama baja con conectividad
+ * intermitente en via, de modo que el ancho de referencia es 360px y no el
+ * escritorio.
+ *
+ * Breakpoints del proyecto: sm 640, md 768, lg 1024, xl 1280.
+ */
+
+:root {
+  --fondo: #f5f6f8;
+  --superficie: #ffffff;
+  --borde: #d8dce3;
+  --texto: #1c2430;
+  --texto-suave: #5a6675;
+  --acento: #1d4f91;
+  --acento-suave: #e8eff9;
+  --exito: #1f6b45;
+  --exito-suave: #e4f2ea;
+  --alerta: #8a5a00;
+  --alerta-suave: #fbf0dc;
+  --error: #9b2226;
+  --error-suave: #fbe6e6;
+
+  --radio: 10px;
+  --espacio: 1rem;
+  --tactil: 44px; /* Area tactil minima exigida por las reglas del proyecto. */
+  --ancho-maximo: 72rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #12161c;
+    --superficie: #1b2129;
+    --borde: #2f3945;
+    --texto: #e8ecf2;
+    --texto-suave: #a3aebc;
+    --acento: #7fb0ee;
+    --acento-suave: #1d2c40;
+    --exito: #6fce9f;
+    --exito-suave: #172d22;
+    --alerta: #e0b062;
+    --alerta-suave: #302713;
+    --error: #f08b8e;
+    --error-suave: #33191a;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden; /* Ningun desbordamiento horizontal en el documento. */
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------------------------------------------------------------------- */
+/* Estructura                                                            */
+/* --------------------------------------------------------------------- */
+
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem var(--espacio);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.barra__marca {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.barra__marca small {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.barra__sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: var(--texto-suave);
+  min-width: 0;
+}
+
+.contenido {
+  width: 100%;
+  max-width: var(--ancho-maximo);
+  margin: 0 auto;
+  padding: var(--espacio);
+  display: grid;
+  gap: var(--espacio);
+}
+
+/* Un elemento de rejilla o de caja flexible no baja por omision de su ancho
+ * de contenido: sin esto, la tabla de bitacora estira su contenedor y el
+ * desbordamiento se traslada a la pagina en lugar de quedarse dentro del
+ * bloque que debe desplazarse. */
+.contenido > *,
+.vista > *,
+.panel-doble > *,
+.campos > *,
+.tarjeta {
+  min-width: 0;
+}
+
+/* Navegacion: en movil es una fila deslizable; desde tablet, pestanas fijas. */
+.navegacion {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.navegacion__boton {
+  flex: 0 0 auto;
+  min-height: var(--tactil);
+  padding: 0 1rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--tactil);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.navegacion__boton[aria-current="page"] {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: var(--espacio);
+}
+
+.tarjeta__titulo {
+  margin: 0 0 0.25rem;
+  font-size: 1.0625rem;
+}
+
+.tarjeta__ayuda {
+  margin: 0 0 var(--espacio);
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+}
+
+/* --------------------------------------------------------------------- */
+/* Formularios                                                           */
+/* --------------------------------------------------------------------- */
+
+.campos {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.campo {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.campo > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: var(--tactil);
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem; /* Evita el zoom automatico de iOS al enfocar. */
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: var(--espacio);
+}
+
+.boton {
+  min-height: var(--tactil);
+  min-width: var(--tactil);
+  padding: 0 1.125rem;
+  border: 1px solid var(--acento);
+  border-radius: 8px;
+  background: var(--acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton--secundario {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde);
+}
+
+.boton[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------- */
+/* Listas y tablas                                                       */
+/* --------------------------------------------------------------------- */
+
+.lista {
+  display: grid;
+  gap: 0.625rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.envio {
+  display: grid;
+  gap: 0.375rem;
+  width: 100%;
+  min-height: var(--tactil);
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.envio__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.envio__id {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere; /* Un UUID no debe desbordar en 360px. */
+}
+
+.envio__dato {
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.etiqueta {
+  display: inline-block;
+  padding: 0.1875rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--acento-suave);
+  color: var(--acento);
+}
+
+.etiqueta--ENTREGADO { background: var(--exito-suave); color: var(--exito); }
+.etiqueta--INCIDENCIA { background: var(--error-suave); color: var(--error); }
+.etiqueta--EN_TRANSITO,
+.etiqueta--EN_REPARTO { background: var(--alerta-suave); color: var(--alerta); }
+
+.etiqueta--DENY { background: var(--error-suave); color: var(--error); }
+.etiqueta--ALLOW { background: var(--exito-suave); color: var(--exito); }
+
+/* Toda tabla ancha scrollea dentro de su contenedor, nunca en la pagina. */
+.tabla-contenedor {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  min-width: 40rem;
+}
+
+th,
+td {
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: var(--superficie);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+
+td.envuelve {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 12rem;
+}
+
+.hash {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.6875rem;
+  color: var(--texto-suave);
+}
+
+/* --------------------------------------------------------------------- */
+/* Linea de tiempo del historico                                         */
+/* --------------------------------------------------------------------- */
+
+.linea {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: var(--espacio) 0 0;
+  padding: 0;
+}
+
+.linea__paso {
+  position: relative;
+  padding: 0 0 1.125rem 1.75rem;
+  border-left: 2px solid var(--borde);
+}
+
+.linea__paso:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.linea__paso::before {
+  content: "";
+  position: absolute;
+  left: -0.4375rem;
+  top: 0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--acento);
+}
+
+.linea__paso--INCIDENCIA::before { background: var(--error); }
+.linea__paso--ENTREGADO::before { background: var(--exito); }
+
+.linea__fecha {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+/* --------------------------------------------------------------------- */
+/* Avisos                                                                */
+/* --------------------------------------------------------------------- */
+
+.aviso {
+  padding: 0.75rem var(--espacio);
+  border-radius: var(--radio);
+  border: 1px solid var(--borde);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.aviso--error { background: var(--error-suave); border-color: var(--error); color: var(--error); }
+.aviso--exito { background: var(--exito-suave); border-color: var(--exito); color: var(--exito); }
+.aviso--info { background: var(--acento-suave); border-color: var(--acento); color: var(--acento); }
+
+.vacio {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.9375rem;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------- */
+/* Ampliaciones por ancho                                                */
+/* --------------------------------------------------------------------- */
+
+@media (min-width: 640px) {
+  .campos--pareja {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .envio {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+@media (min-width: 768px) {
+  .contenido {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .navegacion {
+    overflow-x: visible;
+    flex-wrap: wrap;
+  }
+
+  .lista--envios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .panel-doble {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .lista--envios {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1280px) {
+  .contenido {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

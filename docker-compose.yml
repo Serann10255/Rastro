@@ -1,0 +1,184 @@
+# Pila local de Rastro.
+#
+# Reproduce la arquitectura desplegada en AWS con equivalentes locales, de modo
+# que el sistema se pueda construir y probar sin consumir el presupuesto del
+# laboratorio ni depender de una sesion de cuatro horas:
+#
+#   API Gateway  ->  nginx (gateway)
+#   Lambda       ->  un contenedor por microservicio
+#   DynamoDB     ->  DynamoDB Local
+#   S3 + KMS     ->  MinIO (sin KMS: el cifrado solo se acredita en AWS)
+#   Cognito      ->  microservicio auth
+#
+# Las diferencias no se disimulan. El cifrado con llave administrada, el
+# registro de actividad y el versionado del contenedor no existen aqui: son
+# controles de infraestructura y los verifica Cotejo contra la cuenta real.
+
+name: rastro
+
+x-servicio-comun: &servicio-comun
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  environment: &entorno-comun
+    RASTRO_ENTORNO: local
+    AWS_REGION: us-east-1
+    AWS_ACCESS_KEY_ID: local
+    AWS_SECRET_ACCESS_KEY: localsecreto
+    RASTRO_ENDPOINT_DYNAMODB: http://dynamodb:8000
+    RASTRO_ENDPOINT_S3: http://almacen:9000
+    RASTRO_ENDPOINT_S3_PUBLICO: http://localhost:9000
+    RASTRO_S3_PATH_STYLE: "true"
+    RASTRO_TABLA_ENVIOS: rastro-envios
+    RASTRO_TABLA_BITACORA: rastro-bitacora
+    RASTRO_BUCKET_EVIDENCIAS: rastro-evidencias-local
+    RASTRO_JWT_EMISOR: http://localhost:8080/auth
+    RASTRO_JWT_AUDIENCIA: rastro-web
+    RASTRO_JWT_SECRETO: ${RASTRO_JWT_SECRETO:-rastro-secreto-local-solo-para-desarrollo-32b}
+    RASTRO_URL_API: http://localhost:8080
+    RASTRO_VIGENCIA_ENLACE: "300"
+  depends_on:
+    preparar-entorno:
+      condition: service_completed_successfully
+
+services:
+  # ----------------------------------------------------------------------- #
+  # Infraestructura equivalente
+  # ----------------------------------------------------------------------- #
+
+  dynamodb:
+    image: amazon/dynamodb-local:2.5.2
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/datos"]
+    working_dir: /home/dynamodblocal
+    user: root
+    volumes:
+      - datos-dynamodb:/datos
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8000 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  almacen:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /datos --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: local
+      MINIO_ROOT_PASSWORD: localsecreto
+    volumes:
+      - datos-minio:/datos
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 0"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Crea tablas, indices y contenedor, y carga los datos sinteticos. Es el
+  # equivalente local de la secuencia de despliegue versionada (REQ-09).
+  preparar-entorno:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      <<: *entorno-comun
+    command: ["python", "/app/deploy/local/preparar_entorno.py"]
+    volumes:
+      - ./deploy:/app/deploy:ro
+    depends_on:
+      dynamodb:
+        condition: service_healthy
+      almacen:
+        condition: service_started
+    restart: on-failure
+
+  # ----------------------------------------------------------------------- #
+  # Microservicios
+  # ----------------------------------------------------------------------- #
+
+  auth:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: auth
+    ports:
+      - "8001:8000"
+
+  envios:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: shipments
+    ports:
+      - "8002:8000"
+
+  rastreo:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: tracking
+    ports:
+      - "8003:8000"
+
+  evidencias:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: evidence
+    ports:
+      - "8004:8000"
+
+  publico:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: public
+    ports:
+      - "8005:8000"
+
+  bitacora:
+    <<: *servicio-comun
+    environment:
+      <<: *entorno-comun
+      SERVICIO: audit
+    ports:
+      - "8006:8000"
+
+  # ----------------------------------------------------------------------- #
+  # Puerta de enlace e interfaz
+  # ----------------------------------------------------------------------- #
+
+  # Equivalente local de API Gateway: enruta por prefijo hacia cada servicio.
+  # La validacion del token no se delega aqui, porque el supuesto SU-01 esta
+  # pendiente: cada servicio valida el suyo.
+  gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - auth
+      - envios
+      - rastreo
+      - evidencias
+      - publico
+      - bitacora
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway
+
+volumes:
+  datos-dynamodb:
+  datos-minio:

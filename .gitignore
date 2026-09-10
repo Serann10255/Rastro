@@ -1,20 +1,19 @@
-# Instrucciones locales para Claude
-CLAUDE.md
-.claude/
-
-# Entorno virtual de Python
 .venv/
-venv/
 __pycache__/
 *.py[cod]
-
-# Entorno y secretos
+.pytest_cache/
 .env
-.env.local
-
-# Sistema operativo / editores
-Thumbs.db
-desktop.ini
+config/deployment.json
+cotejo/papeles/*/
+!cotejo/papeles/.gitkeep
+node_modules/
 .DS_Store
-.idea/
-.vscode/
+*.log
+
+# Generados por la preparacion del entorno y el despliegue
+seed/envios-creados.json
+evidencias-despliegue/
+migracion/
+config/.identidad.env
+config/.api.env
+web/configuracion.json
