@@ -44,6 +44,42 @@ DIR_EVIDENCIAS="${RAIZ_PROYECTO}/evidencias-despliegue"
 # Los ocho microservicios. El nombre de la funcion se deriva del prefijo.
 SERVICIOS=(auth shipments tracking evidence public audit masters dashboard)
 
+# En Windows (Git Bash) la CLI de AWS es un ejecutable nativo: no entiende las
+# rutas POSIX que van dentro de un argumento como fileb:///tmp/..., porque Git
+# Bash solo convierte los argumentos que empiezan por "/". En Linux y macOS la
+# ruta se devuelve tal cual.
+ruta_nativa() {
+  if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi
+}
+
+# Primer interprete capaz de importar boto3. En Windows, "python3" suele ser el
+# de la Microsoft Store, sin dependencias, aunque haya otro correcto en el PATH.
+# RASTRO_PYTHON permite fijarlo a mano.
+elegir_python() {
+  local candidato
+  for candidato in "${RASTRO_PYTHON:-}" python3 python; do
+    [[ -n "${candidato}" ]] || continue
+    if "${candidato}" -c "import boto3" >/dev/null 2>&1; then
+      command -v "${candidato}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Primer resultado de una busqueda sobre una operacion paginada, o "None".
+# Con --output text la CLI aplica --query a cada pagina por separado: pasadas
+# las 25 rutas, una busqueda sin coincidencias devuelve "None" una vez por
+# pagina, y compararlo con "None" daba por existente lo que no existia. Con
+# json la CLI une las paginas antes de aplicar la consulta.
+primer_resultado() {
+  local salida
+  salida="$(aws "$@" --output json)" || return 1
+  salida="$(printf '%s' "${salida}" | tr -d '\r"')"
+  [[ "${salida}" == "null" || -z "${salida}" ]] && salida="None"
+  printf '%s' "${salida}"
+}
+
 paso()  { printf '\n=== %s ===\n' "$*"; }
 ok()    { printf '  [ok] %s\n' "$*"; }
 aviso() { printf '  [!!] %s\n' "$*" >&2; }

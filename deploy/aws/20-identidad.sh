@@ -19,12 +19,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/comun.sh"
 
 paso "Aprovisionamiento de organizaciones y usuarios"
 
-if ! command -v python >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
-  aviso "Se necesita Python para derivar las contrasenas y sembrar los maestros."
+if ! PYTHON="$(elegir_python)"; then
+  aviso "Se necesita Python con boto3 para derivar las contrasenas y sembrar los maestros."
+  aviso "    python -m venv .venv && .venv/bin/pip install boto3 pydantic fastapi 'pyjwt[crypto]'"
+  aviso "O fije el interprete con RASTRO_PYTHON."
   exit 1
 fi
-
-PYTHON="$(command -v python3 || command -v python)"
+ok "interprete: ${PYTHON}"
 
 # Las claves de la semilla son de desarrollo. Antes de un despliegue con datos
 # reales deben sustituirse: se pasan por variable de entorno para no dejarlas

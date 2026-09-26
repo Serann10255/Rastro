@@ -1,28 +1,44 @@
 # Despliegue en AWS
 
-Fecha: 2026-09-10 · Versión: 0.2
+Fecha: 2026-09-26 · Versión: 0.3
 
 ## Estado de verificación
 
-> **La secuencia de despliegue está escrita y versionada, pero no se ha
-> ejecutado contra la cuenta del laboratorio.** No hay credenciales de AWS en el
-> entorno donde se construyó el repositorio, de modo que estos guiones no están
-> verificados contra el servicio real. Lo que sí está verificado de extremo a
-> extremo es la pila local equivalente.
+> **Ejecutado contra la cuenta del laboratorio el 2026-09-26**, desde Windows
+> con Git Bash, en una cuenta vacía. La secuencia completa (`desplegar.sh`)
+> termina sin errores en unos ocho minutos y `95-verificar.sh` confirma todos
+> los componentes. Una segunda ejecución sobre lo ya desplegado no duplica
+> recursos ni datos.
 >
-> Esto es lo que queda por comprobar, y es también la primera actividad de la
-> fase 1 del plan de trabajo:
+> La primera ejecución destapó siete defectos que en local no se veían; están
+> corregidos y descritos en la
+> [bitácora del 2026-09-26](../cambios/2026-09-26-despliegue-aws.md). Dos de
+> ellos habrían dejado el sistema inservible con los guiones terminando en
+> verde: el validador de API Gateway habría respondido 401 a toda ruta
+> protegida, y el navegador no habría podido subir evidencias por falta de CORS
+> en el contenedor.
 >
-> - **SU-01** — que el laboratorio permita crear una interfaz HTTP con validador
->   de tokens. `40-api.sh` lo intenta y continúa si no se puede: cada servicio
->   valida el token por su cuenta, de modo que el sistema funciona igual y solo
->   se pierde una capa. Con el proveedor de identidad propio el validador no
->   aplica de todas formas —solo verifica firmas de clave pública (RS256) contra
->   un JWKS, y el sistema firma con clave compartida—, pero se intenta igual para
->   dejar constancia de lo que el laboratorio permite, que es lo que el supuesto
->   pregunta. Véase [ADR-007](../decisiones/adr-007-identidad-propia.md).
-> - **REQ-09** — que el despliegue se reproduzca en una cuenta vacía sin editar
->   código.
+> Además de la verificación del guion se comprobó a mano:
+>
+> - la consulta pública desde el navegador, del sitio en S3 hasta DynamoDB;
+> - la carga de una evidencia con el enlace prefirmado que genera el propio
+>   código: el objeto queda cifrado con la llave del proyecto y una carga sin
+>   cifrar se rechaza;
+> - las respuestas CORS de la interfaz y del contenedor, que rechaza orígenes
+>   ajenos.
+>
+> Lo que queda abierto:
+>
+> - **SU-01 — indeterminado.** API Gateway descarga el documento OpenID del
+>   emisor *al crear* el validador, y el sistema no tiene uno: el emisor propio
+>   no es una URL válida y la interfaz no publica `/.well-known/openid-configuration`.
+>   El rechazo no es de permisos, de modo que no dice nada sobre lo que permite
+>   el laboratorio. Confirmarlo exige un emisor OpenID real (un grupo de
+>   usuarios de Cognito, por ejemplo). No afecta al funcionamiento: cada
+>   servicio valida el token ([ADR-007](../decisiones/adr-007-identidad-propia.md)).
+> - **REQ-09 — parcial.** La secuencia corregida se reproduce sin editar código
+>   de la aplicación ni tocar la consola, pero la primera pasada exigió corregir
+>   los guiones. Queda el simulacro de migración a otra cuenta de la fase 3.
 
 ---
 
@@ -88,6 +104,51 @@ Es lo recomendable en un equipo compartido. En cualquiera de los dos casos,
 
 ---
 
+## Desde Windows
+
+Los guiones son de Bash y corren en **Git Bash**. Hacen falta tres cosas que
+Linux y macOS ya traen resueltas:
+
+1. **La CLI de AWS en el `PATH` de Git Bash.** El instalador la deja en
+   `C:\Program Files\Amazon\AWSCLIV2`, pero una terminal abierta antes de
+   instalarla no la ve. Se reabre la terminal o se añade a mano:
+
+   ```bash
+   export PATH="$PATH:/c/Program Files/Amazon/AWSCLIV2"
+   ```
+
+2. **Un Python con `boto3`** para sembrar los datos. En Windows `python3` suele
+   ser el de la Microsoft Store, sin dependencias; `20-identidad.sh` recorre
+   los intérpretes y elige el primero que importa `boto3`, o el de
+   `RASTRO_PYTHON` si está fijado. Lo más sencillo es un entorno virtual:
+
+   ```bash
+   python -m venv .venv
+   .venv/Scripts/python -m pip install boto3 pydantic fastapi "pyjwt[crypto]" pyyaml
+   export PATH="$PWD/.venv/Scripts:$PATH"
+   ```
+
+3. **Node 20 o superior** para compilar la interfaz en `60-sitios.sh`.
+
+No hace falta `zip`, que Git Bash no trae: `30-funciones.sh` usa la biblioteca
+estándar de Python cuando falta, con permisos Unix explícitos para que Lambda
+pueda leer el código.
+
+### El secreto de firma
+
+`30-funciones.sh` lo toma de `RASTRO_JWT_SECRETO` o, si no está, de
+`config/.jwt.env`, que está fuera del control de versiones. Guardarlo ahí evita
+que un redespliegue lo cambie sin querer y cierre todas las sesiones:
+
+```bash
+printf 'RASTRO_JWT_SECRETO=%s\n' "$(openssl rand -hex 32)" > config/.jwt.env
+```
+
+Se usa hexadecimal y no base64 porque base64 puede traer `=`, `+` y `/`, que
+complican el paso por la línea de comandos.
+
+---
+
 ## Ejecutar el despliegue
 
 ```bash
@@ -106,10 +167,10 @@ modo que un tercero pueda repetir la verificación.
 
 | Etapa | Qué crea |
 |---|---|
-| `10-datos.sh` | Tablas con sus índices, llave de cifrado con rotación, contenedores con cifrado, versionado, bloqueo público y política que rechaza cargas sin cifrar |
+| `10-datos.sh` | Tablas con sus índices, llave de cifrado con rotación, contenedores con cifrado, versionado, bloqueo público, política que rechaza cargas sin cifrar y CORS para la carga directa desde el sitio (origen en `RASTRO_ORIGENES_WEB`) |
 | `20-identidad.sh` | Aprovisiona las dos organizaciones, sus diez usuarios con las contraseñas derivadas y sus datos maestros, ejecutando **el mismo guion que prepara el entorno local** apuntado a la cuenta |
 | `30-funciones.sh` | Empaqueta y despliega los ocho microservicios como funciones Lambda. **Se niega a desplegar** si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32 caracteres |
-| `40-api.sh` | Interfaz HTTP, validador de tokens (SU-01), rutas e integraciones |
+| `40-api.sh` | Interfaz HTTP con CORS, prueba del validador de tokens (SU-01), rutas e integraciones. Con el proveedor propio el validador **no se asocia** a las rutas: rechazaría todo token HS256 |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
 | `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
 | `90-configuracion.sh` | Escribe `config/deployment.json` y comprueba que no queden identificadores literales |
@@ -145,6 +206,20 @@ con los identificadores del despliegue. Un mismo `dist/` compilado sirve para
 local y para AWS. Si alguien introdujera una variable de entorno de compilación
 con la URL, REQ-09 dejaría de cumplirse aunque el resto siguiera igual. Véase
 [ADR-005](../decisiones/adr-005-react-con-configuracion-en-ejecucion.md).
+
+### Limitaciones conocidas del sitio
+
+- **Los enlaces directos responden 404, aunque la página se muestre bien.** El
+  sitio estático de S3 no conoce las rutas de la aplicación (`/rastreo`,
+  `/envios/<id>`): entrega `index.html` como documento de error, con estado 404,
+  y la aplicación resuelve la ruta en el navegador. El usuario no lo nota, pero
+  la consola del navegador y cualquier monitor de disponibilidad sí. Corregirlo
+  exige CloudFront delante del contenedor, que no se usa para no añadir un
+  componente más.
+- **HTTP y no HTTPS.** El sitio de S3 solo se sirve por HTTP. La interfaz sí va
+  por HTTPS, de modo que el token no viaja en claro, pero el propio sitio podría
+  ser alterado en tránsito. Es la misma razón para CloudFront, y se declara
+  como limitación.
 
 ---
 

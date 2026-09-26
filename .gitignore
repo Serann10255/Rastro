@@ -16,6 +16,7 @@ evidencias-despliegue/
 migracion/
 config/.identidad.env
 config/.api.env
+config/.jwt.env
 web/configuracion.json
 
 # Interfaces

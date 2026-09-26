@@ -17,12 +17,42 @@ paso "Empaquetado de las funciones"
 
 # Las dependencias se instalan para la plataforma de destino y no para la del
 # equipo de desarrollo: el paquete se ejecuta en Linux, no en la maquina local.
-python -m pip install --quiet \
+# Lambda con python3.12 corre sobre Amazon Linux 2023 (glibc 2.34): acepta
+# ruedas manylinux2014 y manylinux_2_28. Sin la segunda, pip retrocede a
+# versiones antiguas de las bibliotecas que ya solo publican esa.
+# --no-compile: los .pyc del equipo local no sirven en Lambda y solo engordan el paquete.
+python -m pip install --quiet --no-compile \
   --target "${DIR_TRABAJO}/paquete" \
-  --platform manylinux2014_x86_64 \
+  --platform manylinux2014_x86_64 --platform manylinux_2_28_x86_64 \
   --implementation cp --python-version 3.12 --only-binary=:all: --upgrade \
   fastapi pydantic mangum pyjwt cryptography >/dev/null
 ok "dependencias instaladas para linux/x86_64 y python 3.12"
+
+# Comprime el contenido de un directorio en la raiz del archivo. Usa zip si
+# existe; si no (Git Bash en Windows no lo trae), la biblioteca estandar de Python.
+comprimir() {
+  local origen="$1" destino="$2"
+  if command -v zip >/dev/null 2>&1; then
+    (cd "${origen}" && zip -qr "${destino}" .)
+  else
+    python - "${origen}" "${destino}" <<'PY'
+import os, sys, zipfile
+origen, destino = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as archivo:
+    for raiz, _, nombres in os.walk(origen):
+        for nombre in nombres:
+            ruta = os.path.join(raiz, nombre)
+            info = zipfile.ZipInfo(os.path.relpath(ruta, origen).replace(os.sep, "/"))
+            # Permisos Unix explicitos: un archivo creado en Windows no los
+            # trae y Lambda podria no poder leer el codigo.
+            info.create_system = 3
+            info.external_attr = 0o100644 << 16
+            info.compress_type = zipfile.ZIP_DEFLATED
+            with open(ruta, "rb") as fuente:
+                archivo.writestr(info, fuente.read())
+PY
+  fi
+}
 
 cp -r "${RAIZ_PROYECTO}/libs/rastro_core" "${DIR_TRABAJO}/paquete/"
 ok "capa comun incluida en el paquete"
@@ -46,13 +76,36 @@ from main import app
 manejador = Mangum(app, lifespan="off")
 PY
 
-  (cd "${destino}" && zip -qr "${DIR_TRABAJO}/${servicio}.zip" .)
+  comprimir "${destino}" "${DIR_TRABAJO}/${servicio}.zip"
+  local archivo_zip
+  archivo_zip="fileb://$(ruta_nativa "${DIR_TRABAJO}/${servicio}.zip")"
 
-  local variables="Variables={RASTRO_ENTORNO=aws,RASTRO_TABLA_ENVIOS=${TABLA_ENVIOS},RASTRO_TABLA_BITACORA=${TABLA_BITACORA},RASTRO_TABLA_MAESTROS=${TABLA_MAESTROS},RASTRO_BUCKET_EVIDENCIAS=${BUCKET_EVIDENCIAS},RASTRO_ALIAS_LLAVE=${ALIAS_LLAVE},RASTRO_ACCOUNT_ID=${CUENTA},RASTRO_JWT_EMISOR=${EMISOR},RASTRO_JWT_AUDIENCIA=${AUDIENCIA},RASTRO_JWT_SECRETO=${SECRETO_JWT},RASTRO_VIGENCIA_ENLACE=300,RASTRO_VIGENCIA_TOKEN=3600,RASTRO_VIGENCIA_REFRESCO=43200}"
+  # En JSON y no en la sintaxis abreviada de la CLI: el emisor lleva ":" y "/",
+  # y un secreto en base64 puede llevar "=", que la sintaxis abreviada no admite
+  # sin comillas.
+  local variables
+  variables="$(cat <<JSON
+{"Variables":{
+  "RASTRO_ENTORNO":"aws",
+  "RASTRO_TABLA_ENVIOS":"${TABLA_ENVIOS}",
+  "RASTRO_TABLA_BITACORA":"${TABLA_BITACORA}",
+  "RASTRO_TABLA_MAESTROS":"${TABLA_MAESTROS}",
+  "RASTRO_BUCKET_EVIDENCIAS":"${BUCKET_EVIDENCIAS}",
+  "RASTRO_ALIAS_LLAVE":"${ALIAS_LLAVE}",
+  "RASTRO_ACCOUNT_ID":"${CUENTA}",
+  "RASTRO_JWT_EMISOR":"${EMISOR}",
+  "RASTRO_JWT_AUDIENCIA":"${AUDIENCIA}",
+  "RASTRO_JWT_SECRETO":"${SECRETO_JWT}",
+  "RASTRO_VIGENCIA_ENLACE":"300",
+  "RASTRO_VIGENCIA_TOKEN":"3600",
+  "RASTRO_VIGENCIA_REFRESCO":"43200"
+}}
+JSON
+)"
 
   if existe_funcion "${nombre}"; then
     aws lambda update-function-code --region "${REGION}" \
-      --function-name "${nombre}" --zip-file "fileb://${DIR_TRABAJO}/${servicio}.zip" >/dev/null
+      --function-name "${nombre}" --zip-file "${archivo_zip}" >/dev/null
     aws lambda wait function-updated --region "${REGION}" --function-name "${nombre}"
     aws lambda update-function-configuration --region "${REGION}" \
       --function-name "${nombre}" --environment "${variables}" >/dev/null
@@ -65,7 +118,7 @@ PY
       --handler manejador.manejador \
       --timeout 15 \
       --memory-size 512 \
-      --zip-file "fileb://${DIR_TRABAJO}/${servicio}.zip" \
+      --zip-file "${archivo_zip}" \
       --environment "${variables}" \
       --tags proyecto="${PREFIJO}" >/dev/null
     aws lambda wait function-active --region "${REGION}" --function-name "${nombre}"
@@ -87,6 +140,12 @@ fi
 # Secreto de firma del token. Si no se fija, se usa el valor de desarrollo, que
 # esta en el repositorio y por lo tanto no protege nada: cualquiera que lo lea
 # puede firmar un token de administrador de cualquier organizacion.
+# Si no viene en el entorno, se lee de config/.jwt.env (fuera del control de
+# versiones), para que un redespliegue no cambie el secreto sin querer.
+if [[ -z "${RASTRO_JWT_SECRETO:-}" && -f "${RAIZ_PROYECTO}/config/.jwt.env" ]]; then
+  # shellcheck source=/dev/null
+  source "${RAIZ_PROYECTO}/config/.jwt.env"
+fi
 SECRETO_JWT="${RASTRO_JWT_SECRETO:-}"
 if [[ -z "${SECRETO_JWT}" ]]; then
   aviso "RASTRO_JWT_SECRETO no esta definido."
