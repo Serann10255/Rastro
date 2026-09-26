@@ -327,5 +327,7 @@ concluye que el control está bien.
 cd cotejo && python -m cotejo ejecutar
 ```
 
-Contra AWS, los ocho controles del catálogo son ejecutables. En local solo cinco
-lo son, y los otros tres quedan como *no ejecutados*.
+Contra AWS, los once controles del catálogo son ejecutables. Los tres de
+secretos en el repositorio (C-09a a C-09c) necesitan además que Cotejo se
+ejecute desde una copia del repositorio git, porque revisan su historial. En
+local, tres controles de infraestructura quedan como *no ejecutados*.

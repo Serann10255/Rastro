@@ -93,6 +93,11 @@ def _permanentes(catalogo: dict) -> list[Hallazgo]:
 
 def _causa_probable(papel: PapelDeTrabajo) -> str:
     """La causa se deduce de la evidencia; cuando no se deduce, se dice."""
+    # Cuando la propia prueba pudo deducirla de lo que encontro (el commit en
+    # que se versiono un secreto, por ejemplo), esa causa vale mas que la
+    # generica de su tipo.
+    if papel.detalle.get("causa"):
+        return str(papel.detalle["causa"])
     fallos = papel.detalle.get("fallos") or []
     if any("FUGA" in f for f in fallos):
         return (
@@ -126,6 +131,9 @@ def _efecto(control) -> str:
         "C-06": "Una empresa accederia a los datos de otra sobre la misma infraestructura compartida: es una fuga de informacion, no un defecto funcional.",
         "C-07": "El historico registraria secuencias imposibles y dejaria de servir como cadena de custodia.",
         "C-08": "La alteracion posterior del historico seria indetectable y el registro perderia su valor probatorio.",
+        "C-09a": "Quien lea el repositorio obtiene el secreto y, si es el de firma, puede fabricar tokens con el rol que elija.",
+        "C-09b": "El secreto sigue a la vista de quien consulte el historial aunque ya no figure en la rama. Su gravedad real depende de que siga vigente (C-09c).",
+        "C-09c": "Un secreto publicado sigue abriendo el sistema: cualquiera puede fabricar un token de administrador de cualquier organizacion.",
     }
     return efectos.get(control.id, "Se pierde la propiedad que el control debia garantizar.")
 
@@ -140,6 +148,9 @@ def _recomendacion(control) -> str:
         "C-06": "Revisar que toda consulta pase por la capa comun de acceso a datos y reciba el identificador de organizacion desde el token.",
         "C-07": "Revisar que la validacion de transiciones se aplique en el servidor y no solo en la interfaz.",
         "C-08": "Revisar el calculo del encadenamiento y el procedimiento de escritura de la bitacora.",
+        "C-09a": "Rotar primero el secreto y redesplegar; despues retirarlo del control de versiones (git rm --cached) y excluirlo en .gitignore. Retirarlo sin rotarlo no corrige nada: queda en el historial.",
+        "C-09b": "Reescribir el historial para retirar el secreto (git filter-repo), forzar la actualizacion de las ramas publicas y pedir a cada integrante que vuelva a clonar. No sustituye a la rotacion: el proveedor del repositorio puede seguir sirviendo el commit por su identificador, y toda copia previa lo conserva.",
+        "C-09c": "Rotar de inmediato el secreto vigente y redesplegar las funciones (deploy/aws/30-funciones.sh); despues, revisar las invocaciones desde la fecha de exposicion para descartar su uso.",
     }
     return recomendaciones.get(control.id, "Corregir la configuracion del control y volver a ejecutar el programa.")
 

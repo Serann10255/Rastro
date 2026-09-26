@@ -656,7 +656,7 @@ sistema auditado; su lectura restringida es un control, no una formalidad.
 
 ### `GET /catalogo`
 
-Los ocho controles con marco, tipo, procedimiento, criterio, evidencia esperada y
+Los controles del catálogo (once desde la versión 0.3) con marco, tipo, procedimiento, criterio, evidencia esperada y
 severidad, más los hallazgos permanentes con su nota de alcance.
 
 El criterio se devuelve tal como está declarado en el catálogo, **antes** de

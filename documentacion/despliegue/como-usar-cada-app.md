@@ -272,7 +272,7 @@ proveedor de Rastro: el auditor es un usuario de la organización auditada.
 
 ### Las tres pestañas
 
-**Catálogo.** Los ocho controles con su marco de referencia, criterio,
+**Catálogo.** Los once controles con su marco de referencia, criterio,
 procedimiento y severidad, más los dos hallazgos permanentes. Conviene mirarlo
 antes de ejecutar: el criterio se declara de antemano justamente para que no
 pueda acomodarse al resultado.
@@ -280,7 +280,9 @@ pueda acomodarse al resultado.
 **Ejecución.** El botón recorre el catálogo completo en una sola invocación.
 Al terminar muestra:
 
-- **Cobertura** — cuántos controles tienen resultado. En local es `5/8`.
+- **Cobertura** — cuántos controles tienen resultado. En local, tres controles
+  de infraestructura quedan sin ejecutar; los tres de secretos (C-09) también,
+  si la API corre en su contenedor, que no lleva el repositorio git.
 - **Resultado por control** — pulsar uno abre su papel de trabajo con la salida
   literal y la comprobación de que su huella coincide con la registrada.
 - **Verificar almacén** — recalcula todas las huellas y detecta si alguien editó
@@ -290,7 +292,7 @@ Al terminar muestra:
   recomendación y referencia a su papel de trabajo.
 
 **Reproducibilidad.** Compara dos ejecuciones y comprueba que clasifican igual
-los ocho controles. Avisa si ambas se hicieron bajo la misma identidad: la
+todos los controles. Avisa si ambas se hicieron bajo la misma identidad: la
 comprobación vale más cuando la segunda la ejecuta un integrante distinto.
 
 ### Desde línea de comandos

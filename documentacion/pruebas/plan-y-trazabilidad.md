@@ -14,7 +14,7 @@ que se ejecutan sin consumir el presupuesto del laboratorio.
 |---|---|---|---|
 | Unitarias de Rastro | `tests/unit/` | 82 | Máquina de estados y códigos, cadena de hash, reparto de roles, claves y coherencia entre la semilla de módulos y la interfaz |
 | Extremo a extremo de Rastro | `tests/e2e/` | 100 | Los nueve requisitos, la identidad, los maestros, el tablero, el lote, las guías, los módulos y el equipo |
-| Cotejo | `cotejo/tests/` | 27 | Catálogo, papeles de trabajo, reproducibilidad, informe y **contrato con el servicio de identidad de Rastro** |
+| Cotejo | `cotejo/tests/` | 52 | Catálogo, papeles de trabajo, reproducibilidad, informe, **contrato con el servicio de identidad de Rastro** y **secretos en el repositorio (C-09)**, incluido que ningún papel contenga el valor hallado |
 
 Desglose de extremo a extremo:
 

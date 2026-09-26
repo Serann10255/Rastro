@@ -15,9 +15,9 @@
 # decide, y un hallazgo que nadie entiende no se corrige. Vive aqui, y no en la
 # interfaz, para que la consola, el informe y la web digan exactamente lo mismo.
 
-version: "0.2"
+version: "0.3"
 sistema_auditado: Rastro
-fecha_catalogo: "2026-09-10"
+fecha_catalogo: "2026-09-26"
 
 # Lo que hace este programa, en una frase que se pueda leer en voz alta.
 que_es_esto: >-
@@ -241,6 +241,116 @@ controles:
       primero no demuestra que el verificador sirva.
     evidencia_esperada: >-
       Salida del verificador antes y despues de la alteracion controlada.
+    severidad_si_desviado: alta
+
+  # ------------------------------------------------------------------ #
+  # Secretos en el repositorio
+  # ------------------------------------------------------------------ #
+  #
+  # Se agregan despues de un incidente real: el secreto de firma de los tokens
+  # quedo versionado en el repositorio publico y hubo que rotarlo (H-01,
+  # 2026-09-26). Ninguno de los ocho controles anteriores lo habria detectado.
+  #
+  # Son tres y no uno porque "hay un secreto en el repositorio" mezcla tres
+  # condiciones de riesgo muy distinto. Separar arbol e historial no basta: un
+  # secreto borrado del arbol sin rotarlo sale bien en C-09a, mal en C-09b, y
+  # sigue abriendo el sistema. Lo que distingue lo vivo de lo invalidado es
+  # C-09c, que lo prueba.
+  #
+  # En los tres, ningun papel contiene el valor hallado: tipo, ruta, commit y
+  # los primeros 16 caracteres de su huella SHA-256. Un papel que cita el
+  # secreto lo vuelve a exponer.
+
+  - id: C-09a
+    control: Ningun secreto esta versionado en el arbol actual del repositorio.
+    pregunta: ¿Hay alguna llave o contrasena guardada hoy en el codigo que se publica?
+    en_simple: >-
+      El codigo de Rastro esta publicado en internet. Revisamos todos los
+      archivos tal como estan hoy buscando llaves: la que firma las sesiones,
+      las de la nube y las llaves privadas. Si encontramos una, anotamos donde
+      esta y nunca la llave misma.
+    si_falla: >-
+      Cualquiera que abra el repositorio podria copiar la llave y entrar al
+      sistema como si fuera un administrador.
+    marco: ISO/IEC 27001:2022, A.5.17 y A.8.4; CWE-798
+    tipo: cumplimiento
+    prueba: secretos.arbol_actual
+    procedimiento: >-
+      Buscar con git grep, sobre el commit al que apunta la rama revisada,
+      asignaciones de secretos (secreto de firma de tokens, identificadores y
+      claves secretas de AWS, tokens de sesion, llaves privadas), y listar los
+      archivos versionados cuyo nombre indica un secreto (.jwt.env, .env, .pem,
+      .key, id_rsa, credentials).
+    criterio: >-
+      No aparece ningun secreto versionado. No cuentan como secreto las
+      referencias a variables, los marcadores de posicion, los valores mas
+      cortos que el minimo de su tipo (32 caracteres para el secreto de firma,
+      que es lo que exige el despliegue; 40 para una clave secreta de AWS), las
+      claves de ejemplo publicadas por el proveedor ni los valores de
+      desarrollo declarados en la prueba, cuya vigencia comprueba C-09c.
+    evidencia_esperada: >-
+      Commit revisado, numero de archivos y cada hallazgo con tipo, ruta, linea
+      y huella parcial, sin el valor.
+    severidad_si_desviado: alta
+
+  - id: C-09b
+    control: Ningun secreto aparece en el historial de commits del repositorio.
+    pregunta: ¿Quedo alguna llave guardada en versiones anteriores del codigo, aunque hoy ya no este?
+    en_simple: >-
+      El repositorio guarda todas las versiones pasadas de cada archivo, y
+      cualquiera puede verlas. Borrar hoy una llave no la saca de las versiones
+      de ayer. Revisamos el historial completo, commit por commit, con la misma
+      busqueda que en la pregunta anterior.
+    si_falla: >-
+      La llave seguiria a la vista de quien sepa mirar el historial. Si ademas
+      sigue sirviendo, es una puerta abierta; si ya no sirve, es una limpieza
+      pendiente. La pregunta siguiente es la que lo distingue.
+    marco: ISO/IEC 27001:2022, A.5.17 y A.8.4; CWE-798
+    tipo: cumplimiento
+    prueba: secretos.historial
+    procedimiento: >-
+      Recorrer con git log --all -p las lineas agregadas en todos los commits
+      alcanzables desde cualquier referencia, con los mismos patrones y
+      exclusiones que C-09a.
+    criterio: >-
+      Ningun commit agrega un secreto. La severidad es media porque un secreto
+      que solo esta en el historial ya salio de la rama: su riesgo real depende
+      de si sigue vigente, que se mide por separado en C-09c con severidad alta.
+    evidencia_esperada: >-
+      Numero de commits revisados y cada hallazgo con tipo, ruta, commit,
+      huella parcial y si sigue en el arbol actual, sin el valor.
+    severidad_si_desviado: media
+
+  - id: C-09c
+    control: >-
+      Ningun secreto de firma hallado en el repositorio es aceptado por el
+      sistema auditado.
+    pregunta: Las llaves que aparecieron en el repositorio, ¿todavia abren el sistema?
+    en_simple: >-
+      Encontrar una llave vieja no dice si todavia sirve. Para saberlo la
+      probamos: con cada llave hallada fabricamos un pase de entrada a nombre de
+      nadie y sin ningun permiso, y lo presentamos en la puerta. Si el sistema
+      lo rechaza porque la firma no cuadra, esa llave ya no abre nada.
+    si_falla: >-
+      Alguien que haya visto la llave en el repositorio podria fabricar un pase
+      de administrador y hacer lo que quisiera en el sistema.
+    marco: ISO/IEC 27001:2022, A.5.17; NIST SP 800-57 Parte 1, compromiso de llaves
+    tipo: sustantiva
+    prueba: secretos.vigencia
+    procedimiento: >-
+      Por cada secreto de firma distinto hallado en el arbol o en el historial,
+      firmar un token con el emisor y la audiencia del sistema, un usuario
+      inexistente y ningun rol, y presentarlo en GET /auth/yo. Los valores de
+      desarrollo declarados se prueban tambien, salvo en el entorno local,
+      donde el sistema los usa por diseno.
+    criterio: >-
+      Todo secreto probado es rechazado con 401 por firma invalida; cualquier
+      otra respuesta cuenta como aceptado. Si algun secreto hallado no puede
+      probarse (un tipo sin prueba de uso, o la interfaz no responde), el
+      control queda sin ejecutar: no se presume invalidado lo que no se probo.
+    evidencia_esperada: >-
+      Por cada secreto probado, su huella parcial, su origen, la ruta invocada,
+      el codigo de respuesta y el mensaje del sistema. Ni el secreto ni el token.
     severidad_si_desviado: alta
 
 # ------------------------------------------------------------------------ #

@@ -35,9 +35,11 @@ from rastro_core.repository import RepositorioMemoria
 # --------------------------------------------------------------------------- #
 
 
-def test_el_catalogo_declara_ocho_controles_con_criterio_y_marco():
+def test_el_catalogo_declara_once_controles_con_criterio_y_marco():
+    # Ocho originales y los tres de secretos en el repositorio (C-09a/b/c),
+    # agregados despues del hallazgo H-01.
     catalogo = cargar_catalogo()
-    assert len(catalogo["controles"]) == 8
+    assert len(catalogo["controles"]) == 11
     for control in catalogo["controles"]:
         assert control.marco, f"{control.id} sin referencia de marco"
         assert control.criterio, f"{control.id} sin criterio de aceptacion"
@@ -208,7 +210,7 @@ def test_una_ejecucion_produce_un_papel_por_control_con_su_huella(tmp_path, cata
     resultados = {c.id: _conforme() for c in catalogo["controles"]}
     almacen, _ = _ejecutar_con(resultados, tmp_path, "ej-1")
 
-    assert len(almacen.papeles) == 8
+    assert len(almacen.papeles) == len(catalogo["controles"])
     for papel in almacen.papeles:
         ruta = almacen.base / papel.archivo_evidencia
         assert ruta.is_file()
@@ -241,7 +243,7 @@ def test_el_almacen_verifica_mientras_nadie_edite_la_evidencia(tmp_path, catalog
 
     verificacion = verificar_almacen(almacen.base)
     assert verificacion["almacen_integro"]
-    assert verificacion["papeles_verificados"] == 8
+    assert verificacion["papeles_verificados"] == len(catalogo["controles"])
 
 
 def test_editar_un_papel_de_trabajo_se_detecta(tmp_path, catalogo):
@@ -287,7 +289,7 @@ def test_dos_ejecuciones_con_el_mismo_resultado_son_reproducibles(tmp_path, cata
 
     comparacion = comparar_ejecuciones(a.base, b.base)
     assert comparacion["reproducible"]
-    assert comparacion["controles_comparados"] == 8
+    assert comparacion["controles_comparados"] == len(catalogo["controles"])
 
 
 def test_una_clasificacion_distinta_rompe_la_reproducibilidad(tmp_path, catalogo):
@@ -317,9 +319,10 @@ def test_un_control_no_ejecutado_no_cuenta_como_conforme(tmp_path, catalogo):
     almacen, _ = _ejecutar_con(resultados, tmp_path, "ej-6")
     resumen = cobertura(almacen, catalogo)
 
-    assert resumen["conformes"] == 6
+    total = len(catalogo["controles"])
+    assert resumen["conformes"] == total - 2
     assert resumen["no_ejecutados"] == 2
-    assert resumen["cobertura"] == "6/8"
+    assert resumen["cobertura"] == f"{total - 2}/{total}"
 
 
 def test_cada_desviacion_produce_un_hallazgo_trazado_a_su_papel(tmp_path, catalogo):
@@ -402,7 +405,7 @@ def test_el_informe_abre_en_lenguaje_llano_y_conserva_el_tecnico(tmp_path, catal
 
     # La capa llana.
     assert "EN PALABRAS SIMPLES" in texto
-    assert "Revisamos 8 cosas" in texto
+    assert f"Revisamos {len(catalogo['controles'])} cosas" in texto
     assert "quedaron sin revisar 1" in texto
     assert "[BIEN]" in texto and "[SIN REVISAR]" in texto
     assert "Pregunta:" in texto and "Que hicimos:" in texto
@@ -431,7 +434,7 @@ def test_una_prueba_que_lanza_una_excepcion_no_detiene_la_ejecucion(tmp_path, ca
         PRUEBAS.clear()
         PRUEBAS.update(originales)
 
-    assert len(almacen.papeles) == 8
+    assert len(almacen.papeles) == len(catalogo["controles"])
 
 
 # --------------------------------------------------------------------------- #

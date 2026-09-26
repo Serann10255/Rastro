@@ -31,13 +31,14 @@ producen evidencia que nadie puede repetir. Ese cruce es lo que ocupa Cotejo.
 
 | Archivo | Responsabilidad |
 |---|---|
-| `catalogo/controles.yaml` | Matriz de ocho controles con marco, criterio, evidencia esperada y su versión en lenguaje llano; más el diccionario |
+| `catalogo/controles.yaml` | Matriz de once controles con marco, criterio, evidencia esperada y su versión en lenguaje llano; más el diccionario |
 | `cotejo/contexto.py` | Contra qué sistema se ejecuta y con qué usuarios de prueba |
 | `cotejo/ejecutor.py` | Recorre el catálogo, produce un papel por control |
 | `cotejo/papeles.py` | Almacén: índice, evidencia y huellas |
 | `cotejo/pruebas/cumplimiento.py` | C-01 a C-04: configuración, en modo lectura |
 | `cotejo/pruebas/sustantiva.py` | C-05 a C-07: ejercitan la aplicación |
 | `cotejo/pruebas/integridad.py` | C-08: recalcula la cadena de la bitácora |
+| `cotejo/pruebas/secretos.py` | C-09a a C-09c: secretos en el árbol, en el historial y su vigencia |
 | `cotejo/informe.py` | Hallazgos con condición, criterio, causa y efecto |
 | `cotejo/cli.py` | `ejecutar`, `verificar`, `comparar`, `catalogo`, `glosario` |
 
@@ -57,6 +58,44 @@ un olvido.
 | C-06 | Aislamiento entre organizaciones | COBIT 2019; OWASP A01 | sustantiva |
 | C-07 | Transiciones de estado inválidas rechazadas | COBIT 2019 | sustantiva |
 | C-08 | Bitácora detecta su propia alteración | Schneier y Kelsey (1999) | integridad |
+| C-09a | Ningún secreto versionado en el árbol actual | ISO/IEC 27001 A.5.17 y A.8.4; CWE-798 | cumplimiento |
+| C-09b | Ningún secreto en el historial de commits | ISO/IEC 27001 A.5.17 y A.8.4; CWE-798 | cumplimiento |
+| C-09c | Ningún secreto hallado sigue siendo aceptado por el sistema | ISO/IEC 27001 A.5.17; NIST SP 800-57 | sustantiva |
+
+### C-09: secretos en el repositorio
+
+Se agregó (catálogo 0.3, 2026-09-26) después de un incidente real: el secreto de
+firma de los tokens quedó versionado en el repositorio público y hubo que
+rotarlo ([H-01](../../cambios/2026-09-26-h01-secreto-expuesto.md)). Ninguno de
+los ocho controles originales lo habría detectado.
+
+**Son tres comprobaciones, no una ni dos.** «Hay un secreto en el repositorio»
+mezcla condiciones de riesgo muy distinto. Separar árbol (C-09a) e historial
+(C-09b) localiza la desviación, pero no distingue un secreto vivo de uno
+invalidado: uno que se borró del árbol **sin rotarse** sale bien en C-09a y mal
+en C-09b, y sigue abriendo el sistema. Lo que decide el riesgo residual es
+C-09c, que prueba cada secreto hallado: firma con él un token sin roles, a
+nombre de un usuario inexistente, y comprueba que el sistema lo rechace por
+firma inválida. Cada uno tiene su severidad declarada de antemano: alta, media
+y alta.
+
+**Ningún papel contiene el valor hallado.** Se reporta tipo, ruta, línea o
+commit y los primeros 16 caracteres de la huella SHA-256, que bastan para
+cruzarlo con otra evidencia sin revelarlo. Los papeles circulan hacia el
+docente, y un papel que cita el secreto lo vuelve a exponer. El token de C-09c
+tampoco llega al papel. Hay una prueba que lo verifica sobre los tres
+controles.
+
+**Qué no cuenta como secreto** está declarado en la prueba: referencias a
+variables (`${...}`, `\$(...)`), marcadores (`%s`), valores más cortos que el
+mínimo de su tipo y las claves de ejemplo que publica AWS. El secreto de
+desarrollo de la pila local es **público por diseño** y no es hallazgo en C-09a
+ni C-09b, pero C-09c lo prueba fuera del entorno local: un valor publicado solo
+es aceptable mientras ningún despliegue real lo acepte.
+
+**Necesita el repositorio git.** El contenedor de la API no lo lleva; ahí los
+tres quedan *sin ejecutar* con ese motivo, en lugar de concluir sin mirar. Para
+evaluarlos, Cotejo se ejecuta desde una copia del repositorio.
 
 ### Cada control se declara dos veces
 
@@ -92,7 +131,8 @@ resultado, que es justamente lo que el programa existe para evitar.
 **Un control no ejecutado no es un control conforme.** La conclusión
 `NO_EJECUTADA` es una tercera categoría, no un matiz de conformidad. En el
 entorno local, tres controles de infraestructura no pueden comprobarse; el
-informe lo declara y la cobertura lo refleja (`5/8`). Presentar la ausencia de
+informe lo declara y la cobertura lo refleja (`5/8` con el catálogo original de
+ocho controles). Presentar la ausencia de
 una capacidad como conformidad sería el peor resultado posible.
 
 **Cada prueba se valida en los dos sentidos.** Comprobar que una prueba informa
@@ -192,6 +232,19 @@ permanente H-PERM-02, no como condición aceptable de diseño.
 
 **El almacén detecta la manipulación, no la previene.** Prometer prevención donde
 solo hay detección sería una afirmación que la evidencia no sostiene.
+
+**El sellado es por huella, no por firma.** Cada papel lleva la huella SHA-256
+de su evidencia, y `python -m cotejo verificar` la recalcula. Eso permite a
+quien recibe los papeles confirmar que son los mismos que cita el documento,
+pero exige tenerlos. No hay un par de llaves ni una llave pública: verificar sin
+acceder a los papeles requeriría firmar el índice con una llave asimétrica y
+anclarlo en un registro externo. Queda como trabajo futuro.
+
+**La numeración de hallazgos es por ejecución.** El informe llama H-01, H-02…
+a las desviaciones de cada ejecución, en orden de catálogo. No coincide con los
+identificadores de hallazgo del documento de auditoría, que son estables entre
+ejecuciones: al integrar un informe hay que cruzarlos por control y por huella,
+no por número.
 
 ## Dependencias y relaciones
 

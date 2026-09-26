@@ -22,7 +22,7 @@ import yaml
 from .contexto import Contexto
 from .modelos import Conclusion, Control, PapelDeTrabajo, ResultadoPrueba, marca_tiempo
 from .papeles import AlmacenPapeles
-from .pruebas import cumplimiento, integridad, sustantiva
+from .pruebas import cumplimiento, integridad, secretos, sustantiva
 
 RAIZ_COTEJO = Path(__file__).resolve().parents[1]
 CATALOGO_POR_OMISION = RAIZ_COTEJO / "catalogo" / "controles.yaml"
@@ -39,6 +39,9 @@ PRUEBAS: dict[str, Callable[[Contexto], ResultadoPrueba]] = {
     "sustantiva.aislamiento_entre_organizaciones": sustantiva.aislamiento_entre_organizaciones,
     "sustantiva.transiciones_invalidas": sustantiva.transiciones_invalidas,
     "integridad.cadena_de_bitacora": integridad.cadena_de_bitacora,
+    "secretos.arbol_actual": secretos.arbol_actual,
+    "secretos.historial": secretos.historial,
+    "secretos.vigencia": secretos.vigencia,
 }
 
 

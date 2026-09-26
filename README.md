@@ -85,7 +85,7 @@ Desde la interfaz en http://localhost:5175, o desde la línea de comandos:
 cd cotejo && python -m cotejo ejecutar
 ```
 
-Recorre el catálogo de ocho controles contra el sistema desplegado y escribe los
+Recorre el catálogo de once controles contra el sistema desplegado y escribe los
 papeles de trabajo y el informe en `cotejo/papeles/<ejecución>/`.
 
 ---

@@ -174,6 +174,13 @@ class Contexto:
     #: "local:desconocido" incumple el principio del propio modulo: un resultado
     #: del que no consta quien lo obtuvo no es evidencia de auditoria.
     identidad_declarada: str | None = None
+    #: Emisor y audiencia de los tokens del sistema auditado. C-09c los usa
+    #: para que lo unico distinto en su token de prueba sea la firma.
+    jwt_emisor: str = "http://localhost:8080/auth"
+    jwt_audiencia: str = "rastro-web"
+    #: Repositorio que revisa C-09. En el contenedor de la API no hay .git, y
+    #: C-09 queda sin ejecutar con ese motivo en lugar de concluir sin mirar.
+    raiz_repositorio: Path = RAIZ_PROYECTO
     _tokens: dict[str, str] = field(default_factory=dict, repr=False)
     _cliente: httpx.Client | None = field(default=None, repr=False)
 
@@ -214,6 +221,9 @@ class Contexto:
             tabla_bitacora=valor("COTEJO_TABLA_BITACORA", "tabla_bitacora", "rastro-bitacora"),
             endpoint_s3=valor("COTEJO_ENDPOINT_S3", "endpoint_s3_publico", None),
             endpoint_dynamodb=valor("COTEJO_ENDPOINT_DYNAMODB", "endpoint_dynamodb", None),
+            jwt_emisor=valor("COTEJO_JWT_EMISOR", "jwt_emisor", "http://localhost:8080/auth"),
+            jwt_audiencia=valor("COTEJO_JWT_AUDIENCIA", "jwt_audiencia", "rastro-web"),
+            raiz_repositorio=Path(os.getenv("COTEJO_REPOSITORIO") or RAIZ_PROYECTO),
             usuarios=descubrir_usuarios(
                 region=valor("AWS_REGION", "region", "us-east-1"),
                 endpoint_dynamodb=valor("COTEJO_ENDPOINT_DYNAMODB", "endpoint_dynamodb", None),

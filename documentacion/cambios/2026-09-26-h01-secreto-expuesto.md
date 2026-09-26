@@ -88,13 +88,22 @@ después de comprobar que ninguna función conservaba el secreto expuesto.
 
 ## Lo que el hallazgo deja para el programa de auditoría
 
-**Un control nuevo: ausencia de secretos en el repositorio.** Es una prueba de
-cumplimiento sencilla y cubre un riesgo que ya se materializó una vez. El
-siguiente identificador libre del catálogo es **C-09**. Hay una decisión que
-tomar antes de escribirla: si revisa solo el árbol actual (hoy saldría
-conforme) o también el historial (saldría desviado mientras el historial no se
-reescriba). Revisar el historial es más exigente y más honesto con lo que
-pregunta el control.
+**Un control nuevo: C-09, secretos en el repositorio.** Ya está en el catálogo
+(versión 0.3), con tres comprobaciones y no una:
+[C-09a, C-09b y C-09c](2026-09-26-c09-secretos-en-el-repositorio.md). Su
+primera ejecución contra el repositorio y el despliegue da lo que este hallazgo
+anticipa:
+
+| Control | Resultado | Qué dice |
+|---|---|---|
+| C-09a · árbol actual | BIEN | Ningún secreto versionado en `eca3475` |
+| C-09b · historial | MAL | `config/.jwt.env` en `be75812`, huella `984383820f91ddde`, ya fuera del árbol |
+| C-09c · vigencia | BIEN | Ese secreto y el de desarrollo se rechazan con 401 por firma inválida |
+
+La huella que reporta C-09b es la misma de la evidencia de rotación: el papel de
+Cotejo y este hallazgo se cruzan sin que ninguno contenga el secreto. La
+corrección pendiente es reescribir el historial, y C-09b seguirá saliendo MAL
+hasta que se haga.
 
 **Los papeles de trabajo no van al repositorio.** Enumeran las debilidades del
 sistema auditado, y publicarlos sería el mismo error que el secreto. El
