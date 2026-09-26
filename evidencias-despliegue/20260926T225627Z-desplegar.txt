@@ -77,3 +77,176 @@ Entorno local preparado.
   [ok] funcion actualizada: rastro-evidence
   [ok] funcion actualizada: rastro-public
   [ok] funcion actualizada: rastro-audit
+  [ok] funcion actualizada: rastro-masters
+  [ok] funcion actualizada: rastro-dashboard
+
+=== Funciones desplegadas ===
+
+########################################
+# Etapa 40-api
+########################################
+
+=== Interfaz HTTP ===
+  [ok] interfaz ya existente: l7ymvbqqc4
+  [ok] CORS aplicado
+
+=== Validador de tokens (supuesto SU-01) ===
+  [ok] proveedor de identidad propio: la validacion la hace cada servicio
+  [!!] SU-01 INDETERMINADO: el validador no se creo por un motivo ajeno a los permisos.
+  [!!] Respuesta del proveedor:  aws: [ERROR]: An error occurred (BadRequestException) when calling the CreateAuthorizer operation: Caught exception when connecting to https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com/.well-known/openid-configuration for issuer https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com. Please tr
+  [!!] El sistema sigue operando: cada servicio valida el token por su cuenta.
+  [ok] validador NO asociado a las rutas: el proveedor propio firma con HS256
+
+=== Rutas ===
+  [ok] ruta ya existente: POST /auth/token
+  [ok] ruta ya existente: POST /auth/refrescar
+  [ok] ruta ya existente: GET /auth/roles
+  [ok] ruta ya existente: POST /auth/salir
+  [ok] ruta ya existente: GET /auth/yo
+  [ok] ruta ya existente: POST /auth/clave
+  [ok] ruta ya existente: GET /usuarios
+  [ok] ruta ya existente: POST /usuarios
+  [ok] ruta ya existente: POST /usuarios/{correo}
+  [ok] ruta ya existente: GET /empresa
+  [ok] ruta ya existente: GET /equipo/mensajeros
+  [ok] ruta ya existente: GET /roles
+  [ok] ruta ya existente: POST /roles
+  [ok] ruta ya existente: POST /roles/{clave}
+  [ok] ruta ya existente: POST /roles/{clave}/eliminar
+  [ok] ruta ya existente: POST /envios
+  [ok] ruta ya existente: GET /envios
+  [ok] ruta ya existente: POST /envios/lote
+  [ok] ruta ya existente: GET /envios/exportar
+  [ok] ruta ya existente: POST /envios/etiquetas
+  [ok] ruta ya existente: GET /envios/{envio_id}
+  [ok] ruta ya existente: POST /envios/{envio_id}/asignacion
+  [ok] ruta ya existente: GET /envios/{envio_id}/transiciones
+  [ok] ruta ya existente: POST /envios/{envio_id}/eventos
+  [ok] ruta ya existente: POST /envios/{envio_id}/evidencias
+  [ok] ruta ya existente: GET /envios/{envio_id}/evidencias
+  [ok] ruta ya existente: POST /envios/{envio_id}/evidencias/{evidencia_id}/confirmacion
+  [ok] ruta ya existente: GET /catalogos/estados
+  [ok] ruta ya existente: GET /catalogos/modulos
+  [ok] ruta ya existente: POST /catalogos/modulos/{clave}
+  [ok] ruta ya existente: GET /tiendas
+  [ok] ruta ya existente: POST /tiendas
+  [ok] ruta ya existente: POST /tiendas/{tienda_id}
+  [ok] ruta ya existente: POST /tiendas/{tienda_id}/eliminar
+  [ok] ruta ya existente: GET /clientes
+  [ok] ruta ya existente: POST /clientes
+  [ok] ruta ya existente: POST /clientes/{cliente_id}
+  [ok] ruta ya existente: POST /clientes/{cliente_id}/eliminar
+  [ok] ruta ya existente: GET /transportistas
+  [ok] ruta ya existente: POST /transportistas
+  [ok] ruta ya existente: POST /transportistas/{transportista_id}
+  [ok] ruta ya existente: POST /transportistas/{transportista_id}/eliminar
+  [ok] ruta ya existente: GET /tablero
+  [ok] ruta ya existente: GET /bitacora
+  [ok] ruta ya existente: GET /bitacora/verificacion
+  [ok] ruta ya existente: GET /publico/envios/{envio_id}
+
+=== Etapa de despliegue ===
+  [ok] etapa por omision ya existente
+
+=== Interfaz disponible en https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com ===
+
+########################################
+# Etapa 50-registro
+########################################
+
+=== Politica del contenedor de registro ===
+  [ok] politica aplicada a rastro-registro-484948252891
+
+=== Registro de actividad ===
+  [ok] registro ya existente: rastro-actividad
+  [ok] registro activo
+
+=== Eventos de datos (componente condicionado) ===
+  [ok] eventos de datos NO habilitados; exporte RASTRO_EVENTOS_DE_DATOS=si para activarlos
+
+=== Registro de actividad listo ===
+
+########################################
+# Etapa 60-sitios
+########################################
+
+=== Comprobación de herramientas ===
+  [ok] npm 11.12.1
+
+=== Configuración en tiempo de ejecución ===
+  [ok] configuración de Rastro escrita
+  [ok] configuración de Cotejo escrita
+  [!!] COTEJO_URL_API está vacía: la interfaz de auditoría no encontrará su programa.
+  [!!] Cotejo no se despliega como función en AWS; se ejecuta desde la máquina del auditor.
+  [!!] Exporte COTEJO_URL_API con la dirección donde lo publique, o use la línea de comandos.
+
+=== Sitio Rastro ===
+  [ok] contenedor ya existente: rastro-web-484948252891
+  [ok] sitio estático habilitado con reescritura a index.html
+  [ok] compilado Rastro
+  [ok] recursos publicados con caché larga
+  [ok] índice y configuración publicados sin caché
+  URL: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+=== Sitio Cotejo ===
+  [ok] no publicado (exporte RASTRO_PUBLICAR_COTEJO=si para hacerlo)
+  La interfaz de auditoría se sirve en la máquina del auditor:
+    cd cotejo/web && npm run dev
+
+=== Sitios publicados ===
+  Rastro: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+########################################
+# Etapa 90-configuracion
+########################################
+
+=== Archivo de configuracion ===
+  [ok] escrito /c/Users/orlan/Downloads/Rastro/config/deployment.json
+  [ok] la interfaz web tiene su configuracion de ejecucion
+
+=== Verificacion de que no quedan identificadores escritos a mano ===
+  [ok] ningun identificador de cuenta escrito a mano en el codigo
+
+=== Configuracion lista ===
+
+########################################
+# Verificacion posterior al despliegue
+########################################
+
+=== Componentes de datos ===
+  [ok] tabla de envios rastro-envios
+  [ok] tabla de bitacora rastro-bitacora
+  [ok] tabla de maestros rastro-maestros
+  [ok] llave de cifrado alias/rastro
+  [ok] contenedor de evidencias
+  [ok] contenedor de registro
+
+=== Funciones ===
+  [ok] funcion rastro-auth
+  [ok] funcion rastro-shipments
+  [ok] funcion rastro-tracking
+  [ok] funcion rastro-evidence
+  [ok] funcion rastro-public
+  [ok] funcion rastro-audit
+  [ok] funcion rastro-masters
+  [ok] funcion rastro-dashboard
+
+=== Interfaz y registro ===
+  [ok] interfaz HTTP l7ymvbqqc4
+
+=== Prueba de extremo a extremo del punto publico ===
+  [ok] el punto publico responde a traves de la interfaz (404 esperado)
+
+=== Prueba de extremo a extremo del catalogo de estados ===
+  [ok] el catalogo de estados responde a traves de la interfaz
+
+=== Estado del supuesto SU-01 ===
+  SU-01 (validador de tokens en API Gateway): indeterminado
+  Nota: el sistema valida el token en cada servicio, de modo que
+  funciona igual con o sin validador en la puerta.
+  [ok] registro de actividad rastro-actividad
+
+=== Resultado ===
+  Todos los componentes verificados.
+
+Despliegue completo. Inicio 2026-09-26T22:56:27Z, fin 2026-09-26T23:04:57Z.

@@ -1,0 +1,31 @@
+# inventario de recursos desplegados (solo lectura)
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-09-26T23:05:52Z
+---
+== Tablas DynamoDB (nombre, estado, facturacion, registros contados, creada)
+rastro-envios	ACTIVE	PAY_PER_REQUEST	registros=84  creada=2026-09-26T17:24:52.289000-05:00
+rastro-bitacora	ACTIVE	PAY_PER_REQUEST	registros=0  creada=2026-09-26T17:25:17.078000-05:00
+rastro-maestros	ACTIVE	PAY_PER_REQUEST	registros=63  creada=2026-09-26T17:25:41.709000-05:00
+== Llave KMS (alias, id, estado, creada, rotacion)
+alias/rastro	f223e4d5-fa6c-4a53-ae00-f787fb25839b	Enabled	2026-09-26T17:26:06.322000-05:00	rotacion=True
+== Contenedores S3 (nombre, creado, cifrado, versionado, bloqueo publico)
+rastro-evidencias-484948252891	2026-09-26T22:26:13+00:00	cifrado=aws:kms	versionado=Enabled	bloqueo(politica/restringido)=True/True
+rastro-registro-484948252891	2026-09-26T22:26:17+00:00	cifrado=AES256	versionado=None	bloqueo(politica/restringido)=True/True
+rastro-web-484948252891	2026-09-26T22:38:50+00:00	cifrado=AES256	versionado=None	bloqueo(politica/restringido)=False/False
+== Funciones Lambda (nombre, runtime, memoria MB, paquete bytes, ultima modificacion, estado)
+rastro-audit	python3.12	512	8268593	2026-09-26T23:00:07.000+0000	Active/Successful
+rastro-auth	python3.12	512	8275506	2026-09-26T22:57:47.000+0000	Active/Successful
+rastro-dashboard	python3.12	512	8270439	2026-09-26T23:01:19.000+0000	Active/Successful
+rastro-evidence	python3.12	512	8269018	2026-09-26T22:59:15.000+0000	Active/Successful
+rastro-masters	python3.12	512	8269984	2026-09-26T23:00:44.000+0000	Active/Successful
+rastro-public	python3.12	512	8268358	2026-09-26T22:59:36.000+0000	Active/Successful
+rastro-shipments	python3.12	512	8271213	2026-09-26T22:58:21.000+0000	Active/Successful
+rastro-tracking	python3.12	512	8269780	2026-09-26T22:58:41.000+0000	Active/Successful
+== API Gateway (nombre, id, protocolo, direccion, creada)
+rastro-api	l7ymvbqqc4	HTTP	https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com	2026-09-26T22:31:32+00:00
+rutas=46  integraciones=8  rutas_con_validador=0
+== CloudTrail (nombre, contenedor, validacion de integridad, multirregion)
+rastro-actividad	rastro-registro-484948252891	True	True
+registrando=True
+== Sitio web
+http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com -> HTTP 200
