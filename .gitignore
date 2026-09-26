@@ -4,6 +4,12 @@ __pycache__/
 .pytest_cache/
 .env
 config/deployment.json
+
+# Secreto de firma de los tokens. Quien lo lea puede firmar un token de
+# administrador de cualquier organizacion. Estuvo versionado por error
+# (hallazgo H-01, 2026-09-26): esta exclusion no se retira aunque se ajusten
+# las demas.
+config/.jwt.env
 cotejo/papeles/*/
 !cotejo/papeles/.gitkeep
 node_modules/
