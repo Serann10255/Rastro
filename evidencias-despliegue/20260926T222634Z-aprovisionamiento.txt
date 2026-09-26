@@ -1,0 +1,18 @@
+# comando: /c/Users/orlan/Downloads/Rastro/.venv/Scripts/python /c/Users/orlan/Downloads/Rastro/deploy/local/preparar_entorno.py
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-09-26T22:26:34Z
+---
+  [ok] tabla ya existente: rastro-envios
+  [ok] tabla ya existente: rastro-bitacora
+  [ok] tabla ya existente: rastro-maestros
+  [ok] contenedor creado: rastro-evidencias-484948252891
+  [ok] versionado: aplicado
+  [ok] bloqueo de acceso publico: aplicado
+  [ok] derivando contrasenas con PBKDF2 (tarda unos segundos)...
+  [ok] datos maestros: 2 organizaciones, 10 usuarios, 5 tiendas, 5 clientes, 3 transportistas
+  [ok] roles: 8 aprovisionados, 0 ya personalizables
+  [ok] modulos: 30 nuevos, 0 actualizados conservando su estado
+  [ok] envios sinteticos: 20 creados con su historico
+  [ok] identificadores de consulta publica en envios-creados.json
+
+Entorno local preparado.

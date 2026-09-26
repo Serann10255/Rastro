@@ -10,17 +10,3 @@ node_modules/
 .DS_Store
 *.log
 
-# Generados por la preparacion del entorno y el despliegue
-seed/envios-creados.json
-evidencias-despliegue/
-migracion/
-config/.identidad.env
-config/.api.env
-config/.jwt.env
-web/configuracion.json
-
-# Interfaces
-dist/
-*.tsbuildinfo
-web/public/configuracion.json
-cotejo/web/public/configuracion.json

@@ -1,0 +1,16 @@
+# comando: /c/Users/orlan/Downloads/Rastro/.venv/Scripts/python /c/Users/orlan/Downloads/Rastro/deploy/local/preparar_entorno.py
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-09-26T22:57:01Z
+---
+  [ok] tabla ya existente: rastro-envios
+  [ok] tabla ya existente: rastro-bitacora
+  [ok] tabla ya existente: rastro-maestros
+  [ok] contenedor creado: rastro-evidencias-484948252891
+  [ok] versionado: aplicado
+  [ok] bloqueo de acceso publico: aplicado
+  [ok] datos maestros: ya existen, no se duplican
+  [ok] roles: 0 aprovisionados, 8 ya personalizables
+  [ok] modulos: 0 nuevos, 30 actualizados conservando su estado
+  [ok] envios sinteticos: ya existen, no se duplican
+
+Entorno local preparado.
