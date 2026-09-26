@@ -137,8 +137,17 @@ pueda leer el código.
 ### El secreto de firma
 
 `30-funciones.sh` lo toma de `RASTRO_JWT_SECRETO` o, si no está, de
-`config/.jwt.env`, que está fuera del control de versiones. Guardarlo ahí evita
-que un redespliegue lo cambie sin querer y cierre todas las sesiones:
+`config/.jwt.env`. Guardarlo ahí evita que un redespliegue lo cambie sin querer
+y cierre todas las sesiones.
+
+> **`config/.jwt.env` nunca se versiona.** Estuvo versionado por error en un
+> repositorio público y hubo que rotarlo
+> ([H-01](../cambios/2026-09-26-h01-secreto-expuesto.md)). Si se ajusta el
+> `.gitignore`, esa exclusión no se toca. Si el secreto llega a publicarse,
+> sacarlo del repositorio no basta: se genera uno nuevo y se ejecuta
+> `30-funciones.sh`, porque el viejo queda en el historial.
+
+Para generarlo:
 
 ```bash
 printf 'RASTRO_JWT_SECRETO=%s\n' "$(openssl rand -hex 32)" > config/.jwt.env

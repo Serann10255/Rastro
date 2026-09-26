@@ -1,0 +1,43 @@
+# comando: ./deploy/aws/95-verificar.sh
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-09-26T23:24:33Z
+# contexto: posterior a la rotacion del secreto de firma (H-01)
+---
+
+=== Componentes de datos ===
+  [ok] tabla de envios rastro-envios
+  [ok] tabla de bitacora rastro-bitacora
+  [ok] tabla de maestros rastro-maestros
+  [ok] llave de cifrado alias/rastro
+  [ok] contenedor de evidencias
+  [ok] contenedor de registro
+
+=== Funciones ===
+  [ok] funcion rastro-auth
+  [ok] funcion rastro-shipments
+  [ok] funcion rastro-tracking
+  [ok] funcion rastro-evidence
+  [ok] funcion rastro-public
+  [ok] funcion rastro-audit
+  [ok] funcion rastro-masters
+  [ok] funcion rastro-dashboard
+
+=== Interfaz y registro ===
+  [ok] interfaz HTTP l7ymvbqqc4
+
+=== Prueba de extremo a extremo del punto publico ===
+  [ok] el punto publico responde a traves de la interfaz (404 esperado)
+
+=== Prueba de extremo a extremo del catalogo de estados ===
+  [ok] el catalogo de estados responde a traves de la interfaz
+
+=== Estado del supuesto SU-01 ===
+  SU-01 (validador de tokens en API Gateway): indeterminado
+  Nota: el sistema valida el token en cada servicio, de modo que
+  funciona igual con o sin validador en la puerta.
+  [ok] registro de actividad rastro-actividad
+
+=== Resultado ===
+  Todos los componentes verificados.
+---
+# codigo de salida: 0

@@ -109,7 +109,9 @@ importa `boto3`, o el de `RASTRO_PYTHON`.
   expone `content-disposition` para que la exportación CSV conserve el nombre
   de archivo.
 - `30-funciones.sh` lee el secreto de firma de `config/.jwt.env` si no está en
-  el entorno. El archivo se añadió a `.gitignore`.
+  el entorno. El archivo se añadió a `.gitignore`; esa exclusión se retiró
+  después por error y el secreto llegó al repositorio público, donde hubo que
+  rotarlo ([H-01](2026-09-26-h01-secreto-expuesto.md)).
 - Documentación: [despliegue en AWS](../despliegue/entorno-aws.md) (estado,
   sección para Windows, limitaciones del sitio) y
   [plan de pruebas](../pruebas/plan-y-trazabilidad.md) (REQ-09 pasa a parcial).
