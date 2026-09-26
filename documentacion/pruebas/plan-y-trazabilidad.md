@@ -60,12 +60,15 @@ entonces*, y cada uno tiene al menos una prueba que lo comprueba.
 | REQ-06 | Un usuario de la organización A pidiendo un envío de la B recibe *no existe* y queda registrado | `test_req06_un_usuario_de_otra_organizacion_recibe_recurso_inexistente` | ✅ |
 | REQ-07 | Un conductor creando un envío recibe 403 y existe registro con actor, grupo, acción, recurso y `DENY` | `test_req07_el_conductor_no_puede_crear_envios_y_el_intento_queda_registrado` | ✅ |
 | REQ-08 | Tras modificar un registro directamente en el almacén, el verificador señala el punto de ruptura | `test_req08_tras_una_alteracion_controlada_el_verificador_senala_la_ruptura` | ✅ |
-| REQ-09 | El despliegue se reproduce sin editar código ni intervenir en la consola | `deploy/aws/90-configuracion.sh` (comprobación automática) | ⚠️ pendiente de ejecución en la cuenta |
+| REQ-09 | El despliegue se reproduce sin editar código ni intervenir en la consola | `deploy/aws/90-configuracion.sh` (comprobación automática) y `deploy/aws/95-verificar.sh` | ⚠️ parcial: desplegado en una cuenta vacía el 2026-09-26; falta el simulacro de migración |
 
 REQ-09 es el único que no puede cerrarse con una prueba automatizada en este
-entorno: exige desplegar en una cuenta vacía. La secuencia está versionada y
-comprueba por su cuenta que no queden identificadores literales en el código,
-pero **no se ha ejecutado contra el laboratorio**. Véase
+entorno: exige desplegar en una cuenta vacía. **Se ejecutó contra el
+laboratorio el 2026-09-26**: la secuencia completa termina sin errores, sin
+editar código de la aplicación ni tocar la consola, y una segunda ejecución no
+duplica nada. No se da por cerrado porque la primera pasada exigió corregir los
+guiones de despliegue; lo que lo cierra es el simulacro de migración a otra
+cuenta con la versión corregida. Véase
 [el estado del despliegue](../despliegue/entorno-aws.md#estado-de-verificacion).
 
 ---

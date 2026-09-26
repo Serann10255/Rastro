@@ -17,18 +17,27 @@ source "${RAIZ_PROYECTO}/config/.identidad.env"
 
 paso "Interfaz HTTP"
 
-ID_API="$(aws apigatewayv2 get-apis --region "${REGION}" \
-  --query "Items[?Name=='${NOMBRE_API}'].ApiId | [0]" --output text)"
+ID_API="$(primer_resultado apigatewayv2 get-apis --region "${REGION}" \
+  --query "Items[?Name=='${NOMBRE_API}'].ApiId | [0]")"
 
 if [[ "${ID_API}" == "None" || -z "${ID_API}" ]]; then
   ID_API="$(aws apigatewayv2 create-api --region "${REGION}" \
     --name "${NOMBRE_API}" --protocol-type HTTP \
-    --cors-configuration 'AllowOrigins=*,AllowMethods=GET,POST,OPTIONS,AllowHeaders=authorization,content-type' \
     --query ApiId --output text)"
   ok "interfaz creada: ${ID_API}"
 else
   ok "interfaz ya existente: ${ID_API}"
 fi
+
+# CORS se aplica en cada ejecucion, no solo al crear: asi un cambio aqui llega
+# tambien a una interfaz ya existente. El origen es abierto porque el token
+# viaja en la cabecera Authorization y no en cookies, de modo que un origen
+# ajeno no puede usar la sesion de nadie. content-disposition se expone para
+# que la exportacion CSV conserve el nombre de archivo que propone el servicio.
+aws apigatewayv2 update-api --region "${REGION}" --api-id "${ID_API}" \
+  --cors-configuration 'AllowOrigins=*,AllowMethods=GET,POST,OPTIONS,AllowHeaders=authorization,content-type,ExposeHeaders=content-disposition,MaxAge=3600' \
+  >/dev/null
+ok "CORS aplicado"
 
 paso "Validador de tokens (supuesto SU-01)"
 
@@ -40,27 +49,62 @@ paso "Validador de tokens (supuesto SU-01)"
 # laboratorio lo permite, que es lo que el supuesto SU-01 pregunta.
 ok "proveedor de identidad propio: la validacion la hace cada servicio"
 
-ID_AUTORIZADOR="$(aws apigatewayv2 get-authorizers --api-id "${ID_API}" --region "${REGION}" \
-  --query "Items[?Name=='${PREFIJO}-cognito'].AuthorizerId | [0]" --output text)"
+ID_AUTORIZADOR="$(primer_resultado apigatewayv2 get-authorizers --api-id "${ID_API}" --region "${REGION}" \
+  --query "Items[?Name=='${PREFIJO}-cognito'].AuthorizerId | [0]")"
+
+# API Gateway exige que el emisor sea una URL publica valida, y el del
+# proveedor propio (https://rastro-api.<cuenta>.rastro) no lo es: no tiene un
+# dominio de primer nivel real. Con el proveedor propio la prueba de SU-01 usa
+# como emisor la propia direccion de la interfaz, que si es valida; el
+# validador resultante no se asocia a ninguna ruta (vease mas abajo), de modo
+# que es solo la prueba de si el laboratorio permite crearlo.
+if [[ "${PROVEEDOR:-propio}" == "propio" ]]; then
+  EMISOR_PRUEBA="https://${ID_API}.execute-api.${REGION}.amazonaws.com"
+else
+  EMISOR_PRUEBA="${EMISOR}"
+fi
 
 if [[ "${ID_AUTORIZADOR}" == "None" || -z "${ID_AUTORIZADOR}" ]]; then
+  ERROR_SU01="${RAIZ_PROYECTO}/config/.su01.err"
   if ID_AUTORIZADOR="$(aws apigatewayv2 create-authorizer --api-id "${ID_API}" --region "${REGION}" \
       --name "${PREFIJO}-cognito" \
       --authorizer-type JWT \
       --identity-source '$request.header.Authorization' \
-      --jwt-configuration "Audience=${AUDIENCIA},Issuer=${EMISOR}" \
-      --query AuthorizerId --output text 2>/dev/null)"; then
+      --jwt-configuration "Audience=${AUDIENCIA},Issuer=${EMISOR_PRUEBA}" \
+      --query AuthorizerId --output text 2>"${ERROR_SU01}")"; then
     ok "SU-01 CONFIRMADO: validador de tokens creado (${ID_AUTORIZADOR})"
     SU01="confirmado"
   else
-    aviso "SU-01 NO CONFIRMADO: el laboratorio no permite crear el validador."
+    MENSAJE_SU01="$(tr -d '\r' < "${ERROR_SU01}" | tr '\n' ' ' | head -c 300)"
+    # Solo una denegacion de permisos descarta el supuesto. Cualquier otro
+    # rechazo (un parametro mal formado, por ejemplo) no dice nada sobre lo que
+    # el laboratorio permite, y concluir "descartado" seria un falso hallazgo.
+    if grep -qiE 'AccessDenied|not authorized|explicit deny' "${ERROR_SU01}"; then
+      aviso "SU-01 DESCARTADO: el laboratorio no permite crear el validador."
+      SU01="descartado"
+    else
+      aviso "SU-01 INDETERMINADO: el validador no se creo por un motivo ajeno a los permisos."
+      SU01="indeterminado"
+    fi
+    aviso "Respuesta del proveedor: ${MENSAJE_SU01}"
     aviso "El sistema sigue operando: cada servicio valida el token por su cuenta."
     ID_AUTORIZADOR=""
-    SU01="descartado"
   fi
+  rm -f "${ERROR_SU01}"
 else
   ok "validador ya existente: ${ID_AUTORIZADOR}"
   SU01="confirmado"
+fi
+
+# Crear el validador responde a SU-01; asociarlo a las rutas es otra cosa. Con
+# el proveedor propio el emisor no publica un JWKS y el token va firmado con
+# HS256, de modo que el validador rechazaria todo token valido y cada ruta
+# protegida responderia 401. Solo se asocia con un proveedor de clave publica.
+if [[ "${PROVEEDOR:-propio}" == "propio" ]]; then
+  ASOCIAR_VALIDADOR=""
+  ok "validador NO asociado a las rutas: el proveedor propio firma con HS256"
+else
+  ASOCIAR_VALIDADOR="${ID_AUTORIZADOR}"
 fi
 
 paso "Rutas"
@@ -137,8 +181,8 @@ crear_integracion() {
   local arn="arn:aws:lambda:${REGION}:${CUENTA}:function:${PREFIJO}-${servicio}"
 
   local existente
-  existente="$(aws apigatewayv2 get-integrations --api-id "${ID_API}" --region "${REGION}" \
-    --query "Items[?IntegrationUri=='${arn}'].IntegrationId | [0]" --output text)"
+  existente="$(primer_resultado apigatewayv2 get-integrations --api-id "${ID_API}" --region "${REGION}" \
+    --query "Items[?IntegrationUri=='${arn}'].IntegrationId | [0]")"
 
   if [[ "${existente}" != "None" && -n "${existente}" ]]; then
     echo "${existente}"
@@ -169,8 +213,8 @@ for entrada in "${RUTAS[@]}"; do
       --source-arn "arn:aws:execute-api:${REGION}:${CUENTA}:${ID_API}/*/*" >/dev/null 2>&1 || true
   fi
 
-  existente="$(aws apigatewayv2 get-routes --api-id "${ID_API}" --region "${REGION}" \
-    --query "Items[?RouteKey=='${clave}'].RouteId | [0]" --output text)"
+  existente="$(primer_resultado apigatewayv2 get-routes --api-id "${ID_API}" --region "${REGION}" \
+    --query "Items[?RouteKey=='${clave}'].RouteId | [0]")"
   if [[ "${existente}" != "None" && -n "${existente}" ]]; then
     ok "ruta ya existente: ${clave}"
     continue
@@ -181,8 +225,8 @@ for entrada in "${RUTAS[@]}"; do
 
   # La consulta publica no lleva validador: es el unico punto sin autenticacion
   # y su proteccion es el identificador aleatorio, no el token (REQ-04).
-  if [[ "${proteccion}" == "auth" && -n "${ID_AUTORIZADOR}" ]]; then
-    argumentos+=(--authorization-type JWT --authorizer-id "${ID_AUTORIZADOR}")
+  if [[ "${proteccion}" == "auth" && -n "${ASOCIAR_VALIDADOR}" ]]; then
+    argumentos+=(--authorization-type JWT --authorizer-id "${ASOCIAR_VALIDADOR}")
   fi
 
   aws apigatewayv2 create-route "${argumentos[@]}" >/dev/null
