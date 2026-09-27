@@ -700,12 +700,34 @@
   font-size: var(--t-base);
 }
 
-.notas__texto {
+/* Lo que se dice va primero y a tamaño de lectura; cómo decirlo y las
+ * respuestas preparadas, debajo y en menor jerarquía. */
+.notas__guion {
   max-width: 80ch;
   overflow-wrap: break-word;
+  line-height: 1.5;
 }
 
 .notas__presentador {
+  color: var(--acento);
+}
+
+.notas__apoyo {
+  max-width: 80ch;
+  overflow-wrap: break-word;
+  font-size: 0.85em;
+  color: var(--texto-suave);
+}
+
+.notas__etiqueta {
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.notas__apoyo--pregunta .notas__etiqueta {
   color: var(--acento);
 }
 
@@ -1000,9 +1022,19 @@
 /* Impresión: una diapositiva por página, con sus notas debajo             */
 /* ======================================================================= */
 
+/* Sin margen de página: el margen lo pone cada hoja con su relleno. Así el fondo
+ * del tema cubre la hoja entera; con margen de página, el navegador pinta los
+ * bordes con su propio color y en tema oscuro quedaba un marco casi negro. */
 @page {
   size: landscape;
-  margin: 12mm;
+  margin: 0;
+}
+
+/* Solo diapositivas: página panorámica de 13,33 × 7,5 pulgadas y sin márgenes,
+ * que es exactamente el lienzo de 1920 × 1080 a dos tercios (1280 × 720 px). */
+@page diapositiva {
+  size: 13.333in 7.5in;
+  margin: 0;
 }
 
 @media print {
@@ -1016,12 +1048,13 @@
     display: none !important;
   }
 
-  /* 250 mm de ancho: cabe en A4 y en carta apaisados y deja sitio a las notas. */
+  /* 220 mm de ancho (0,4331 del lienzo): cabe en A4 y en carta apaisados y
+   * deja bajo la lámina unos 55 mm para el guion hablado y sus indicaciones. */
   .guion,
   .guion--impresion,
   .guion--revision,
   .guion--lectura {
-    --zoom: 0.4921 !important;
+    --zoom: 0.4331 !important;
     display: block;
     max-width: none;
     padding: 0;
@@ -1042,6 +1075,7 @@
   .guion__pagina {
     display: grid;
     gap: 4mm;
+    padding: 12mm;
     break-after: page;
     break-inside: avoid;
   }
@@ -1060,13 +1094,42 @@
   /* En papel las notas salen siempre, aunque en pantalla estuvieran ocultas. */
   .guion__notas {
     display: grid !important;
-    gap: 2mm;
-    font-size: 12pt;
-    line-height: 1.4;
+    gap: 1.5mm;
+    font-size: 11.5pt;
+    line-height: 1.35;
   }
 
   .guion__notas > * {
     display: block !important;
+  }
+
+  /* En papel el guion usa todo el ancho de la página: con el límite de lectura
+   * de pantalla, las diapositivas de guion largo pasaban a una segunda hoja. */
+  .notas__guion,
+  .notas__apoyo {
+    max-width: none;
+  }
+
+  /* -- Solo diapositivas, sin notas: `data-impresion="diapositivas"` -- */
+
+  /* Un pelo por debajo de 2/3 para que el redondeo no empuje la lámina a una
+   * segunda página en blanco. */
+  :root[data-impresion="diapositivas"] .guion {
+    --zoom: 0.6666 !important;
+  }
+
+  :root[data-impresion="diapositivas"] .guion__pagina {
+    page: diapositiva;
+    gap: 0;
+    padding: 0;
+  }
+
+  :root[data-impresion="diapositivas"] .guion__marco {
+    border: 0;
+  }
+
+  :root[data-impresion="diapositivas"] .guion__notas {
+    display: none !important;
   }
 
   * {

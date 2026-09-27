@@ -27,7 +27,13 @@ Sistema auditado: **Rastro**
 Sergio Montoya · Nicolás Torres · Oscar Rincón
 Auditoría de Sistemas (ISD39) · Grupo 30112
 
-> Notas: Oscar. Diez segundos, no leer.
+> Guion: Nicolás. Buenos días, profesor. Somos Sergio Montoya, Nicolás Torres y
+> Oscar Rincón, del grupo 30112. Vamos a sustentar Cotejo, un programa de
+> auditoría que verifica de forma automatizada los controles de un sistema
+> desplegado. El sistema auditado es Rastro, y seguimos los siete bloques que
+> usted pidió.
+
+> Indicación: Diez segundos. Mirar al jurado, no a la pantalla.
 
 ---
 
@@ -43,8 +49,15 @@ Auditoría de Sistemas (ISD39) · Grupo 30112
 
 **Quién lo construyó.** El mismo equipo, en la asignatura de Cloud Computing.
 
-> Notas: Oscar. Decir de entrada que auditamos nuestro propio sistema. Si lo
-> decimos nosotros primero, deja de ser una objeción.
+> Guion: Nicolás. El caso es una empresa pequeña de mensajería urbana en Bogotá
+> que comparte infraestructura con otras empresas. El sistema auditado es
+> Rastro: registra el ciclo de vida de cada envío y está desplegado en AWS, con
+> ocho funciones, tres tablas, un almacén cifrado y registro de actividad. Y lo
+> decimos de entrada: Rastro lo construimos nosotros, en Cloud Computing.
+> Auditamos nuestro propio sistema, y más adelante explicamos cómo tratamos esa
+> falta de independencia.
+
+> Indicación: Decirlo primero quita la objeción antes de que el jurado la haga.
 
 ---
 
@@ -60,8 +73,16 @@ Lo comprobamos antes de construir nada:
 
 Un auditor que solo lee configuraciones habría reportado un hallazgo falso.
 
-> Notas: Oscar. Es evidencia recuperable: el comando y la petición se repiten y
-> dan lo mismo. Está en la Tabla 4 del documento.
+> Guion: Nicolás. La idea que motivó el proyecto es esta: un control declarado
+> no es un control verificado. Lo comprobamos antes de construir nada.
+> Configuramos a propósito una función con una política que autoriza a cualquier
+> principal; quien lea esa configuración concluye que está abierta. Pero al
+> invocarla, el sistema rechaza toda invocación. Un auditor que solo leyera
+> configuraciones habría reportado un hallazgo falso. Por eso Cotejo no solo
+> lee: usa el sistema.
+
+> Si preguntan: Es evidencia recuperable: el comando y la petición se repiten y
+> dan el mismo resultado. Está descrita en el apartado 3.1 del documento.
 
 ---
 
@@ -82,7 +103,14 @@ Un auditor que solo lee configuraciones habría reportado un hallazgo falso.
 
 Los cuatro cumplidos.
 
-> Notas: Oscar. No leer los cuatro: señalar que están y que se cumplieron.
+> Guion: Nicolás. El objetivo general fue verificar de forma automatizada y
+> reproducible los controles de un sistema desplegado, con papeles de trabajo
+> trazables a un marco de referencia. Los cuatro objetivos específicos siguen el
+> orden de una auditoría: definir qué se audita y contra qué, diseñar las
+> pruebas con su criterio, construir el ejecutor y ejecutar para emitir el
+> informe. Los cuatro se cumplieron.
+
+> Indicación: No leer la lista: resumirla en una frase.
 
 ---
 
@@ -98,8 +126,16 @@ Los cuatro cumplidos.
 
 **Condicionado y no logrado:** retención inmutable del almacén de papeles. El entorno no la permitió y se declara.
 
-> Notas: Nicolás. Empieza su bloque. La última línea importa: declarar lo que no
-> se logró también es alcance.
+> Guion: Nicolás. El alcance son diez controles trazados a marcos externos, que
+> cubren la configuración de la infraestructura, el comportamiento de la
+> aplicación, la integridad de la bitácora y los secretos del repositorio.
+> Quedaron fuera la auditoría del proceso de desarrollo, la revisión de código,
+> las pruebas de intrusión, la vigilancia continua y cualquier otro sistema. Y
+> declaramos lo que no logramos: la retención inmutable del almacén de papeles,
+> que el entorno no permitió.
+
+> Si preguntan: Diez controles producen once resultados porque el de secretos se
+> parte en tres: árbol actual, historial y vigencia.
 
 ---
 
@@ -116,8 +152,12 @@ Los cuatro cumplidos.
 
 **Recursos:** la cuenta del laboratorio, sin costo adicional. El programa reutiliza los recursos ya desplegados.
 
-> Notas: Nicolás. Lo importante aquí es la regla de independencia, no el
-> cronograma.
+> Guion: Nicolás. Trabajamos doce semanas en cuatro fases: Oscar hizo la
+> planeación y el catálogo, Sergio diseñó el programa, yo lo construí, y Oscar
+> ejecuta y comunica, que es la fase que cierra ahora. Lo importante es la regla
+> de independencia interna: quien construyó un componente de Rastro no ejecuta
+> ni evalúa las pruebas de ese componente. Y no hubo costo adicional: el
+> programa reutiliza la cuenta y los recursos ya desplegados.
 
 ---
 
@@ -131,7 +171,14 @@ Los cuatro cumplidos.
 - **Dos ejecuciones** contra el sistema desplegado
 - Ampliación del catálogo tras un incidente real
 
-> Notas: Nicolás. Pasar rápido. Es inventario, no argumento.
+> Guion: Nicolás. En resumen: la prueba preliminar que acabamos de ver, un
+> catálogo derivado de COBIT, ITAF, ISO 27001, CIS y OWASP, un programa de unas
+> 3.400 líneas con tres familias de prueba, el almacén de papeles con su
+> informe, una interfaz solo para el rol auditor, dos ejecuciones contra el
+> sistema desplegado y una ampliación del catálogo tras un incidente real, que
+> veremos en los hallazgos.
+
+> Indicación: Es inventario: pasar rápido.
 
 ---
 
@@ -149,8 +196,16 @@ planeación → diseño del programa → ejecución y evidencia → evaluación 
 
 ![El ejecutor y sus tres fuentes de evidencia](figura:ejecutor-cotejo)
 
-> Notas: Nicolás. Si preguntan por qué ITAF: es el marco de prácticas
-> profesionales de auditoría de sistemas y define qué es evidencia suficiente y
+> Guion: Nicolás. Seguimos la secuencia de un trabajo de aseguramiento según
+> ITAF, de ISACA: planeación, diseño del programa, ejecución con evidencia, y
+> evaluación y comunicación. Una regla gobernó todo: el criterio de cada prueba
+> se declara antes de ejecutarla, y el catálogo tiene fecha anterior a la
+> primera ejecución, para que el criterio no se acomode al resultado. En la
+> figura, el ejecutor toma el catálogo, obtiene evidencia de tres fuentes, una
+> por familia de prueba, y escribe los papeles de trabajo.
+
+> Si preguntan: ¿Por qué ITAF? Es el marco de prácticas profesionales de
+> auditoría de sistemas de ISACA, y define qué es evidencia suficiente y
 > confiable.
 
 ---
@@ -167,7 +222,17 @@ planeación → diseño del programa → ejecución y evidencia → evaluación 
 
 **No usamos entrevistas ni listas de verificación.** El objeto es un sistema desplegado, no un proceso humano: preguntarle al responsable habría producido exactamente la respuesta que el proyecto busca evitar.
 
-> Notas: Nicolás. La última línea justifica las técnicas por exclusión, que es lo
+> Guion: Nicolás. Cada técnica tiene su porqué. La revisión documental de los
+> marcos nos dio el catálogo. La inspección de configuración sirve para las
+> pruebas de cumplimiento. La reejecución de operaciones, para las sustantivas,
+> porque la configuración puede contradecir el comportamiento. El recálculo
+> criptográfico es la única forma de comprobar la cadena de la bitácora. Y el
+> análisis del repositorio cubre los secretos. No usamos entrevistas ni listas
+> de verificación: el objeto es un sistema, y preguntarle al responsable nos
+> daría justo la respuesta que queremos evitar. Oscar explica cómo se clasifica
+> cada resultado.
+
+> Indicación: La última frase justifica las técnicas por exclusión, que es lo
 > que pide la rúbrica.
 
 ---
@@ -180,8 +245,12 @@ planeación → diseño del programa → ejecución y evidencia → evaluación 
 
 Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
-> Notas: Nicolás. Anticipar que en la diapositiva 23 reconocemos haberla aplicado
-> mal una vez.
+> Guion: Oscar. Gracias, Nicolás. Cada prueba termina en una de tres
+> conclusiones, no dos. BIEN: se probó y cumplió el criterio escrito de
+> antemano. MAL: se probó y no cumplió, y se convierte en hallazgo. SIN REVISAR:
+> no se pudo probar; queda pendiente, no aprobado. Si mezcláramos la tercera con
+> las otras, el informe diría que revisamos más de lo que revisamos. Más
+> adelante reconocemos que una vez la aplicamos mal.
 
 ---
 
@@ -200,8 +269,15 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 | Secreto de firma de sesiones | Permite suplantar cualquier rol |
 | Papeles de trabajo | Enumeran las debilidades del sistema |
 
-> Notas: Oscar. Vuelve a su bloque. El último suele olvidarse: el propio informe
-> de auditoría es un activo sensible.
+> Guion: Oscar. Identificamos seis activos. Los datos de envíos y destinatarios,
+> información personal de terceros; las evidencias de entrega, que prueban la
+> cadena de custodia; la bitácora, que sostiene el no repudio; y la llave de
+> cifrado y el secreto de firma, porque comprometerlos compromete todo lo demás.
+> Y uno que suele olvidarse: los papeles de trabajo, porque enumeran las
+> debilidades del sistema. Por eso no están en el repositorio público.
+
+> Si preguntan: Los papeles se entregan directamente al evaluador; publicarlos
+> sería repetir el error del incidente.
 
 ---
 
@@ -216,8 +292,12 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 | Evidencias legibles por terceros | Baja | Alto | Cifrado y bloqueo público · C-02, C-03 |
 | Enumeración de envíos | Media | Medio | Identificadores aleatorios |
 
-> Notas: Oscar. La cuarta fila va resaltada porque se materializó durante el
-> proyecto. Anunciarlo aquí y desarrollarlo en la 23.
+> Guion: Oscar. Para cada amenaza valoramos probabilidad e impacto y le
+> asignamos un control del catálogo. Las de impacto muy alto son tres: el acceso
+> a datos de otra organización, que controla C-06; la alteración del histórico,
+> que controla C-08; y la exposición de secretos, que cubren los tres controles
+> C-09. Esta última va resaltada porque se materializó durante el proyecto; la
+> desarrollamos en los hallazgos.
 
 ---
 
@@ -231,8 +311,13 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 - Credenciales de solo lectura para el auditor
 - Ancla de integridad fuera de la cuenta
 
-> Notas: Oscar. Los tres faltantes son hallazgos permanentes. No son olvidos: son
-> restricciones del laboratorio y se declaran en cada informe.
+> Guion: Oscar. Los controles existentes funcionan: registro de actividad con
+> validación de integridad, cifrado con llave propia y rotación, bloqueo de
+> acceso público, versionado, autorización por rol, aislamiento entre
+> organizaciones, máquina de estados y bitácora encadenada. Y faltan tres que el
+> entorno impide construir: un rol de ejecución por función, credenciales de
+> solo lectura para el auditor y un ancla de integridad fuera de la cuenta. No
+> son olvidos: se declaran en cada informe.
 
 ---
 
@@ -248,8 +333,13 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **Ningún rol combina escritura con lectura de la bitácora, y ninguna cuenta puede sumar dos roles que juntos lo hagan.** No es configurable.
 
-> Notas: Oscar. El administrador opera; el auditor revisa lo que el administrador
-> operó. Esa es la separación de funciones y es lo que comprueba C-05.
+> Guion: Oscar. Rastro tiene cinco roles de fábrica. El administrador puede
+> todo, menos leer la bitácora. El coordinador despacha, reanuda incidencias y
+> mantiene catálogos. El despachador registra y asigna envíos. El conductor
+> trabaja solo sobre sus envíos. Y el auditor consulta y lee la bitácora, sin
+> escribir nada. Para la auditoría, lo que importa es la segregación de
+> funciones: ningún rol combina operar con leer la bitácora, y ninguna cuenta
+> puede sumar dos roles que juntos lo hagan.
 
 ---
 
@@ -268,10 +358,12 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **Quien detiene no es quien reanuda:** el conductor reporta la incidencia; autorizar la continuación corresponde a otro rol.
 
-> Notas: Oscar. Es el criterio contra el que se juzga C-05, tomado del catálogo
-> de operaciones del sistema auditado (`authz.py`) y no de lo que el equipo
-> recuerda haber programado. «Solo suyos»: sin la operación de asignar, listar,
-> marcar avance y cargar evidencia se limitan a los envíos asignados.
+> Guion: Oscar. Esta matriz es el criterio con que juzgamos la autorización, y
+> la tomamos del código del sistema auditado, no de lo que recordábamos haber
+> programado. En la operación, el conductor solo lista, marca avance y adjunta
+> evidencia de sus propios envíos. Y quien detiene un envío no es quien lo
+> reanuda: el conductor reporta la incidencia, pero autorizar la continuación le
+> corresponde al coordinador o al administrador.
 
 ---
 
@@ -293,9 +385,11 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **De 19 operaciones:** Administrador 17 · Coordinador 12 · Despachador 9 · Conductor 6 · Auditor 8
 
-> Notas: Oscar. Las dos últimas filas son la segregación de funciones: solo el
-> auditor lee y verifica la bitácora, y no tiene ninguna operación de escritura.
-> Al administrador le faltan exactamente esas dos para llegar a 19.
+> Guion: Oscar. En administración, solo el administrador crea cuentas, cambia
+> roles y define permisos; el auditor puede verlos, pero no modificarlos. Las
+> dos últimas filas son la segregación de funciones: leer la bitácora y
+> verificar su integridad son exclusivas del auditor. Por eso el administrador
+> tiene 17 de las 19 operaciones.
 
 ---
 
@@ -310,10 +404,20 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **C-05 comprueba una celda de la matriz:** un conductor que intenta crear un envío recibe 403 y el intento queda registrado. El resto lo cubren las pruebas del propio Rastro.
 
-> Notas: Oscar. Decirlo así evita que parezca que la auditoría recorrió toda la
-> matriz. Si preguntan por el resto: `tests/e2e/test_roles.py` y
-> `tests/unit/test_autorizacion_y_claves.py` prueban cada regla, pero son
-> pruebas de quien construyó el sistema, no de la auditoría.
+> Guion: Oscar. Cuatro reglas no se pueden configurar: el rol de administrador
+> no se edita, ningún rol ni cuenta combina operar con auditar, nadie concede un
+> permiso que no tiene, y sin permiso de asignar solo se actúa sobre envíos
+> propios. Y seamos precisos sobre lo que auditamos: C-05 comprueba una celda de
+> esta matriz, un conductor que intenta crear un envío, que recibe 403 y queda
+> registrado. El resto lo cubren las pruebas del propio Rastro, que no son
+> pruebas de auditoría.
+
+> Indicación: Decirlo así evita que parezca que la auditoría recorrió toda la
+> matriz.
+
+> Si preguntan: Las pruebas de cada regla están en `tests/e2e/test_roles.py` y
+> `tests/unit/test_autorizacion_y_claves.py`, pero son de quien construyó el
+> sistema.
 
 ---
 
@@ -328,8 +432,13 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **Dentro de la aplicación la matriz se cumple; fuera de ella, el entorno impide aplicar mínimo privilegio.**
 
-> Notas: Oscar. Es la capa que la matriz no cubre. Los dos hallazgos permanentes
-> se desarrollan en la 22; aquí basta con situarlos.
+> Guion: Oscar. La matriz se cumple dentro de la aplicación, pero no cubre la
+> infraestructura. Las ocho funciones comparten un rol amplio del laboratorio:
+> es el hallazgo permanente H-PERM-01, de severidad alta. El propio programa de
+> auditoría corre con ese mismo rol, con permisos de escritura sobre lo que
+> audita: H-PERM-02, severidad media. Los usuarios de prueba usan credenciales
+> que no se versionan, y la interfaz de Cotejo solo admite al rol auditor.
+> Sergio sigue con la normativa.
 
 ---
 
@@ -350,8 +459,15 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **El catálogo se deriva de los marcos, no de nuestra intuición.** Así, un control ausente es una decisión de alcance y no un olvido.
 
-> Notas: Sergio. Empieza su bloque. No leer la tabla: señalar la frase final,
-> que es el argumento.
+> Guion: Sergio. Gracias, Oscar. Cada control del catálogo sale de un marco:
+> COBIT para la autorización, el aislamiento y las transiciones; ITAF para el
+> informe y la calidad de la evidencia; ISO 27001 para cifrado, copias y
+> secretos; CIS para la configuración de la cuenta; OWASP para el control de
+> acceso; y NIST para los registros y las llaves. El argumento es este: el
+> catálogo se deriva de los marcos, no de nuestra intuición, así que un control
+> ausente es una decisión de alcance y no un olvido.
+
+> Indicación: No leer la tabla: nombrar los marcos y llegar a la frase final.
 
 ---
 
@@ -365,8 +481,15 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **Incumple.** Un secreto permanece en el historial de commits.
 
-> Notas: Sergio. No pasar rápido por el incumplimiento: es la transición al
-> bloque siguiente.
+> Guion: Sergio. En la ejecución de referencia, del 26 de septiembre, obtuvimos
+> once resultados: diez conformes, uno desviado y ninguno sin ejecutar. Cumplen
+> el registro de actividad, el cifrado, el bloqueo público, el versionado, la
+> autorización, el aislamiento, las transiciones y la bitácora; el árbol del
+> repositorio está limpio y los secretos encontrados ya no sirven. Lo que
+> incumple es que un secreto sigue en el historial de commits.
+
+> Indicación: No pasar rápido por el incumplimiento: es la transición a los
+> hallazgos.
 
 ---
 
@@ -386,8 +509,14 @@ Mezclar la tercera con las otras dos informa más cobertura de la que hubo.
 
 **Recomendación.** Reescribir el historial. No sustituye a la rotación, que ya se ejecutó.
 
-> Notas: Sergio. Este es el formato que pide la rúbrica: condición, criterio,
-> causa, riesgo, evidencia. Los tres hallazgos lo siguen.
+> Guion: Sergio. El primer hallazgo sigue el formato que pide la rúbrica.
+> Condición: un secreto de firma sigue en el historial del repositorio, aunque
+> ya no está en el árbol actual. Criterio: ISO 27001 sobre información de
+> autenticación y acceso al código, y CWE-798. Causa: se versionó en un commit,
+> y borrar el archivo después no lo saca del historial. Riesgo: medio, porque el
+> secreto ya está invalidado. Evidencia: el papel de trabajo de C-09b con su
+> huella. Recomendación: reescribir el historial, que no reemplaza la rotación
+> ya hecha.
 
 ---
 
@@ -401,8 +530,13 @@ El programa corre con permisos de escritura sobre lo que audita. Un auditor con 
 
 Ambos **fuera del alcance automatizado**: una prueba que siempre da el mismo resultado no aporta información.
 
-> Notas: Sergio. Si preguntan por qué no se automatizan, la respuesta está en la
-> última línea.
+> Guion: Sergio. Los otros dos hallazgos son permanentes. Mínimo privilegio, de
+> severidad alta: las ocho funciones comparten un rol amplio porque el
+> laboratorio no permite crear roles. Y privilegios del auditor, de severidad
+> media: el programa corre con permisos de escritura sobre lo que audita, y un
+> auditor con permisos de escritura no es un auditor. No los automatizamos a
+> propósito: una prueba que siempre da el mismo resultado no aporta información.
+> Por eso se declaran en cada informe.
 
 ---
 
@@ -412,11 +546,20 @@ Ambos **fuera del alcance automatizado**: una prueba que siempre da el mismo res
 
 **El error metodológico.** En la primera ejecución, el control de cifrado informó MAL cuando el almacén estaba vacío. Lo correcto era SIN REVISAR. Es un defecto del criterio, no de la ejecución.
 
-> Notas: Sergio. La diapositiva más importante del deck. Decirla despacio. Los
-> dos puntos son fallos del propio programa: un catálogo con un hueco y un
-> criterio mal escrito. Un control ausente no avisa de que falta; por eso el
-> catálogo se deriva de marcos externos. Si preguntan qué aportó C-09: separa lo
-> que sigue expuesto, el historial, de lo que ya no abre nada, que comprueba C-09c.
+> Guion: Sergio. Esta es la diapositiva más importante, porque habla de nuestros
+> errores. Primero, el incidente: publicamos un secreto de firma en el
+> repositorio durante 27 minutos. Lo vimos nosotros al revisar el despliegue, no
+> Cotejo, porque ninguno de los ocho controles del catálogo cubría los secretos:
+> el catálogo tenía un hueco. Lo cerramos con C-09, que en la ejecución de
+> referencia encontró el secreto que sigue en el historial. Segundo, un error de
+> método: el control de cifrado dijo MAL con el almacén vacío, cuando lo
+> correcto era SIN REVISAR. Fue un error del criterio, no de la ejecución.
+
+> Indicación: Decirla despacio.
+
+> Si preguntan: ¿Qué aportó C-09? Separa lo que sigue expuesto, el historial, de
+> lo que ya no abre nada: C-09c firma un token con el secreto hallado y
+> comprueba que el sistema lo rechaza.
 
 ---
 
@@ -434,8 +577,15 @@ Sin las cinco, un resultado de auditoría es una afirmación.
 
 **Alcance de la huella.** Permite comprobar que el papel no cambió después de escribirse. No permite verificar sin tenerlo.
 
-> Notas: Sergio. Ser preciso con la última línea. Si exageramos lo que la huella
-> garantiza y alguien lo cuestiona, perdemos credibilidad en todo lo demás.
+> Guion: Sergio. Cada papel de trabajo conserva cinco cosas: el procedimiento
+> ejecutado, la salida literal sin editar, la marca de tiempo, la identidad con
+> que se ejecutó y una huella SHA-256 del archivo. Sin las cinco, un resultado
+> de auditoría es solo una afirmación. Y precisamos lo que garantiza la huella:
+> que el papel no cambió después de escribirse; no permite verificarlo sin
+> tenerlo.
+
+> Indicación: Ser exactos con la huella: exagerar lo que garantiza haría perder
+> credibilidad en todo lo demás.
 
 ---
 
@@ -453,13 +603,13 @@ Sin las cinco, un resultado de auditoría es una afirmación.
 
 Lo que el catálogo cubre, el programa lo verifica de forma repetible. Lo que no cubría lo reveló un incidente, y hoy lo cubre C-09.
 
-> Notas: Oscar. Cierra el equipo. Ese último renglón es la conclusión de fondo:
-> la verificación automatizada vale lo que vale su catálogo, y el incidente lo
-> demostró. Por eso el catálogo se deriva de marcos externos y se amplía cuando
-> un riesgo se materializa. Si preguntan por las dos ejecuciones: entre una y
-> otra solo se cargó una evidencia; C-02 pasó de desviado a conforme y los otros
-> diez no cambiaron. El resultado depende del estado del sistema, no de quién ni
-> cuándo ejecuta.
+> Guion: Sergio. En resultados: once controles evaluados y ninguno sin ejecutar;
+> diez conformes y uno desviado; tres hallazgos, uno corregible y dos
+> permanentes por el entorno. En las dos ejecuciones, diez controles dieron lo
+> mismo y C-02 cambió solo por lo que cambiamos a propósito: cargar una
+> evidencia. El programa tiene además sus 34 pruebas. La conclusión de fondo: lo
+> que el catálogo cubre, el programa lo verifica de forma repetible; lo que no
+> cubría lo reveló un incidente, y hoy lo cubre C-09.
 
 ---
 
@@ -476,8 +626,16 @@ Lo que el catálogo cubre, el programa lo verifica de forma repetible. Lo que no
 
 **Las dos primeras no dependen del entorno.** Son las que podemos ejecutar ya.
 
-> Notas: Oscar. Cada acción tiene su criterio de cierre en el apartado 15.2 del
-> documento. Si preguntan por uno, buscarlo ahí.
+> Guion: Sergio. Estas son las acciones correctivas, con responsable, prioridad
+> y tiempo. Las dos primeras no dependen del entorno y las podemos hacer ya:
+> partir el control de cifrado en dos, en unas cuatro horas, y automatizar la
+> validación en doble sentido de los controles de cumplimiento, en una semana.
+> Las siguientes dependen de permisos que el laboratorio no da: credenciales de
+> solo lectura, firma asimétrica y retención inmutable. La última es validar el
+> informe con auditores externos.
+
+> Si preguntan: El criterio de cierre de cada acción está en el apartado 15.2
+> del documento.
 
 ---
 
@@ -489,8 +647,11 @@ Lo que el catálogo cubre, el programa lo verifica de forma repetible. Lo que no
 
 **Valor probatorio.** El ejecutor tiene permisos de escritura sobre lo que audita.
 
-> Notas: Oscar. Están en la sección de limitaciones del informe que genera el
-> propio programa. No las escribimos para la presentación.
+> Guion: Sergio. Tres limitaciones, que están en el propio informe que genera el
+> programa. Independencia: auditamos lo que construimos; tenemos rotación
+> interna y un programa determinista, pero eso no equivale a una revisión
+> externa. Cobertura: solo verificamos lo que está en el catálogo. Y valor
+> probatorio: el ejecutor puede escribir sobre lo que audita. Nicolás cierra.
 
 ---
 
@@ -504,4 +665,9 @@ Dos reglas sostuvieron el trabajo:
 
 `github.com/Serann10255/Rastro`
 
-> Notas: Oscar. Terminar ahí y callarse.
+> Guion: Nicolás. Terminamos con las dos reglas que sostuvieron el trabajo:
+> declarar el criterio antes de ejecutar la prueba, y no clasificar como
+> aprobado ni como reprobado lo que no se pudo comprobar. Muchas gracias;
+> quedamos atentos a sus preguntas.
+
+> Indicación: Después de «gracias», callarse.

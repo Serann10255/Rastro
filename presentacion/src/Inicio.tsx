@@ -1,14 +1,15 @@
 /* Índice de las sustentaciones.
  *
  * Todo lo que muestra sale de los dos guiones: metadatos, recuento de
- * diapositivas y reparto de intervenciones, que se deduce de las notas
- * («Notas: Sergio. …»). Sirve para ensayar: se ve de un vistazo quién presenta
- * qué y si el reparto está equilibrado.
+ * diapositivas y reparto de intervenciones, que se deduce del guion
+ * («Guion: Sergio. …»). Sirve para ensayar: se ve de un vistazo quién presenta
+ * qué, cuánto habla cada uno y si el reparto está equilibrado.
  */
 
 import type { ComponentType } from "react";
 
 import type { PropiedadesLogotipo } from "@/deck/Diapositiva";
+import { duracion, PALABRAS_POR_MINUTO } from "@/deck/formato";
 import { SelectorTema } from "@/deck/SelectorTema";
 import type { Deck } from "@/deck/tipos";
 
@@ -23,9 +24,9 @@ const TECLAS: [string, string][] = [
   ["← ↑ Re Pág Mayús+Espacio", "Diapositiva anterior"],
   ["Clic en el borde derecho o izquierdo", "Siguiente o anterior"],
   ["Inicio · Fin", "Primera · última"],
-  ["N", "Mostrar u ocultar las notas del presentador"],
+  ["N", "Mostrar u ocultar el guion de la diapositiva: qué decir, cómo y qué responder"],
   ["F", "Entrar o salir de pantalla completa"],
-  ["Ctrl+P", "Imprimir el guion: una diapositiva por página, con sus notas debajo"],
+  ["Ctrl+P", "Imprimir el guion: una diapositiva por página, con su texto hablado debajo"],
 ];
 
 function rangos(numeros: number[]): string {
@@ -79,7 +80,7 @@ export function Inicio({ decks }: { decks: EntradaDeck[] }) {
               <p>{texto(deck.meta.subtitulo)}</p>
               <p className="texto-suave texto-sm">
                 {deck.resumen.total} diapositivas: {deck.resumen.contenido} de contenido y {deck.resumen.bloques}{" "}
-                portadillas de bloque.
+                portadillas de bloque. Guion hablado: {duracion(deck.resumen.palabras)}.
               </p>
               <div className="acciones">
                 <a className="boton" href={`${ruta}/`}>
@@ -98,7 +99,10 @@ export function Inicio({ decks }: { decks: EntradaDeck[] }) {
                       <th scope="col">Integrante</th>
                       <th scope="col">Diapositivas</th>
                       <th scope="col" className="tabla__numero">
-                        Total
+                        Cuántas
+                      </th>
+                      <th scope="col" className="tabla__numero">
+                        Tiempo
                       </th>
                     </tr>
                   </thead>
@@ -108,11 +112,15 @@ export function Inicio({ decks }: { decks: EntradaDeck[] }) {
                         <td>{i.presentador}</td>
                         <td className="envuelve">{rangos(i.numeros)}</td>
                         <td className="tabla__numero">{i.numeros.length}</td>
+                        <td className="tabla__numero">{duracion(i.palabras)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <p className="texto-tenue texto-xs">
+                Tiempo estimado a {PALABRAS_POR_MINUTO} palabras por minuto. Cronométrense en voz alta.
+              </p>
               <p className="texto-tenue texto-xs mono">{deck.archivo}</p>
             </div>
           </article>

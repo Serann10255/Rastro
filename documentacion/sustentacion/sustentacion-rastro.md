@@ -25,7 +25,12 @@ Trazabilidad verificable de envíos
 Sergio Montoya · Nicolás Torres · Oscar Rincón
 Cloud Computing (ISD38) · Grupo 30112
 
-> Notas: Sergio. Diez segundos, no leer.
+> Guion: Sergio. Buenos días, profesor. Somos Sergio Montoya, Nicolás Torres y
+> Oscar Rincón, del grupo 30112. Vamos a sustentar Rastro, un sistema de
+> trazabilidad de envíos que construimos y desplegamos en AWS, siguiendo los
+> siete bloques que usted pidió.
+
+> Indicación: Diez segundos. Mirar al jurado, no a la pantalla.
 
 ---
 
@@ -41,7 +46,14 @@ Cloud Computing (ISD38) · Grupo 30112
 
 **No existe un registro que diga quién cambió el estado, cuándo y con qué respaldo.**
 
-> Notas: Sergio. La frase final es el problema. No adelantar la solución.
+> Guion: Sergio. El caso es una empresa pequeña de mensajería urbana en Bogotá,
+> con pocos vehículos y clientes corporativos. Hoy el estado de un envío está
+> repartido en cuatro sitios: la memoria del mensajero, un chat, una hoja de
+> cálculo y lo que el despachador averigua por teléfono. Información hay; lo que
+> no hay es un registro que diga quién cambió el estado, cuándo y con qué
+> respaldo.
+
+> Indicación: La última frase es el problema. No adelantar la solución.
 
 ---
 
@@ -56,8 +68,14 @@ Infraestructura compartida entre varias empresas, con datos aislados.
 
 ![Componentes desplegados en AWS](figura:arquitectura-rastro)
 
-> Notas: Sergio. Una frase por línea. No entrar en arquitectura todavía: la
-> figura se señala, no se recorre caja por caja.
+> Guion: Sergio. Rastro lleva ese registro a un sistema donde cada cambio queda
+> atribuido a una persona, fechado y validado: un envío no puede pasar de creado
+> a entregado sin recorrer los pasos intermedios. Está desplegado en AWS, en
+> us-east-1: una puerta de enlace, ocho funciones Lambda, tres tablas, un
+> almacén de evidencias cifrado y el registro de actividad. Varias empresas
+> comparten la infraestructura, pero cada una solo ve sus datos.
+
+> Indicación: Señalar la figura de arriba abajo, sin recorrer caja por caja.
 
 ---
 
@@ -71,8 +89,16 @@ Infraestructura compartida entre varias empresas, con datos aislados.
 
 **Sobre la evidencia del problema:** procede de la experiencia laboral del equipo, declarada con sus limitaciones en el documento. Es observación no sistemática y así está escrito.
 
-> Notas: Sergio. Decirlo de frente. Si el jurado lo detecta antes que nosotros,
-> parece que lo escondíamos.
+> Guion: Sergio. Esto importa por tres razones. Sin ese registro, las
+> reclamaciones se resuelven por acuerdo y la empresa asume el costo sin poder
+> demostrar lo contrario; el despachador pierde tiempo reconstruyendo
+> información por teléfono, y no se puede acreditar ante un cliente que el
+> procedimiento se cumplió. Una aclaración: esta evidencia viene de la
+> experiencia laboral del equipo. Es observación no sistemática, y así está
+> declarada en el documento.
+
+> Indicación: Decir la aclaración de frente: si el jurado la detecta primero,
+> parece que la escondíamos.
 
 ---
 
@@ -93,7 +119,14 @@ Infraestructura compartida entre varias empresas, con datos aislados.
 
 La palabra que carga el peso es *verificable*: no que funcione, sino que cualquiera pueda comprobarlo.
 
-> Notas: Sergio. La última línea conecta con el bloque 6.
+> Guion: Sergio. El objetivo general fue desarrollar un sistema que registre de
+> forma verificable el ciclo de vida de cada envío, con control de acceso por
+> rol, aislamiento entre organizaciones y evidencia cifrada. Lo dividimos en
+> cuatro objetivos, uno por fase: caracterizar el proceso, diseñar, construir y
+> desplegar, y verificar con pruebas. La palabra clave es «verificable»: no
+> basta con que funcione, cualquiera tiene que poder comprobarlo.
+
+> Indicación: La idea de «verificable» se retoma en el bloque de evidencias.
 
 ---
 
@@ -110,9 +143,17 @@ La palabra que carga el peso es *verificable*: no que funcione, sino que cualqui
 
 **Condicionado y no logrado:** retención inmutable del almacén. El entorno no la permitió y se declara.
 
-> Notas: Nicolás. Empieza su bloque. El rastreo continuo no se excluyó solo por
-> costo: implicaría vigilar al trabajador, y esa decisión ética está en el
-> documento.
+> Guion: Sergio. Dentro del alcance quedó el ciclo de vida con un identificador
+> que no se puede adivinar, la consulta pública sin cuenta, la evidencia
+> cifrada, el aislamiento entre empresas, la autorización por rol y la bitácora
+> encadenada. Dejamos fuera, entre otras cosas, el rastreo continuo del
+> vehículo: no solo por costo, sino porque implicaría vigilar al trabajador. Y
+> declaramos lo que no logramos: la retención inmutable del almacén, que el
+> laboratorio no permitió.
+
+> Si preguntan: ¿Por qué no rastreo continuo? Además del costo, registrar la
+> posición todo el tiempo documenta a la persona y no al envío. Por eso la
+> ubicación solo se captura al registrar cada evento.
 
 ---
 
@@ -127,8 +168,15 @@ La palabra que carga el peso es *verificable*: no que funcione, sino que cualqui
 
 **Recursos.** Presupuesto de 50 dólares por cuenta. Único cargo fijo: la llave de cifrado. Se excluyen deliberadamente los recursos que facturan entre sesiones.
 
-> Notas: Nicolás. Si preguntan por el presupuesto: el riesgo no es el volumen de
-> uso, es dejar encendido algo que factura sin usarse.
+> Guion: Sergio. Trabajamos doce semanas en cuatro fases. Oscar hizo el
+> diagnóstico y cierra la verificación; yo me encargué del diseño, y la
+> construcción y el despliegue los hicimos Nicolás y yo. Las tres primeras fases
+> están cerradas; la última cierra con esta entrega. El recurso crítico era el
+> presupuesto, 50 dólares por cuenta: el único cargo fijo es la llave de
+> cifrado, y excluimos a propósito todo lo que factura entre sesiones.
+
+> Si preguntan: El riesgo del presupuesto no es el volumen de uso, que en
+> pruebas es marginal, sino dejar encendido un recurso que factura sin usarse.
 
 ---
 
@@ -141,7 +189,13 @@ La palabra que carga el peso es *verificable*: no que funcione, sino que cualqui
 - 238 pruebas automatizadas escritas junto con el código
 - Despliegue y verificación completa el 26 de septiembre
 
-> Notas: Nicolás. Pasar rápido. Es inventario.
+> Guion: Sergio. En resumen: pruebas preliminares de permisos antes de
+> construir, once decisiones de arquitectura registradas antes de
+> implementarlas, ocho servicios con dos interfaces y una capa común de control,
+> un despliegue que se puede repetir sin duplicar nada, 238 pruebas
+> automatizadas y el despliegue verificado el 26 de septiembre.
+
+> Indicación: Es inventario: pasar rápido.
 
 ---
 
@@ -159,8 +213,12 @@ Enfoque **iterativo e incremental** en cuatro fases, una por objetivo específic
 
 Eso convirtió la verificación en parte de la construcción y no en una fase posterior. Por eso la suite creció al mismo ritmo que el sistema.
 
-> Notas: Nicolás. Esta regla es lo que explica que la cobertura no se degradara
-> cuando el alcance creció.
+> Guion: Sergio. Seguimos un enfoque iterativo e incremental, una fase por
+> objetivo. No adoptamos un marco ágil completo, porque tres personas con
+> dedicación parcial no sostienen sus ceremonias. Lo que sí sostuvimos fue una
+> regla: ningún requisito se dio por cumplido sin su prueba automatizada. Así la
+> verificación fue parte de la construcción, y por eso la cobertura no se cayó
+> cuando el alcance creció. Nicolás explica las técnicas.
 
 ---
 
@@ -175,8 +233,17 @@ Eso convirtió la verificación en parte de la construcción y no en una fase po
 | Verificación posterior al despliegue | Que cada componente exista y responda | Código de salida automatizable |
 | **Auditoría independiente** | Que los controles funcionen | Quien despliega no debe concluir que el control está bien |
 
-> Notas: Nicolás. La última fila es la más importante y la distingue del resto:
-> es un programa externo, no una prueba nuestra.
+> Guion: Nicolás. Gracias, Sergio. Cada técnica responde a una pregunta.
+> Registramos las decisiones antes de implementarlas, para que código y
+> documento no se contradigan. Probamos cada capacidad del laboratorio antes de
+> construir sobre ella. Las pruebas unitarias cubren las reglas, las de extremo
+> a extremo cada requisito, y la verificación posterior confirma que lo
+> desplegado existe y responde. Y la más importante: una auditoría
+> independiente, porque quien despliega no debería ser quien concluya que su
+> control funciona.
+
+> Indicación: La auditoría es un programa externo, Cotejo, no una prueba más del
+> equipo.
 
 ---
 
@@ -196,8 +263,16 @@ Eso convirtió la verificación en parte de la construcción y no en una fase po
 
 **Decisión de privacidad:** el sistema se pobló **solo con datos sintéticos**. Ningún dato personal real entró al sistema.
 
-> Notas: Nicolás. La decisión de datos sintéticos resuelve la Ley 1581 sin
-> renunciar a implementar los controles que exigiría un tratamiento real.
+> Guion: Nicolás. Pasamos a riesgos. Identificamos cinco activos: los datos de
+> envíos y destinatarios, que son información personal de terceros; las
+> evidencias de entrega, que prueban la cadena de custodia; la bitácora, que
+> sostiene el no repudio; y la llave de cifrado y el secreto de firma de
+> sesiones, porque comprometer cualquiera de los dos compromete todo lo demás.
+> Una decisión de privacidad: el sistema solo tiene datos sintéticos.
+
+> Si preguntan: Los datos sintéticos resuelven la Ley 1581 sin renunciar a los
+> controles que exigiría un tratamiento real: minimización, cifrado y acceso por
+> rol están implementados.
 
 ---
 
@@ -212,8 +287,16 @@ Eso convirtió la verificación en parte de la construcción y no en una fase po
 | Se agota el presupuesto de la cuenta | Media | Alto | No materializado |
 | Identificador literal impide migrar | Media | Alto | No materializado |
 
-> Notas: Oscar. Empieza su bloque. Tres riesgos se materializaron. Decirlo así:
-> una matriz donde nada ocurre es una matriz que nadie usó.
+> Guion: Nicolás. Esta es la matriz de riesgos. Los dos de impacto muy alto son
+> la consulta sin filtrar por organización y la exposición de secretos. Y tres
+> riesgos se materializaron: la exposición de secretos, que veremos en los
+> hallazgos; el bloqueo de un servicio, porque el laboratorio impedía invocar
+> funciones sin autenticación y lo resolvimos con la puerta de enlace; y el
+> crecimiento del alcance, que contuvimos con la regla de no cerrar requisitos
+> sin prueba.
+
+> Indicación: Decirlo como fortaleza: una matriz donde nada ocurre es una matriz
+> que nadie usó.
 
 ---
 
@@ -229,8 +312,20 @@ Eso convirtió la verificación en parte de la construcción y no en una fase po
 
 **El aislamiento no depende de que el programador recuerde filtrar:** sin el identificador de organización, la consulta no se puede construir.
 
-> Notas: Oscar. La última línea es la diapositiva técnica más importante. Si hay
-> repregunta difícil, probablemente sea aquí.
+> Guion: Nicolás. Cada amenaza tiene un control, y cada control una
+> verificación. El acceso a datos de otra empresa lo impiden la clave de
+> partición y una capa común única; lo verifica C-06. Una operación de un rol no
+> autorizado se rechaza y queda registrada; lo verifica C-05. Los
+> identificadores aleatorios evitan la enumeración, y la bitácora encadenada
+> detecta la alteración del histórico. Lo central: el aislamiento no depende de
+> que el programador recuerde filtrar; sin el identificador de la organización,
+> la consulta ni siquiera se puede construir.
+
+> Indicación: Es la diapositiva más técnica: si hay una repregunta difícil,
+> suele ser aquí.
+
+> Si preguntan: Entre organizaciones el sistema responde 404 y no 403: un 403
+> confirmaría que el envío existe.
 
 ---
 
@@ -242,9 +337,16 @@ El entorno impide construirlos, y se declaran en lugar de omitirse:
 
 **Ancla de integridad fuera de la cuenta.** Frente a quien administra la cuenta, la arquitectura ofrece **detección**, no prevención.
 
-> Notas: Oscar. Si preguntan "¿entonces no está protegido?": ningún control de
-> integridad protege contra la destrucción por quien administra el sistema;
-> protege contra la alteración silenciosa.
+> Guion: Nicolás. Y hay dos controles que faltan, y los declaramos. Un rol de
+> ejecución por función: las ocho funciones comparten el rol del laboratorio,
+> que es amplio, y eso incumple el mínimo privilegio. Y un ancla de integridad
+> fuera de la cuenta: frente a quien administra la cuenta, la arquitectura
+> detecta una alteración, pero no la impide. Los dos los impide el entorno, no
+> el diseño.
+
+> Si preguntan: ¿Entonces no está protegido? Ningún control de integridad impide
+> que quien administra el sistema lo destruya; lo que evita es la alteración
+> silenciosa, y esa sí se detecta.
 
 ---
 
@@ -262,8 +364,16 @@ El entorno impide construirlos, y se declaran en lugar de omitirse:
 
 Los roles se definen en datos, no en código: una empresa puede crear roles propios eligiendo de la lista de operaciones, nunca inventando operaciones nuevas.
 
-> Notas: Oscar. El administrador opera; el auditor revisa lo que el administrador
-> operó. Esa es la separación de funciones.
+> Guion: Nicolás. Rastro tiene cinco roles de fábrica. El administrador puede
+> todo, menos leer la bitácora. El coordinador despacha, reanuda incidencias y
+> mantiene catálogos. El despachador registra y asigna envíos. El conductor
+> trabaja solo sobre sus envíos. Y el auditor consulta y lee la bitácora, sin
+> escribir nada. La regla central es la separación de funciones: el
+> administrador opera y el auditor revisa lo que el administrador operó. Ninguna
+> cuenta puede ser las dos cosas.
+
+> Si preguntan: Los roles viven en datos: una empresa puede crear los suyos,
+> pero solo eligiendo de la lista de operaciones que ya existe.
 
 ---
 
@@ -282,11 +392,15 @@ Los roles se definen en datos, no en código: una empresa puede crear roles prop
 
 **Quien detiene no es quien reanuda:** el conductor reporta la incidencia; autorizar la continuación corresponde a otro rol.
 
-> Notas: Oscar. La tabla sale del catálogo de operaciones de `authz.py`, no se
-> escribió aparte. «Solo suyos»: sin la operación de asignar, listar, marcar
-> avance y cargar evidencia se limitan a los envíos asignados. Si preguntan:
-> abrir un envío por su identificador sí se puede dentro de la propia empresa,
-> y el identificador es aleatorio.
+> Guion: Nicolás. Esta matriz sale directamente del código. En la operación, los
+> tres roles operativos registran, asignan y marcan avance; el conductor solo
+> lista, marca avance y adjunta evidencia de los envíos que tiene asignados. Y
+> un detalle de diseño: el conductor reporta la incidencia, pero no puede
+> autorizar que el envío continúe; eso lo hacen el coordinador o el
+> administrador. Quien detiene no es quien reanuda.
+
+> Si preguntan: Abrir un envío por su identificador sí se puede dentro de la
+> propia empresa; el identificador es aleatorio, así que no se puede adivinar.
 
 ---
 
@@ -308,9 +422,11 @@ Los roles se definen en datos, no en código: una empresa puede crear roles prop
 
 **De 19 operaciones:** Administrador 17 · Coordinador 12 · Despachador 9 · Conductor 6 · Auditor 8
 
-> Notas: Oscar. Las dos últimas filas son la separación de funciones: solo el
-> auditor lee y verifica la bitácora, y no tiene ninguna operación de escritura.
-> Al administrador le faltan exactamente esas dos para llegar a 19.
+> Guion: Nicolás. En administración, solo el administrador crea cuentas, cambia
+> roles y define permisos; el auditor puede verlos, pero no modificarlos. Las
+> dos últimas filas son la separación de funciones: leer la bitácora y verificar
+> su integridad son exclusivas del auditor. Por eso el administrador tiene 17 de
+> las 19 operaciones: le faltan exactamente esas dos.
 
 ---
 
@@ -327,11 +443,17 @@ Todo intento, permitido o rechazado, queda en la bitácora.
 
 Cada regla tiene su prueba en `tests/e2e/test_roles.py` y `tests/unit/test_autorizacion_y_claves.py`.
 
-> Notas: Oscar. Las reglas viven en el código, no en una pantalla: ninguna
-> configuración las desactiva. La separación se comprueba sobre el rol que se
-> guarda y sobre la suma de roles de la cuenta; sin lo segundo, un administrador
-> podría añadirse el rol de auditor sin que ningún rol rompiera la regla por
-> separado.
+> Guion: Nicolás. Cuatro reglas no se pueden configurar desde ninguna pantalla.
+> El rol de administrador no se edita, para que un error no deje a la empresa
+> sin quien lo corrija. Ningún rol ni cuenta combina operar con auditar. Nadie
+> concede un permiso que no tiene; si lo intenta, queda en la bitácora como
+> escalada de privilegios. Y sin permiso de asignar, solo se actúa sobre los
+> envíos propios. Cada regla tiene su prueba automatizada. Oscar sigue con la
+> normativa.
+
+> Si preguntan: La separación se comprueba sobre la suma de roles de la cuenta:
+> si no, un administrador podría añadirse el rol de auditor sin que ningún rol
+> rompiera la regla por separado.
 
 ---
 
@@ -350,8 +472,16 @@ Cada regla tiene su prueba en `tests/e2e/test_roles.py` y `tests/unit/test_autor
 | NIST SP 800-92 | Registros de seguridad | La bitácora conserva actor, acción, recurso y momento |
 | AWS Well-Architected, seguridad | Mínimo privilegio | **No se cumple.** Declarado como hallazgo permanente |
 
-> Notas: Sergio. Empieza su bloque. La última fila es deliberada: se pone el
-> incumplimiento en la misma tabla que los cumplimientos.
+> Guion: Oscar. Gracias, Nicolás. Aplicamos seis marcos. La Ley 1581, con
+> minimización, cifrado, acceso por rol y datos sintéticos. ISO 27001 en
+> criptografía y copias. El benchmark CIS en la configuración de la cuenta.
+> OWASP A01 en control de acceso: entre organizaciones respondemos 404 y no 403,
+> para no revelar que un envío existe. NIST 800-92 en los registros. Y la última
+> fila va a propósito: el mínimo privilegio que pide AWS no se cumple, y lo
+> ponemos junto a los cumplimientos.
+
+> Indicación: No leer la tabla entera: nombrar los marcos y detenerse en la
+> última fila.
 
 ---
 
@@ -366,7 +496,15 @@ Verificado por una **auditoría independiente**, ejecutada por un programa disti
 **Incumple:** un secreto permanece en el historial del repositorio, ya invalidado.
 **Incumple, sin posibilidad de corregir aquí:** mínimo privilegio.
 
-> Notas: Sergio. Presentar el desviado, no esconderlo. Transición al bloque 6.
+> Guion: Oscar. Esto no lo afirmamos solo nosotros: lo verificó una auditoría
+> independiente, un programa distinto ejecutado contra el sistema desplegado.
+> Once controles: diez conformes, uno desviado y ninguno sin ejecutar. El
+> desviado es un secreto que sigue en el historial del repositorio, aunque ya
+> está invalidado. El otro incumplimiento, el mínimo privilegio, no se puede
+> corregir en este entorno.
+
+> Indicación: Presentar el desviado sin bajar la voz: es la transición a los
+> hallazgos.
 
 ---
 
@@ -388,8 +526,18 @@ Verificado por una **auditoría independiente**, ejecutada por un programa disti
 
 No requieren credenciales ni contenedores. **Cualquiera puede repetirlas.**
 
-> Notas: Oscar. Ofrecer ejecutarlas en vivo: `python -m pytest -q`. Es el mejor
-> momento del deck para hacerlo.
+> Guion: Oscar. Primera evidencia: la suite de pruebas. 234 superadas, cuatro
+> omitidas y ninguna fallida, en unos catorce segundos: 84 unitarias, 120 de
+> extremo a extremo y 34 del programa de auditoría. No necesitan credenciales de
+> AWS ni contenedores, así que cualquiera puede repetirlas. Si el jurado quiere,
+> la ejecutamos ahora.
+
+> Indicación: Tener una terminal abierta en la raíz del repositorio con `python
+> -m pytest -q` listo.
+
+> Si preguntan: Las cuatro omitidas requieren condiciones que no existen en la
+> ejecución local; se cuentan aparte para no informar más cobertura de la que
+> hubo.
 
 ---
 
@@ -405,8 +553,12 @@ Seis grupos comprobados, código de salida 0, el 26/09/2026:
 
 El 404 no es un error: es una **prueba negativa** que confirma la ruta completa.
 
-> Notas: Oscar. Explicar el 404, porque no es obvio y demuestra que se probó la
-> ruta y no solo la existencia del recurso.
+> Guion: Oscar. Segunda evidencia: la verificación del despliegue del 26 de
+> septiembre, con código de salida cero. Comprueba las tres tablas, la llave,
+> los dos contenedores, las ocho funciones, la puerta de enlace y el registro de
+> actividad. Un detalle: la consulta pública responde 404, y eso es lo esperado.
+> Pedimos un envío que no existe; que conteste «no existe» demuestra que la
+> petición cruzó la puerta de enlace, llegó a la función y ejecutó su lógica.
 
 ---
 
@@ -424,11 +576,21 @@ El 404 no es un error: es una **prueba negativa** que confirma la ruta completa.
 
 **Lo detectó el equipo al revisar el despliegue: ningún control cubría los secretos. Desde entonces lo vigila uno automatizado, C-09.**
 
-> Notas: Sergio. La diapositiva más fuerte del deck. Decirla despacio. Ser exactos
-> con la última línea: la detección fue manual, y depender de que alguien mire es
-> justo lo que se corrigió. El control C-09 nació de este incidente; en la
-> auditoría encontró lo que quedaba, el secreto en el historial, y comprobó que
-> ya no abre nada.
+> Guion: Oscar. Este es nuestro hallazgo más serio. El secreto con que se firman
+> las sesiones quedó publicado en el repositorio durante 27 minutos, contra lo
+> que exige ISO 27001 sobre información de autenticación. La causa: la exclusión
+> del archivo existía, y la retiramos en bloque al versionar las evidencias. Con
+> ese secreto, cualquiera podía firmar un token de administrador. Lo rotamos,
+> redesplegamos las ocho funciones y comprobamos que el secreto viejo se
+> rechaza; no hubo indicios de uso. Lo detectamos nosotros al revisar el
+> despliegue, porque ningún control cubría los secretos; por eso hoy existe uno
+> automatizado, C-09.
+
+> Indicación: Decirla despacio: es la diapositiva más fuerte del deck.
+
+> Si preguntan: ¿Cómo saben que no se usó? Durante la ventana, las seis
+> funciones con rutas protegidas no recibieron ninguna invocación, y las otras
+> dos solo las de nuestra propia verificación.
 
 ---
 
@@ -443,8 +605,14 @@ El 404 no es un error: es una **prueba negativa** que confirma la ruta completa.
 
 Cada una con comando, salida completa y fecha, en el repositorio.
 
-> Notas: Sergio. La rúbrica pide que cada evidencia tenga contexto, fecha y
-> origen. Esta diapositiva existe para eso.
+> Guion: Oscar. Cada evidencia que mostramos tiene origen y fecha, y está en el
+> repositorio con su comando y su salida completa: la verificación del
+> despliegue, la suite de pruebas, que cualquiera puede repetir, la rotación del
+> secreto, comparada por huellas sin exponer ningún valor, y la ejecución de la
+> auditoría del 26 de septiembre.
+
+> Indicación: Responde a lo que pide la rúbrica: contexto, fecha y origen de
+> cada evidencia.
 
 ---
 
@@ -459,10 +627,12 @@ Cada una con comando, salida completa y fecha, en el repositorio.
 - Tres riesgos se materializaron; los tres se gestionaron y se documentan
 - El incidente del secreto se detectó a mano y dejó un control automatizado que antes no existía: C-09
 
-> Notas: Oscar. Cierra el equipo. El segundo punto es el argumento: ninguna de
-> las tres depende de nuestra palabra. Si preguntan por el último: la detección
-> fue manual; lo automatizado es lo que quedó para que no dependa de que alguien
-> mire.
+> Guion: Oscar. En resultados: los nueve requisitos se cumplen y se pueden
+> comprobar. Tres verificaciones independientes llegan a la misma conclusión:
+> las pruebas, la verificación del despliegue y la auditoría externa, y ninguna
+> depende de nuestra palabra. Tres riesgos se materializaron y los tres se
+> gestionaron. Y el incidente del secreto, que detectamos a mano, nos dejó un
+> control automatizado que antes no existía.
 
 ---
 
@@ -477,8 +647,15 @@ Cada una con comando, salida completa y fecha, en el repositorio.
 | Concurrencia en el encadenamiento | Nicolás Torres | Media | 1 semana |
 | Derivación de contraseñas más resistente | Nicolás Torres | Baja | 1 semana |
 
-> Notas: Oscar. Cada acción tiene criterio de cierre en el apartado 15.2 del
-> documento. Si preguntan por uno, buscarlo ahí.
+> Guion: Oscar. Estas son las acciones correctivas, cada una con responsable,
+> prioridad y tiempo. Las de prioridad alta: reescribir el historial del
+> repositorio, unas dos horas; un rol de ejecución por función, que depende del
+> entorno; y validar con una empresa real, que toma un semestre. Después, el
+> ancla externa de la bitácora, la concurrencia en el encadenamiento y una
+> derivación de contraseñas más resistente.
+
+> Si preguntan: El criterio de cierre de cada acción está en el apartado 15.2
+> del documento.
 
 ---
 
@@ -490,7 +667,11 @@ Cada una con comando, salida completa y fecha, en el repositorio.
 
 **Integridad: detección, no prevención.** Frente a quien administra la cuenta, la arquitectura detecta la alteración pero no la impide.
 
-> Notas: Oscar. Ninguna de las tres se suaviza. Están así en el documento.
+> Guion: Oscar. Y tres limitaciones que no vamos a suavizar. No tuvimos usuarios
+> reales: demostramos que el sistema funciona, no que resuelva el problema en
+> operación. El mínimo privilegio no se cumple, porque el entorno no permite
+> crear roles. Y frente a quien administra la cuenta, la integridad ofrece
+> detección, no prevención. Sergio cierra.
 
 ---
 
@@ -506,4 +687,11 @@ Las restricciones del entorno no fueron un obstáculo: fueron el insumo de dise�
 
 `github.com/Serann10255/Rastro`
 
-> Notas: Sergio. Terminar con la última línea y callarse. No resumir otra vez.
+> Guion: Sergio. Cierro con esto: las restricciones del entorno no fueron un
+> obstáculo, fueron el insumo del diseño. Sin cómputo persistente, la
+> arquitectura es bajo demanda; con un entorno volátil, el despliegue es
+> reproducible; y sin roles propios, la limitación quedó declarada, no
+> disimulada. Ningún requisito se cerró sin su prueba. Muchas gracias; quedamos
+> atentos a sus preguntas.
+
+> Indicación: Después de «gracias», callarse. No resumir otra vez.

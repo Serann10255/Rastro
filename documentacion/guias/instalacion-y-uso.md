@@ -169,9 +169,13 @@ npm run dev
 | Deck de Cotejo | http://localhost:5177/cotejo |
 | Guion con notas y revisión de desbordes | http://localhost:5177/rastro/?guion |
 
-Teclas: flechas o barra espaciadora para avanzar, `n` para las notas, `f` para
-pantalla completa. `/rastro#7` abre directamente la diapositiva 7. Ctrl+P
-imprime el guion, una diapositiva por página con sus notas debajo.
+Teclas: flechas o barra espaciadora para avanzar, `n` para ver el guion de la
+diapositiva, `f` para pantalla completa. `/rastro#7` abre directamente la
+diapositiva 7. Ctrl+P imprime el guion, una diapositiva por página con el texto
+que dice cada integrante debajo. Para un PDF
+con **solo las diapositivas**, a página completa de 16:9, se pulsa **PDF de
+diapositivas** en `/rastro/?guion` y se elige *Guardar como PDF*. El PDF y el
+guion salen con el tema que se esté viendo, claro u oscuro.
 
 El contenido sale de `documentacion/sustentacion/*.md`: para cambiar una
 diapositiva se edita el Markdown y se guarda. Antes de presentar:

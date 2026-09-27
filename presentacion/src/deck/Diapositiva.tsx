@@ -182,15 +182,28 @@ function Pie({
 }
 
 /** El texto de las notas, para el visor y para el guion. */
+/** Lo que acompaña a la diapositiva: primero lo que se dice, que es lo que se
+ *  lee de reojo; después cómo decirlo y las respuestas preparadas, en menor
+ *  jerarquía. */
 export function Notas({ diapositiva }: { diapositiva: TipoDiapositiva }) {
-  if (diapositiva.tipo === "bloque" || diapositiva.notas.length === 0) {
-    return <p className="notas__vacio">Sin notas.</p>;
+  if (diapositiva.tipo === "bloque") {
+    return <p className="notas__vacio">Portadilla: se pasa sin detenerse.</p>;
   }
+  if (diapositiva.notas.length === 0) return <p className="notas__vacio">Sin guion.</p>;
+
+  const guion = diapositiva.notas.filter((n) => n.tipo === "guion");
+  const resto = diapositiva.notas.filter((n) => n.tipo !== "guion");
   return (
     <>
-      {diapositiva.notas.map((nota, i) => (
-        <p key={i} className="notas__texto">
-          {nota.presentador && <strong className="notas__presentador">{nota.presentador}. </strong>}
+      {guion.map((nota, i) => (
+        <p key={`g${i}`} className="notas__guion">
+          {nota.presentador && <strong className="notas__presentador">{nota.presentador}: </strong>}
+          <EnLinea nodos={nota.texto} />
+        </p>
+      ))}
+      {resto.map((nota, i) => (
+        <p key={`n${i}`} className={`notas__apoyo notas__apoyo--${nota.tipo}`}>
+          <span className="notas__etiqueta">{nota.tipo === "pregunta" ? "Si preguntan" : "Indicación"}</span>{" "}
           <EnLinea nodos={nota.texto} />
         </p>
       ))}

@@ -23,10 +23,26 @@ y evidencias, y conclusiones.
 - **El número de cada diapositiva lo escribe el autor** (`## 7 · Título`). Si se
   inserta una, hay que renumerar las siguientes y revisar las notas que citan
   números («desarrollarlo en la 23»). La construcción avisa de los saltos.
-- **Las notas empiezan por quien presenta:** `> Notas: Sergio. …`. De ahí sale el
-  reparto de intervenciones del índice.
+- **Cada diapositiva lleva su guion hablado:** `> Guion: Sergio. …`, con lo que
+  dice quien la presenta. Debajo, si hace falta, `> Indicación: …` (cómo
+  decirlo) y `> Si preguntan: …` (respuesta preparada). Del guion salen el
+  reparto de intervenciones y el tiempo estimado del índice.
+- **El guion se escribe a partir de lo que muestra la diapositiva.** Si cambia
+  una cifra en la diapositiva, cambia también en el guion.
 - El formato completo está en el
   [README del módulo](../modulos/presentacion/README.md#formato-del-guion).
+
+## Reparto de intervenciones
+
+Equilibrado en número de diapositivas y en tiempo. Cada integrante abre un deck
+y, entre los dos, presenta un bloque de riesgos y controles y uno de hallazgos.
+
+| Deck | Sergio | Nicolás | Oscar |
+|---|---|---|---|
+| Rastro | 1–9 y 28 · ≈ 4 min 45 s | 10–18 · ≈ 4 min 55 s | 19–27 · ≈ 4 min 30 s |
+| Cotejo | 19–27 · ≈ 5 min 20 s | 1–9 y 28 · ≈ 5 min 10 s | 10–18 · ≈ 4 min 50 s |
+
+El índice del sitio lo recalcula desde el guion cada vez que cambia.
 
 ## Matrices de permisos
 

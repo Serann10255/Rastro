@@ -56,6 +56,19 @@ export function textoPlano(nodos: Inline[]): string {
   return nodos.map((n) => (n.t === "texto" || n.t === "codigo" ? n.v : textoPlano(n.hijos))).join("");
 }
 
+/** Ritmo de una exposición tranquila en español. Es una estimación para
+ *  repartir el tiempo, no un cronómetro: cada quien debe medirse en voz alta. */
+export const PALABRAS_POR_MINUTO = 130;
+
+/** «≈ 35 s», «≈ 1 min 10 s», redondeado a cinco segundos. */
+export function duracion(palabras: number): string {
+  const segundos = Math.round(((palabras / PALABRAS_POR_MINUTO) * 60) / 5) * 5;
+  if (segundos < 60) return `≈ ${segundos} s`;
+  const minutos = Math.floor(segundos / 60);
+  const resto = segundos % 60;
+  return resto === 0 ? `≈ ${minutos} min` : `≈ ${minutos} min ${resto} s`;
+}
+
 /** «RIESGOS Y CONTROLES» → «Riesgos y controles». Solo si todo va en mayúsculas:
  *  un título escrito con mayúsculas propias se respeta tal cual. */
 export function tituloLegible(titulo: string): string {

@@ -7,7 +7,9 @@
  *   ---
  *   ## 1 · Portada          ← diapositiva de contenido, numerada
  *   …
- *   > Notas: Sergio. …      ← notas del presentador
+ *   > Guion: Sergio. …      ← lo que se dice y quién lo dice
+ *   > Indicación: …         ← cómo decirlo
+ *   > Si preguntan: …       ← respuesta preparada
  *   ---
  *   # BLOQUE 1 · TÍTULO     ← portadilla de bloque, sin número propio
  *   ---
@@ -26,7 +28,7 @@ import type {
   Metadatos,
   ReferenciaBloque,
 } from "../src/deck/tipos.ts";
-import { ErrorDeLectura, leerBloques } from "./markdown.ts";
+import { ErrorDeLectura, leerBloques, textoPlano } from "./markdown.ts";
 
 export { ErrorDeLectura };
 
@@ -64,6 +66,10 @@ function dividirEnSecciones(texto: string): Seccion[] {
   });
   secciones.push(actual);
   return secciones;
+}
+
+function contarPalabras(texto: string): number {
+  return texto.split(/\s+/).filter((p) => /[\p{L}\p{N}]/u.test(p)).length;
 }
 
 function leerMetadatos(yaml: string): Metadatos {
@@ -180,11 +186,16 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
       }
     }
 
-    if (leido.notas.length === 0) {
-      avisos.push(`${opciones.archivo}:${seccion.inicio}: la diapositiva ${numero} no tiene notas.`);
+    const guion = leido.notas.filter((n) => n.tipo === "guion");
+    if (guion.length === 0) {
+      avisos.push(
+        `${opciones.archivo}:${seccion.inicio}: la diapositiva ${numero} no tiene guion ` +
+          "(«> Guion: Nombre. lo que se dice»).",
+      );
     }
-    const declarado = leido.notas.find((n) => n.presentador)?.presentador ?? null;
+    const declarado = guion.find((n) => n.presentador)?.presentador ?? null;
     if (declarado) presentadorActual = declarado;
+    const palabras = guion.reduce((total, n) => total + contarPalabras(textoPlano(n.texto)), 0);
 
     const tituloDiapositiva = encabezado[2]!.trim();
     diapositivas.push({
@@ -196,6 +207,7 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
       bloques: leido.bloques,
       notas: leido.notas,
       presentador: presentadorActual,
+      palabras,
       bloque: bloqueActual,
     });
   }
@@ -222,10 +234,14 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
     else portadilla?.contenido.push({ numero: d.numero, titulo: d.titulo });
   }
 
-  const intervenciones = new Map<string, number[]>();
+  const intervenciones = new Map<string, { numeros: number[]; palabras: number }>();
   for (const d of contenido) {
     if (!d.presentador) continue;
-    intervenciones.set(d.presentador, [...(intervenciones.get(d.presentador) ?? []), d.numero]);
+    const previa = intervenciones.get(d.presentador) ?? { numeros: [], palabras: 0 };
+    intervenciones.set(d.presentador, {
+      numeros: [...previa.numeros, d.numero],
+      palabras: previa.palabras + d.palabras,
+    });
   }
 
   return {
@@ -238,7 +254,8 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
         total: diapositivas.length,
         contenido: contenido.length,
         bloques: diapositivas.length - contenido.length,
-        intervenciones: [...intervenciones].map(([presentador, numeros]) => ({ presentador, numeros })),
+        palabras: contenido.reduce((total, d) => total + d.palabras, 0),
+        intervenciones: [...intervenciones].map(([presentador, datos]) => ({ presentador, ...datos })),
       },
     },
     avisos,

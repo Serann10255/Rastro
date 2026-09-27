@@ -3,7 +3,7 @@
  *   npm test
  *
  * Usan el ejecutor de pruebas de Node, sin dependencias: se comprueba lo que el
- * deck promete —que las notas no se cuelen como contenido, que la numeración
+ * deck promete —que el guion y las indicaciones no se cuelen como contenido, que la numeración
  * sea la del enlace directo, que una figura inexistente detenga la
  * construcción— y que los dos guiones reales compilan sin avisos.
  */
@@ -63,41 +63,59 @@ describe("cifras de resultado", () => {
 });
 
 describe("diapositivas", () => {
-  it("separa las notas del presentador de las citas de contenido", () => {
+  it("separa el guion, las indicaciones y las respuestas de las citas de contenido", () => {
     const [d] = contenido(
-      "## 1 · Regla\n\n> Ningún requisito se dio por cumplido sin prueba.\n\n> Notas: Nicolás. Esta regla\n> explica la cobertura.",
+      "## 1 · Regla\n\n> Ningún requisito se dio por cumplido sin prueba.\n\n" +
+        "> Guion: Nicolás. Esta regla\n> explica la cobertura.\n\n" +
+        "> Indicación: Decirlo despacio.\n\n> Si preguntan: Está en el documento.",
     );
+    assert.equal(d!.bloques.length, 1);
     assert.equal(d!.bloques[0]!.tipo, "cita");
-    assert.equal(d!.notas.length, 1);
+    assert.deepEqual(
+      d!.notas.map((n) => n.tipo),
+      ["guion", "indicacion", "pregunta"],
+    );
     assert.equal(d!.notas[0]!.presentador, "Nicolás");
-    // Las líneas de una nota se unen: son el ajuste de línea del editor.
+    // Las líneas de una cita se unen: son el ajuste de línea del editor.
     assert.deepEqual(d!.notas[0]!.texto, [{ t: "texto", v: "Esta regla explica la cobertura." }]);
+    assert.equal(d!.palabras, 5);
+  });
+
+  it("no toma por presentador la primera palabra de una indicación", () => {
+    const [d] = contenido("## 1 · A\n\nx\n\n> Guion: Ana. Hola.\n\n> Indicación: Ojo. Hablar despacio.");
+    assert.equal(d!.notas[1]!.presentador, null);
+    assert.equal(d!.presentador, "Ana");
+  });
+
+  it("acepta «Notas:» como indicación, sin presentador", () => {
+    const [d] = contenido("## 1 · A\n\nx\n\n> Guion: Ana. Hola.\n\n> Notas: Pasar rápido.");
+    assert.equal(d!.notas[1]!.tipo, "indicacion");
   });
 
   it("conserva los saltos de línea de un párrafo", () => {
-    const [d] = contenido("## 1 · Portada\n\n**RASTRO**\nTrazabilidad verificable\n\n> Notas: Ana. Hola.");
+    const [d] = contenido("## 1 · Portada\n\n**RASTRO**\nTrazabilidad verificable\n\n> Guion: Ana. Hola.");
     const parrafo = d!.bloques[0] as Extract<Bloque, { tipo: "parrafo" }>;
     assert.equal(parrafo.lineas.length, 2);
     assert.equal(d!.portada, true);
   });
 
   it("lee una tabla sin fila de separación como tabla sin encabezado", () => {
-    const [d] = contenido("## 1 · Conclusiones\n\n| BIEN | Cumplió |\n| MAL | No cumplió |\n\n> Notas: Ana. Hola.");
+    const [d] = contenido("## 1 · Conclusiones\n\n| BIEN | Cumplió |\n| MAL | No cumplió |\n\n> Guion: Ana. Hola.");
     const tabla = d!.bloques[0] as Extract<Bloque, { tipo: "tabla" }>;
     assert.equal(tabla.encabezado, null);
     assert.equal(tabla.filas.length, 2);
   });
 
   it("trata un encabezado vacío como ausencia de encabezado y respeta la alineación", () => {
-    const [d] = contenido("## 1 · Hallazgo\n\n| | |\n|---|:---:|\n| **Condición** | ✓ |\n\n> Notas: Ana. Hola.");
+    const [d] = contenido("## 1 · Hallazgo\n\n| | |\n|---|:---:|\n| **Condición** | ✓ |\n\n> Guion: Ana. Hola.");
     const tabla = d!.bloques[0] as Extract<Bloque, { tipo: "tabla" }>;
     assert.equal(tabla.encabezado, null);
     assert.deepEqual(tabla.alineacion, [null, "centro"]);
   });
 
-  it("arrastra el presentador hasta que las notas nombran a otro", () => {
+  it("arrastra el presentador hasta que el guion nombra a otro", () => {
     const ds = contenido(
-      "## 1 · A\n\nx\n\n> Notas: Ana. Empieza.\n\n---\n\n## 2 · B\n\ny\n\n> Notas: Pasar rápido.\n\n---\n\n## 3 · C\n\nz\n\n> Notas: Luis. Sigue.",
+      "## 1 · A\n\nx\n\n> Guion: Ana. Empieza.\n\n---\n\n## 2 · B\n\ny\n\n> Notas: Pasar rápido.\n\n---\n\n## 3 · C\n\nz\n\n> Guion: Luis. Sigue.",
     );
     assert.deepEqual(
       ds.map((d) => d.presentador),
@@ -107,7 +125,7 @@ describe("diapositivas", () => {
 
   it("agrupa en cada portadilla las diapositivas de su bloque", () => {
     const { deck } = compilar(
-      "# BLOQUE 1 · INICIO\n\n---\n\n## 1 · A\n\nx\n\n> Notas: Ana. a\n\n---\n\n## 2 · B\n\ny\n\n> Notas: Ana. b",
+      "# BLOQUE 1 · INICIO\n\n---\n\n## 1 · A\n\nx\n\n> Guion: Ana. a\n\n---\n\n## 2 · B\n\ny\n\n> Guion: Ana. b",
     );
     const portadilla = deck.diapositivas[0]!;
     assert.equal(portadilla.tipo, "bloque");
@@ -133,7 +151,7 @@ describe("errores y avisos", () => {
   });
 
   it("avisa de un salto en la numeración", () => {
-    const { avisos } = compilar("## 1 · A\n\nx\n\n> Notas: Ana. a\n\n---\n\n## 3 · B\n\ny\n\n> Notas: Ana. b");
+    const { avisos } = compilar("## 1 · A\n\nx\n\n> Guion: Ana. a\n\n---\n\n## 3 · B\n\ny\n\n> Guion: Ana. b");
     assert.ok(avisos.some((a) => /le correspondía el 2/.test(a)));
   });
 });
@@ -149,6 +167,10 @@ describe("los guiones del repositorio", () => {
       const numeradas = deck.diapositivas.filter((d): d is DiapositivaContenido => d.tipo === "contenido");
       assert.ok(numeradas.every((d) => d.presentador), "toda diapositiva tiene quien la presente");
       assert.equal(deck.resumen.intervenciones.length, 3, "participan los tres integrantes");
+      assert.ok(
+        numeradas.every((d) => d.notas.some((n) => n.tipo === "guion")),
+        "toda diapositiva tiene guion hablado",
+      );
     });
   }
 });

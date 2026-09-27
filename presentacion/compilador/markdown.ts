@@ -13,8 +13,9 @@
  *    frase por línea» a propósito; unirlas en un solo renglón cambiaría la
  *    diapositiva.
  * 2. **En las citas (`>`) los saltos se unen**, porque ahí sí son el ajuste de
- *    línea del editor. Una cita que empieza por «Notas:» es una nota del
- *    presentador; cualquier otra es contenido y se dibuja como cita destacada.
+ *    línea del editor. Una cita que empieza por «Guion:», «Indicación:»,
+ *    «Notas:» o «Si preguntan:» acompaña a la diapositiva sin verse en ella;
+ *    cualquier otra es contenido y se dibuja como cita destacada.
  */
 
 import type { Alineacion, Bloque, Cifra, Inline, Linea, Nota } from "../src/deck/tipos.ts";
@@ -127,7 +128,12 @@ const ELEMENTO_ORDENADO = /^\s*(\d+)\.\s+(.*)$/;
 const ELEMENTO = /^\s*[-*+]\s+(.*)$/;
 const SUBTITULO = /^#{3,6}\s+(.+)$/;
 const IMAGEN = /^!\[([^\]]*)\]\(([^)\s]+)\)\s*$/;
-const PREFIJO_NOTA = /^\*{0,2}Notas\*{0,2}\s*:\s*\*{0,2}\s*/i;
+/** Qué acompaña a la diapositiva, según cómo empieza la cita. */
+const PREFIJOS_DE_NOTA: [RegExp, Nota["tipo"]][] = [
+  [/^\*{0,2}Guion\*{0,2}\s*:\s*\*{0,2}\s*/i, "guion"],
+  [/^\*{0,2}(?:Indicación|Indicacion|Notas)\*{0,2}\s*:\s*\*{0,2}\s*/i, "indicacion"],
+  [/^\*{0,2}Si preguntan\*{0,2}\s*:\s*\*{0,2}\s*/i, "pregunta"],
+];
 /** «Sergio.», «Nicolás.», «Oscar Rincón.»: un nombre propio de hasta tres palabras. */
 const PRESENTADOR = /^(\p{Lu}\p{Ll}+(?:\s\p{Lu}\p{Ll}+){0,2})\.\s*/u;
 
@@ -275,11 +281,15 @@ export function leerBloques(lineas: string[], primeraLinea: number): ResultadoBl
         if (contenido) partes.push(contenido);
       }
       const texto = partes.join(" ");
-      if (PREFIJO_NOTA.test(texto)) {
-        let resto = texto.replace(PREFIJO_NOTA, "");
-        const nombre = PRESENTADOR.exec(resto);
+      const prefijo = PREFIJOS_DE_NOTA.find(([patron]) => patron.test(texto));
+      if (prefijo) {
+        const [patron, tipo] = prefijo;
+        let resto = texto.replace(patron, "");
+        // Solo el guion empieza por un nombre. En una indicación, «Ojo. …» no
+        // es nadie, y leerlo como presentador cambiaría el reparto en silencio.
+        const nombre = tipo === "guion" ? PRESENTADOR.exec(resto) : null;
         if (nombre) resto = resto.slice(nombre[0].length);
-        notas.push({ presentador: nombre?.[1] ?? null, texto: enLinea(resto) });
+        notas.push({ tipo, presentador: nombre?.[1] ?? null, texto: enLinea(resto) });
       } else {
         bloques.push({ tipo: "cita", linea: enLinea(texto) });
       }

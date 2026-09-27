@@ -186,13 +186,13 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
             onClick={() => setVerNotas((v) => !v)}
             aria-pressed={verNotas}
           >
-            Notas <kbd>N</kbd>
+            Guion <kbd>N</kbd>
           </button>
           <button type="button" className="boton boton--sutil" onClick={alternarPantallaCompleta} aria-pressed={completa}>
             {completa ? "Salir de pantalla completa" : "Pantalla completa"} <kbd>F</kbd>
           </button>
           <a className="boton boton--sutil" href="?guion">
-            Guion
+            Guion completo
           </a>
           <a className="boton boton--sutil" href="../">
             Inicio
@@ -202,7 +202,7 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
       </main>
 
       {verNotas && (
-        <aside className="visor__notas" aria-label="Notas del presentador">
+        <aside className="visor__notas" aria-label="Guion de la diapositiva">
           <div className="visor__notas-cabecera">
             <p className="visor__notas-titulo">{rotuloActual}</p>
             <p className="visor__notas-posicion">

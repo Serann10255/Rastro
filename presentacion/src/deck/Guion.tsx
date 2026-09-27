@@ -14,7 +14,8 @@
 import { useCallback, useRef, useState } from "react";
 
 import { Diapositiva, Notas, type Logotipo } from "./Diapositiva";
-import { tituloLegible } from "./formato";
+import { duracion, PALABRAS_POR_MINUTO, tituloLegible } from "./formato";
+import { imprimir } from "./impresion";
 import { useEscala } from "./medidas";
 import { SelectorTema } from "./SelectorTema";
 import type { Deck, Diapositiva as TipoDiapositiva } from "./tipos";
@@ -59,7 +60,8 @@ export function Guion({ deck, Logotipo, modo }: Propiedades) {
               <h1 className="guion__titulo">{String(deck.meta.proyecto ?? deck.titulo)} · guion</h1>
               <p className="guion__resumen">
                 {deck.resumen.total} diapositivas: {deck.resumen.contenido} de contenido y {deck.resumen.bloques}{" "}
-                portadillas de bloque.{" "}
+                portadillas de bloque. Guion hablado de {deck.resumen.palabras} palabras:{" "}
+                {duracion(deck.resumen.palabras)} a {PALABRAS_POR_MINUTO} palabras por minuto.{" "}
                 {modo === "revision" &&
                   (desbordadas.length === 0 ? (
                     <strong>Ninguna se desborda.</strong>
@@ -78,8 +80,11 @@ export function Guion({ deck, Logotipo, modo }: Propiedades) {
             <a className="boton" href="./">
               Presentar
             </a>
-            <button type="button" className="boton boton--secundario" onClick={() => window.print()}>
+            <button type="button" className="boton boton--secundario" onClick={() => imprimir("guion")}>
               Imprimir guion
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => imprimir("diapositivas")}>
+              PDF de diapositivas
             </button>
             <button
               type="button"
@@ -119,7 +124,10 @@ export function Guion({ deck, Logotipo, modo }: Propiedades) {
             <p className="guion__rotulo">
               {rotulo(d)}
               {d.tipo === "contenido" && d.presentador && (
-                <span className="guion__presenta"> · Presenta: {d.presentador}</span>
+                <span className="guion__presenta">
+                  {" "}
+                  · {d.presentador} · {duracion(d.palabras)}
+                </span>
               )}
             </p>
             <Notas diapositiva={d} />

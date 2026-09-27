@@ -6,29 +6,48 @@
  * es el claro, porque un proyector lava el oscuro, y la preferencia se guarda
  * con su propia clave, para que quien usa la aplicación en oscuro no proyecte
  * en oscuro sin darse cuenta.
+ *
+ * `?tema=oscuro` (o `claro`, o `sistema`) en la dirección abre la página con ese
+ * tema sin guardarlo como preferencia: sirve para generar el PDF oscuro desde la
+ * terminal, donde no hay botón que pulsar.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const CLAVE_TEMA = "presentacion.tema";
 type Tema = "sistema" | "claro" | "oscuro";
 
-function temaGuardado(): Tema {
+function esTema(valor: string | null): valor is Tema {
+  return valor === "sistema" || valor === "oscuro" || valor === "claro";
+}
+
+function temaDeLaDireccion(): Tema | null {
+  const valor = new URLSearchParams(window.location.search).get("tema");
+  return esTema(valor) ? valor : null;
+}
+
+function temaInicial(): Tema {
+  const deLaDireccion = temaDeLaDireccion();
+  if (deLaDireccion) return deLaDireccion;
   try {
     const valor = localStorage.getItem(CLAVE_TEMA);
-    return valor === "sistema" || valor === "oscuro" || valor === "claro" ? valor : "claro";
+    return esTema(valor) ? valor : "claro";
   } catch {
     return "claro";
   }
 }
 
 export function SelectorTema() {
-  const [tema, setTema] = useState<Tema>(temaGuardado);
+  const [tema, setTema] = useState<Tema>(temaInicial);
+  // El tema que llega en la dirección es de esta visita; solo lo que se elige
+  // con el botón pasa a ser la preferencia guardada.
+  const elegidoConElBoton = useRef(false);
 
   useEffect(() => {
     const raiz = document.documentElement;
     if (tema === "sistema") raiz.removeAttribute("data-tema");
     else raiz.setAttribute("data-tema", tema);
+    if (temaDeLaDireccion() && !elegidoConElBoton.current) return;
     try {
       localStorage.setItem(CLAVE_TEMA, tema);
     } catch {
@@ -47,7 +66,10 @@ export function SelectorTema() {
     <button
       type="button"
       className="boton boton--sutil boton--icono"
-      onClick={() => setTema(siguiente[tema])}
+      onClick={() => {
+        elegidoConElBoton.current = true;
+        setTema(siguiente[tema]);
+      }}
       title={rotulo[tema]}
       aria-label={`${rotulo[tema]}. Pulse para cambiar.`}
     >
@@ -56,13 +78,22 @@ export function SelectorTema() {
   );
 }
 
-/** Al imprimir se usa siempre el tema claro: el guion en papel no debe gastar
- *  tinta en un fondo oscuro. Se restaura la elección al terminar. */
-export function imprimirEnClaro(): () => void {
+/**
+ * Se imprime con el tema que se está viendo, tanto el guion como el PDF de solo
+ * diapositivas: lo que sale es lo que había en pantalla. Si el tema es el del
+ * sistema, se resuelve en el momento de imprimir y se fija, para no depender de
+ * cómo trate cada navegador esa preferencia al imprimir. Al terminar se
+ * restaura la elección.
+ */
+export function temaAlImprimir(): () => void {
   let anterior: string | null = null;
   const antes = () => {
-    anterior = document.documentElement.getAttribute("data-tema");
-    document.documentElement.setAttribute("data-tema", "claro");
+    const raiz = document.documentElement;
+    anterior = raiz.getAttribute("data-tema");
+    const seVeOscuro =
+      anterior === "oscuro" ||
+      (anterior === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    raiz.setAttribute("data-tema", seVeOscuro ? "oscuro" : "claro");
   };
   const despues = () => {
     if (anterior === null) document.documentElement.removeAttribute("data-tema");

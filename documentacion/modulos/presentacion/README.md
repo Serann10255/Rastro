@@ -8,10 +8,10 @@ Sirve las dos sustentaciones como un sitio estático de tres páginas:
 
 | Ruta | Qué hay |
 |---|---|
-| `/` | Índice: los dos decks, recuento de diapositivas, **quién presenta qué** y las teclas |
+| `/` | Índice: los dos decks, recuento de diapositivas, **quién presenta qué y cuánto habla** y las teclas |
 | `/rastro` | Deck de Rastro (Cloud Computing, ISD38) |
 | `/cotejo` | Deck de Cotejo (Auditoría de Sistemas, ISD39) |
-| `/rastro/?guion`, `/cotejo/?guion` | Guion: todas las diapositivas seguidas con sus notas, y aviso de las que no caben |
+| `/rastro/?guion`, `/cotejo/?guion` | Guion: todas las diapositivas seguidas con su texto hablado, y aviso de las que no caben |
 
 **El contenido no está en el código.** Se lee al construir desde
 [`documentacion/sustentacion/`](../../sustentacion/): si cambia el Markdown y se
@@ -33,7 +33,7 @@ npm run build      # sitio estático en presentacion/dist/
 | ← ↑ Re Pág Mayús+Espacio | Anterior |
 | Clic en el borde derecho o izquierdo | Siguiente o anterior |
 | Inicio · Fin | Primera · última |
-| `n` | Notas del presentador (ocultas por omisión) |
+| `n` | Guion de la diapositiva: qué decir, cómo y qué responder (oculto por omisión) |
 | `f` | Pantalla completa |
 | Ctrl+P | Imprimir el guion |
 
@@ -41,10 +41,25 @@ npm run build      # sitio estático en presentacion/dist/
 portadilla del bloque 4. La dirección se actualiza al avanzar, así que recargar
 retoma donde se estaba.
 
-**Imprimir:** desde cualquier modo, Ctrl+P saca el guion completo: una
-diapositiva por página horizontal, con su número, quién la presenta y sus notas
-debajo. Se imprime siempre en tema claro. Probado con Edge: 35 páginas por deck,
-carta apaisada.
+**Imprimir.** Dos formatos:
+
+| Formato | Cómo | Qué sale |
+|---|---|---|
+| Guion | Ctrl+P desde cualquier modo, o **Imprimir guion** en `?guion` | Una diapositiva por página horizontal, con su número, quién la presenta, el tiempo estimado, su texto hablado, la indicación y la respuesta preparada. **Con el tema que se está viendo** |
+| Solo diapositivas | **PDF de diapositivas** en `?guion`, o Ctrl+P desde `/rastro/?diapositivas` | Cada diapositiva a página completa de 16:9 (13,33 × 7,5 in), sin notas. **Con el tema que se está viendo**: claro u oscuro |
+
+Para el PDF, en el diálogo se elige *Guardar como PDF*; el tamaño de página ya
+viene dado. Probado con Edge: 35 páginas por deck en los dos formatos (carta
+apaisada el guion, 960 × 540 pt las diapositivas).
+
+Sin diálogos, desde la terminal y con el servidor en marcha:
+
+```bash
+"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf="Rastro-diapositivas.pdf" "http://localhost:5177/rastro/?diapositivas"
+```
+
+Para la versión oscura se añade `&tema=oscuro` a la dirección. `?tema=` abre la
+página con ese tema sin guardarlo como preferencia.
 
 ## Formato del guion
 
@@ -64,7 +79,9 @@ equipo: [Nombre Uno, Nombre Dos]
 **RASTRO**
 Trazabilidad verificable de envíos
 
-> Notas: Sergio. Diez segundos, no leer.
+> Guion: Sergio. Buenos días, profesor. Somos…
+> Indicación: Diez segundos. Mirar al jurado.
+> Si preguntan: …
 
 ---
 
@@ -77,8 +94,10 @@ Trazabilidad verificable de envíos
 | `## N · Título` | Diapositiva de contenido. **El número es obligatorio**: es el que se ve, el del enlace y el que citan las notas. Repetido detiene la construcción; con saltos, avisa |
 | `# BLOQUE N · TÍTULO` | Portadilla. Enumera por sí sola las diapositivas que agrupa |
 | Párrafo | **Conserva los saltos de línea**: «una frase por línea» se respeta |
-| `> Notas: Nombre. …` | Nota del presentador. El nombre alimenta el reparto de intervenciones y se arrastra a las siguientes hasta que otra nota nombre a otro |
-| `> …` sin «Notas:» | Cita destacada, parte del contenido |
+| `> Guion: Nombre. …` | **Lo que se dice**, en la voz de quien lo dice. El nombre alimenta el reparto de intervenciones y se arrastra a las siguientes hasta que otro guion nombre a otro. Sus palabras dan el tiempo estimado |
+| `> Indicación: …` (o `> Notas: …`) | Cómo decirlo. Se muestra debajo del guion, en menor jerarquía. No lleva nombre |
+| `> Si preguntan: …` | Respuesta preparada para una repregunta probable |
+| `> …` sin ninguno de esos prefijos | Cita destacada, parte del contenido |
 | Tabla sin fila `\|---\|` o con encabezado vacío | Tabla sin encabezado: la primera columna nombra la fila |
 | `\|:---:\|` | Columna centrada. En ella, `✓`, `—` y «Solo …» se dibujan como marcas de una matriz |
 | Columna «Prob.», «Impacto», «Prioridad» o «Severidad» | Sus valores (Muy alto, Alto, Media…) llevan tono además de la palabra |
@@ -109,6 +128,13 @@ Cuerpo 28 px, tablas 26,25 px, y un suelo de 24 px (`--d-minimo`) que respeta
 incluso el código en línea dentro de una tabla. Solo el pie y la numeración
 bajan a 22,75 px: no son cuerpo.
 
+**El guion es texto hablado, no consejos.** Cada diapositiva lleva lo que dice
+quien la presenta, escrito a partir de lo que la diapositiva muestra y de la
+Entrega 2; las indicaciones de escena y las respuestas preparadas van aparte y
+en menor jerarquía. El tiempo se estima a 130 palabras por minuto, un ritmo
+tranquilo: sirve para repartir, no sustituye cronometrarse en voz alta. Es un
+texto para ensayar, no para leer delante del jurado.
+
 **Si no cabe, se avisa; no se encoge.** Cada diapositiva mide su contenido. El
 guion (`?guion`) lista las que se desbordan y el visor lo dice en las notas. Es
 la forma de revisar tras editar el Markdown.
@@ -133,8 +159,23 @@ seco; los controles se ocultan tras 2,5 s sin mover el ratón, sin animación.
 **El interruptor de tema es el de las aplicaciones**, con dos diferencias: claro
 por omisión, porque un proyector lava el oscuro, y su propia clave de
 almacenamiento, para no proyectar en oscuro por arrastrar la preferencia de la
-aplicación. Es una copia del componente de `web/`: moverlo a `design/` exigiría
+aplicación.
+
+**Se imprime lo que se ve.** El guion y el PDF de solo diapositivas salen con el
+tema que se está viendo; si es el del sistema, se resuelve en el momento de
+imprimir y se fija, para no depender de cómo trate cada navegador esa
+preferencia. La hoja no lleva margen de página sino relleno propio: con margen,
+el navegador pinta los bordes con su color y en oscuro quedaba un marco negro. Se decide en el evento `beforeprint`,
+que Chrome y Edge lanzan con Ctrl+P y con `window.print()`; la impresión sin
+interfaz de Edge no lo lanza, y por eso ahí el tema se fija con `?tema=`. Es una copia del componente de `web/`: moverlo a `design/` exigiría
 tocar las dos interfaces y queda como mejora.
+
+**El formato de impresión se marca en la raíz, no se elige en la hoja de
+estilos.** `@page` no admite condiciones por clase, así que las diapositivas
+sueltas usan una página con nombre (`@page diapositiva`) que solo se asigna
+cuando la raíz lleva `data-impresion="diapositivas"`. El lienzo se imprime a
+0,6666: un pelo por debajo de 2/3, porque a 2/3 exactos el redondeo empuja cada
+lámina a una segunda página en blanco.
 
 **Descartado:** calcular el número por posición; una biblioteca de presentaciones
 (reveal.js y similares) por la regla de código propio; leer el Markdown en el
@@ -159,7 +200,7 @@ del proyecto: sm 640, md 768, lg 1024, xl 1280.
 |---|---|
 | Escritorio y tableta, o teléfono en horizontal | **Presentación**: la lámina escalada para caber, centrada, con franjas si la proporción no es 16:9 |
 | Teléfono en vertical (`max-width: 767px` y vertical) | **Lectura**: las diapositivas se reflujan como tarjetas, a tamaño de aplicación, con las notas plegadas tras un botón |
-| Papel | **Guion**: una diapositiva de 250 mm por página horizontal, notas a 12 pt debajo |
+| Papel | **Guion**: una diapositiva de 220 mm por página horizontal y su texto hablado a 11,5 pt debajo, a todo el ancho. **Solo diapositivas**: página de 16:9 sin márgenes |
 
 | Regla del proyecto | Cómo se cumple |
 |---|---|

@@ -53,7 +53,9 @@ tablas 4, 11 y 14 de la Entrega 2.
 | `npm run build` | 35 diapositivas por deck: 28 de contenido y 7 portadillas |
 | Desbordes en el lienzo | Ninguno. La 17 de Rastro y la 16 de Cotejo quedan con 11 px de holgura |
 | Tamaño mínimo del contenido | 24,1 px (dato de la cuenta en Rastro 3); figuras a 25 px |
-| Impresión (Edge, sin interfaz) | 35 páginas horizontales por deck, notas debajo de cada diapositiva |
+| Impresión del guion (Edge, sin interfaz) | 35 páginas horizontales por deck, notas debajo de cada diapositiva |
+| PDF de solo diapositivas (`?diapositivas`) | 35 páginas por deck a 960 × 540 pt (16:9), sin notas, en claro y en oscuro según el tema visible |
+| Tema al imprimir el guion | Pasa a claro y se restaura después, con tema oscuro elegido y con el del sistema en oscuro (evento `beforeprint` simulado en el navegador) |
 | Enlace directo `/rastro#7` | Abre la diapositiva 7 |
 | Teclado, clic en los bordes, notas | Comprobados en navegador |
 | 360 px | Modo lectura sin desbordes en el documento ni en las tarjetas |
@@ -81,10 +83,10 @@ Encontradas al construir, no corregidas porque son decisiones de contenido:
    segunda cambió C-02 de desviado a conforme por la única diferencia
    introducida a propósito, cargar una evidencia, y las otras diez se
    mantuvieron. La diapositiva lo dice ahora así y la nota de Oscar lo explica.
-2. **Reparto de intervenciones.** Según las notas: en Cotejo, Oscar presenta 16
-   de 28 diapositivas, Nicolás 6 y Sergio 6; en Rastro, Oscar 12, Sergio 10 y
-   Nicolás 6. Las diapositivas nuevas siguen al presentador de su bloque. El
-   índice del sitio muestra el reparto actualizado.
+2. **Reparto de intervenciones — equilibrado.** Estaba en 16 · 6 · 6
+   diapositivas en Cotejo y 12 · 10 · 6 en Rastro. Ahora es 10 · 9 · 9 en los dos
+   decks, con tiempos de entre 4 min 30 s y 5 min 20 s por integrante (véase
+   «Reparto equilibrado», abajo).
 3. **Rúbrica, criterio 3.** Las tablas de riesgo tienen probabilidad e impacto,
    pero no una columna de vulnerabilidad ni una prioridad explícita.
 4. **«Falla cerrado».** Si la tabla de roles no responde se aplican los de
@@ -94,3 +96,59 @@ Encontradas al construir, no corregidas porque son decisiones de contenido:
 5. La tabla 6 de la Entrega 2 de Rastro atribuye al despachador la reanudación
    tras incidencia; el código y la tabla 16 del mismo documento se la dan al
    coordinador.
+
+---
+
+## Guion hablado
+
+Las notas eran indicaciones de escena («diez segundos, no leer», «pasar
+rápido»), no lo que cada uno tenía que decir. Ahora cada diapositiva de los dos
+guiones lleva:
+
+| Línea | Qué es |
+|---|---|
+| `> Guion: Nombre. …` | Lo que dice quien presenta, escrito a partir de la diapositiva y de la Entrega 2 |
+| `> Indicación: …` | Cómo decirlo: las indicaciones de antes, conservadas donde aportan |
+| `> Si preguntan: …` | Respuesta preparada a una repregunta probable |
+
+Se mantiene el reparto de presentadores que ya tenían; los relevos se dicen en
+el propio guion («Nicolás sigue con el alcance»). El compilador cuenta las
+palabras y el índice estima el tiempo a 130 palabras por minuto:
+
+| Deck | Palabras | Tiempo estimado | Por integrante |
+|---|---|---|---|
+| Rastro | 1.863 | ≈ 14 min 20 s | Sergio ≈ 5 min 5 s · Nicolás ≈ 3 min 5 s · Oscar ≈ 6 min 10 s |
+| Cotejo | 1.988 | ≈ 15 min 20 s | Oscar ≈ 8 min 10 s · Nicolás ≈ 3 min 25 s · Sergio ≈ 3 min 40 s |
+
+Los dos pasan de los doce minutos previstos por deck.
+
+Dos precisiones al escribirlo: la nota de Cotejo 3 citaba «la Tabla 4 del
+documento» para la prueba preliminar, pero en la Entrega 2 esa prueba está en el
+apartado 3.1 (la tabla 4 es el alcance); y la nota de Cotejo 14 decía que C-05
+comprueba la separación de funciones, cuando comprueba una celda de la matriz
+(conductor que intenta crear un envío), como dice la diapositiva 17.
+
+Verificado: 18 pruebas del compilador en verde; los dos guiones impresos siguen
+en 35 páginas, una por diapositiva, con la lámina a 220 mm y el texto a todo el
+ancho.
+
+---
+
+## Reparto equilibrado y tema al imprimir
+
+**Reparto.** Tramos seguidos, con dos relevos por deck, y cada tramo con lo que
+cada uno hizo en el proyecto: en Rastro, Nicolás (desarrollo) presenta riesgos,
+controles y roles, y Oscar (verificación) normativa, evidencias y hallazgo; en
+Cotejo, Oscar (catálogo) presenta riesgos y controles, y Sergio normativa y
+hallazgos. Los relevos se reescribieron en el propio guion.
+
+| Deck | Sergio | Nicolás | Oscar |
+|---|---|---|---|
+| Rastro | 1–9 y 28 · 619 palabras · ≈ 4 min 45 s | 10–18 · 638 · ≈ 4 min 55 s | 19–27 · 589 · ≈ 4 min 30 s |
+| Cotejo | 19–27 · 689 · ≈ 5 min 20 s | 1–9 y 28 · 669 · ≈ 5 min 10 s | 10–18 · 623 · ≈ 4 min 50 s |
+
+**Tema al imprimir.** El guion también sale con el tema que se ve, no siempre en
+claro. La hoja pasa de margen de página a relleno propio, para que en oscuro el
+fondo cubra la hoja entera. Verificado con Edge: 35 páginas por deck en claro y
+en oscuro, sin hojas sobrantes; el cambio de tema al imprimir, simulado en el
+navegador con tema oscuro, claro y del sistema.

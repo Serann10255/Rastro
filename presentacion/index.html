@@ -11,7 +11,7 @@
          un destello claro en cada carga. Claro por omisión, para proyector. -->
     <script>
       try {
-        var tema = localStorage.getItem("presentacion.tema") || "claro";
+        var tema = new URLSearchParams(location.search).get("tema") || localStorage.getItem("presentacion.tema") || "claro";
         if (tema !== "sistema") document.documentElement.setAttribute("data-tema", tema);
       } catch (e) {
         document.documentElement.setAttribute("data-tema", "claro");

@@ -44,8 +44,16 @@ export type Bloque =
   | { tipo: "codigo"; lenguaje: string; texto: string }
   | { tipo: "figura"; id: string; titulo: string };
 
+/**
+ * Lo que acompaña a una diapositiva sin verse en ella:
+ *
+ * - `guion`: lo que se dice, con quién lo dice («> Guion: Sergio. …»).
+ * - `indicacion`: cómo decirlo («> Indicación: …» o «> Notas: …»).
+ * - `pregunta`: la respuesta preparada para una repregunta («> Si preguntan: …»).
+ */
 export interface Nota {
-  /** Quien presenta, si la nota empieza por un nombre: «Notas: Sergio. …». */
+  tipo: "guion" | "indicacion" | "pregunta";
+  /** Solo en el guion: el nombre con que empieza. */
   presentador: string | null;
   texto: Linea;
 }
@@ -64,8 +72,10 @@ export interface DiapositivaContenido {
   portada: boolean;
   bloques: Bloque[];
   notas: Nota[];
-  /** Quien presenta: el último nombre declarado en las notas hasta aquí. */
+  /** Quien presenta: el último nombre declarado en el guion hasta aquí. */
   presentador: string | null;
+  /** Palabras del guion hablado, para estimar cuánto dura. */
+  palabras: number;
   bloque: ReferenciaBloque | null;
 }
 
@@ -92,7 +102,9 @@ export interface Deck {
     total: number;
     contenido: number;
     bloques: number;
-    /** Diapositivas de contenido que presenta cada integrante. */
-    intervenciones: { presentador: string; numeros: number[] }[];
+    /** Palabras de todo el guion hablado. */
+    palabras: number;
+    /** Diapositivas de contenido que presenta cada integrante y cuánto habla. */
+    intervenciones: { presentador: string; numeros: number[]; palabras: number }[];
   };
 }
