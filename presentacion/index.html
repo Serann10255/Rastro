@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Sustentaciones de Rastro y Cotejo: diapositivas y guion del presentador." />
+    <link rel="icon" type="image/svg+xml" href="../web/public/icono.svg" />
+    <title>Sustentaciones · Rastro y Cotejo</title>
+    <!-- El tema se fija antes de pintar: sin esto, quien eligió el oscuro vería
+         un destello claro en cada carga. Claro por omisión, para proyector. -->
+    <script>
+      try {
+        var tema = localStorage.getItem("presentacion.tema") || "claro";
+        if (tema !== "sistema") document.documentElement.setAttribute("data-tema", tema);
+      } catch (e) {
+        document.documentElement.setAttribute("data-tema", "claro");
+      }
+    </script>
+  </head>
+  <body>
+    <div id="raiz"></div>
+    <noscript>Las diapositivas requieren JavaScript. El guion completo está en documentacion/sustentacion/.</noscript>
+    <script type="module" src="/src/entradas/inicio.tsx"></script>
+  </body>
+</html>

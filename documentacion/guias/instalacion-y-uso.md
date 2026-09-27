@@ -8,7 +8,7 @@ Fecha: 2026-09-10 · Versión: 0.3
 |---|---|---|
 | Docker + Compose | 29.6 / v5.3 | Levantar la pila local |
 | Python | 3.12 o superior | Pruebas y programa de auditoría |
-| Node | 20 o superior | Solo para desarrollar las interfaces |
+| Node | 20 o superior (22.6 para `npm test` de la presentación) | Desarrollar las interfaces y presentar la sustentación |
 | AWS CLI | 2.36 | Solo para desplegar en AWS |
 
 Con Docker basta para levantar todo: las interfaces se compilan dentro de su
@@ -149,6 +149,41 @@ Las dos comparten el sistema de diseño de `design/`, que está fuera de cada
 aplicación: si `npm run build` falla al resolver `@design/...`, falta el alias en
 `vite.config.ts` o el permiso `fs.allow`. Detalle en
 [sistema-de-diseno](../modulos/sistema-de-diseno/README.md).
+
+---
+
+## Presentar la sustentación
+
+Las diapositivas no necesitan Docker ni la API: solo Node.
+
+```bash
+cd presentacion
+npm install
+npm run dev
+```
+
+| Qué | Dirección |
+|---|---|
+| Índice y reparto de intervenciones | http://localhost:5177 |
+| Deck de Rastro | http://localhost:5177/rastro |
+| Deck de Cotejo | http://localhost:5177/cotejo |
+| Guion con notas y revisión de desbordes | http://localhost:5177/rastro/?guion |
+
+Teclas: flechas o barra espaciadora para avanzar, `n` para las notas, `f` para
+pantalla completa. `/rastro#7` abre directamente la diapositiva 7. Ctrl+P
+imprime el guion, una diapositiva por página con sus notas debajo.
+
+El contenido sale de `documentacion/sustentacion/*.md`: para cambiar una
+diapositiva se edita el Markdown y se guarda. Antes de presentar:
+
+```bash
+cd presentacion
+npm test            # los dos guiones compilan sin avisos (Node 22.6 o superior)
+npm run build       # sitio estático en presentacion/dist/, para llevar sin conexión
+npm run preview     # sirve lo compilado en http://localhost:5177
+```
+
+Detalle en [presentacion](../modulos/presentacion/README.md).
 
 ---
 

@@ -28,6 +28,16 @@ El **coordinador** existe porque no había nada entre el despachador y el
 administrador, y en la práctica se resolvía dándole al coordinador los dos
 roles: es decir, poder de administrador. Ahora es un rol propio.
 
+### Operaciones por rol de fábrica
+
+| Rol | Operaciones de las 19 | Las que le faltan para tenerlas todas |
+|---|---|---|
+| Administrador | 17 | Leer y verificar la bitácora |
+| Coordinador | 12 | Cargar evidencia, cuentas (crear y editar), roles (ver y administrar), bitácora |
+| Despachador | 9 | Además de las del coordinador: reanudar, editar catálogos, listar cuentas |
+| Conductor | 6 | Crear, asignar y reanudar envíos; consultar evidencias; ver el equipo; cuentas, roles, editar catálogos y bitácora. Lo que sí tiene —listar, marcar avance, cargar evidencia— se limita a **sus** envíos |
+| Auditor | 8 | Toda operación de escritura, más el listado de envíos y el de mensajeros |
+
 ## Decisiones
 
 **El catálogo de operaciones está en el código; la composición de los roles, en
@@ -78,6 +88,10 @@ por área.
   decidir qué ofrecer.
 - **Lo audita**: Cotejo, en el control C-05. Los cambios de configuración quedan
   en la bitácora con la lista de operaciones concedidas.
+- **Lo reproducen** las diapositivas de sustentación
+  ([`documentacion/sustentacion/`](../../sustentacion/README.md#matrices-de-permisos)):
+  la matriz completa de las 19 operaciones por rol. Si cambia `ROLES_INTEGRADOS`,
+  hay que actualizarlas.
 
 ## Comportamiento responsive
 

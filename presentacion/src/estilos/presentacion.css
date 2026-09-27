@@ -1,0 +1,1076 @@
+/* Diapositivas de sustentación.
+ *
+ * Todo color, espacio y familia tipográfica sale de las fichas de `design/`.
+ * Lo único propio de este módulo es la escala: una diapositiva se diseña sobre
+ * un lienzo de 1920 × 1080 y las fichas de la aplicación, pensadas para un
+ * teléfono, se multiplican por `--d-escala` para leerse en un proyector.
+ *
+ * El lienzo mide 1920 px a propósito y es la única medida fija del módulo: es
+ * una lámina que se escala entera con `zoom`, no un contenedor de página. Todo
+ * lo que rodea a la lámina —visor, guion, índice— es fluido y mobile-first.
+ */
+
+/* ======================================================================= */
+/* Lienzo                                                                  */
+/* ======================================================================= */
+
+.lienzo {
+  /* 1 rem de la aplicación equivale a 28 px del lienzo. */
+  --d-escala: 1.75;
+
+  --d-cuerpo: calc(var(--t-md) * var(--d-escala)); /* 28 px */
+  --d-tabla: calc(var(--t-base) * var(--d-escala)); /* 26,25 px: el mínimo del contenido */
+  --d-pie: calc(var(--t-sm) * var(--d-escala)); /* 22,75 px: solo pie y numeración */
+  --d-minimo: calc(var(--t-md) * var(--d-escala) * 0.86); /* 24 px: suelo de todo contenido */
+  --d-destacado: calc(var(--t-xl) * var(--d-escala)); /* 38,5 px */
+  --d-titulo: calc(var(--t-2xl) * var(--d-escala) * 1.3); /* 63,7 px */
+  --d-portadilla: calc(var(--t-2xl) * var(--d-escala) * 1.9); /* 93 px */
+  --d-portada: calc(var(--t-2xl) * var(--d-escala) * 2.6); /* 127 px */
+  --d-cifra: calc(var(--t-2xl) * var(--d-escala) * 1.9); /* 93 px */
+
+  --d-lateral: calc(var(--e-7) * 2.5); /* 120 px */
+  --d-superior: calc(var(--e-7) * 1.5); /* 72 px */
+  --d-hueco: calc(var(--e-5) * var(--d-escala)); /* 42 px */
+  --d-hueco-sm: calc(var(--e-3) * var(--d-escala)); /* 21 px */
+  --d-radio: calc(var(--r-lg) * var(--d-escala));
+  --d-franja: calc(var(--e-4) * 1.5); /* 24 px: franja de marca */
+
+  width: 1920px;
+  height: 1080px;
+  zoom: var(--zoom, 1);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--superficie);
+  color: var(--texto);
+  font-family: var(--fuente);
+  font-size: var(--d-cuerpo);
+  line-height: 1.4;
+}
+
+.lienzo strong {
+  font-weight: 750;
+}
+
+/* -- Contenido ------------------------------------------------------------ */
+
+.lamina {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--d-hueco);
+  min-height: 0;
+  padding: var(--d-superior) var(--d-lateral) var(--d-hueco-sm);
+}
+
+/* La franja de marca sobre el título: el mismo degradado del logotipo. */
+.lamina__titulo::before {
+  content: "";
+  display: block;
+  width: calc(var(--e-7) * 2.5);
+  height: calc(var(--e-2) * 1.5);
+  margin-bottom: var(--d-hueco-sm);
+  border-radius: var(--r-completo);
+  background: linear-gradient(90deg, var(--marca-1), var(--marca-2));
+}
+
+.lamina__titulo {
+  font-size: var(--d-titulo);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.lamina__cuerpo {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: calc(var(--d-hueco-sm) * 1.4);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lamina__cuerpo--con-figura {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--d-hueco);
+}
+
+.lamina__texto {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--d-hueco-sm) * 1.4);
+  min-width: 0;
+}
+
+/* -- Portada ---------------------------------------------------------------- */
+
+.portada {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--d-hueco) * 2);
+  padding: 0 var(--d-lateral);
+  border-left: var(--d-franja) solid;
+  border-image: linear-gradient(var(--marca-1), var(--marca-2)) 1;
+  overflow: hidden;
+}
+
+.portada__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--d-hueco);
+  min-width: 0;
+  color: var(--texto-suave);
+}
+
+/* El primer párrafo es el nombre y el lema: «**RASTRO**» sobre su subtítulo. */
+.portada__texto .d-parrafo:first-of-type {
+  color: var(--texto);
+  font-size: var(--d-destacado);
+  line-height: 1.25;
+}
+
+.portada__texto .d-parrafo:first-of-type .d-linea:first-child {
+  font-size: var(--d-portada);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--d-hueco-sm);
+}
+
+/* -- Portadilla de bloque --------------------------------------------------- */
+
+.portadilla {
+  display: grid;
+  align-content: center;
+  gap: var(--d-hueco);
+  padding: 0 var(--d-lateral);
+  border-left: var(--d-franja) solid;
+  border-image: linear-gradient(var(--marca-1), var(--marca-2)) 1;
+  overflow: hidden;
+}
+
+.portadilla__numero {
+  font-size: var(--d-destacado);
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.portadilla__titulo {
+  font-size: var(--d-portadilla);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.portadilla__sumario {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: calc(var(--d-hueco-sm) * 0.5);
+  color: var(--texto-suave);
+}
+
+.portadilla__cifra {
+  display: inline-block;
+  min-width: 2.2em;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--acento);
+}
+
+/* -- Pie y avance ------------------------------------------------------------ */
+
+.lienzo__pie {
+  display: flex;
+  align-items: center;
+  gap: var(--d-hueco-sm);
+  min-width: 0;
+  padding: calc(var(--e-3) * var(--d-escala) * 0.8) var(--d-lateral);
+  border-top: 2px solid var(--borde);
+  font-size: var(--d-pie);
+  color: var(--texto-suave);
+}
+
+.lienzo--portada .lienzo__pie {
+  visibility: hidden;
+}
+
+.lienzo__logo {
+  flex: 0 0 auto;
+}
+
+.lienzo__proyecto {
+  font-weight: 750;
+  color: var(--texto);
+}
+
+.lienzo__bloque {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lienzo__numero {
+  margin-left: auto;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+.lienzo__total {
+  font-weight: 500;
+  color: var(--texto-tenue);
+}
+
+.lienzo__avance {
+  height: calc(var(--e-2) * 1);
+  background: var(--fondo-sutil);
+}
+
+.lienzo__avance > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--marca-1), var(--marca-2));
+}
+
+/* ======================================================================= */
+/* Bloques de contenido                                                    */
+/* ======================================================================= */
+
+.d-parrafo {
+  max-width: 64ch;
+  overflow-wrap: break-word;
+}
+
+.d-linea {
+  display: block;
+}
+
+.d-parrafo--dato {
+  font-family: var(--fuente-mono);
+  font-size: var(--d-tabla);
+  color: var(--texto-suave);
+}
+
+.d-parrafo--dato .d-codigo {
+  background: none;
+  padding: 0;
+}
+
+.d-codigo {
+  font-family: var(--fuente-mono);
+  /* Más pequeño que el texto que lo rodea, pero nunca bajo el suelo de 24 px:
+   * dentro de una tabla, el 90 % quedaría en 23,6. */
+  font-size: max(0.9em, var(--d-minimo));
+  padding: 0.08em 0.35em;
+  border-radius: var(--r-sm);
+  background: var(--fondo-sutil);
+  overflow-wrap: anywhere;
+}
+
+.d-subtitulo {
+  font-size: var(--d-destacado);
+}
+
+.d-lista {
+  margin: 0;
+  padding-left: 1.3em;
+  display: grid;
+  gap: calc(var(--d-hueco-sm) * 0.6);
+  max-width: 64ch;
+}
+
+.d-lista li::marker {
+  color: var(--acento);
+  font-weight: 750;
+}
+
+.d-cita {
+  margin: 0;
+  max-width: 36ch;
+  padding-left: calc(var(--d-hueco) * 0.9);
+  border-left: calc(var(--e-2) * 1.25) solid var(--acento);
+  font-size: var(--d-destacado);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.d-bloque-codigo {
+  margin: 0;
+  padding: var(--d-hueco-sm);
+  border-radius: var(--d-radio);
+  background: var(--superficie-hundida);
+  font-family: var(--fuente-mono);
+  font-size: var(--d-tabla);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* -- Cifras de resultado ----------------------------------------------------- */
+
+.d-resultado {
+  margin: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--d-hueco-sm);
+}
+
+.d-cifra {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: calc(var(--e-1) * var(--d-escala));
+  padding: var(--d-hueco-sm) calc(var(--d-hueco-sm) * 1.3);
+  border: 2px solid var(--borde);
+  border-radius: var(--d-radio);
+  background: var(--superficie-hundida);
+}
+
+.d-cifra__valor {
+  margin: 0;
+  font-size: var(--d-cifra);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.d-cifra__etiqueta {
+  color: var(--texto-suave);
+}
+
+.d-cifra--exito .d-cifra__valor {
+  color: var(--exito);
+}
+
+.d-cifra--peligro {
+  border-color: var(--peligro-borde);
+  background: var(--peligro-suave);
+}
+
+.d-cifra--peligro .d-cifra__valor {
+  color: var(--peligro);
+}
+
+/* -- Tablas ------------------------------------------------------------------ */
+
+.d-tabla-contenedor {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.d-tabla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--d-tabla);
+  line-height: 1.3;
+}
+
+.d-tabla th,
+.d-tabla td {
+  padding: calc(var(--e-2) * var(--d-escala) * 0.6) calc(var(--e-4) * var(--d-escala) * 0.66);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 2px solid var(--borde);
+  overflow-wrap: break-word;
+}
+
+.d-tabla thead th {
+  background: var(--acento-suave);
+  color: var(--acento-fuerte);
+  font-weight: 750;
+  border-bottom: 3px solid var(--acento-borde);
+  vertical-align: bottom;
+}
+
+.d-tabla thead th:first-child {
+  border-top-left-radius: var(--r-md);
+}
+
+.d-tabla thead th:last-child {
+  border-top-right-radius: var(--r-md);
+}
+
+.d-tabla tbody td:first-child {
+  font-weight: 650;
+}
+
+.d-tabla tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Sin encabezado, la primera columna nombra la fila. */
+.d-tabla--por-filas tbody th {
+  width: 1%;
+  white-space: nowrap;
+  background: var(--fondo-sutil);
+  font-weight: 750;
+}
+
+.d-alinear--centro {
+  text-align: center !important;
+}
+
+.d-alinear--derecha {
+  text-align: right !important;
+}
+
+.d-marca--si {
+  color: var(--exito);
+  font-weight: 800;
+}
+
+.d-marca--no {
+  color: var(--texto-tenue);
+}
+
+.d-marca--parcial {
+  color: var(--alerta);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Niveles de probabilidad, impacto y prioridad: la palabra y además el tono. */
+.d-nivel {
+  display: inline-block;
+  padding: 0.05em 0.55em;
+  border: 2px solid var(--borde-fuerte);
+  border-radius: var(--r-completo);
+  background: var(--fondo-sutil);
+  color: var(--texto-suave);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.d-nivel--muy-alto {
+  border-color: var(--peligro-borde);
+  background: var(--peligro-suave);
+  color: var(--peligro);
+}
+
+.d-nivel--alto {
+  border-color: var(--alerta-borde);
+  background: var(--alerta-suave);
+  color: var(--alerta);
+}
+
+.d-nivel--bajo {
+  border-color: var(--exito-borde);
+  background: var(--exito-suave);
+  color: var(--exito);
+}
+
+/* Las tres conclusiones de Cotejo, con los tonos de su interfaz. */
+.d-veredicto--bien > th {
+  background: var(--exito-suave);
+  color: var(--exito);
+}
+
+.d-veredicto--mal > th {
+  background: var(--peligro-suave);
+  color: var(--peligro);
+}
+
+.d-veredicto--sin-revisar > th {
+  background: var(--fondo-sutil);
+  color: var(--texto-suave);
+  box-shadow: inset 0 0 0 2px var(--borde-fuerte);
+}
+
+/* -- Figuras ------------------------------------------------------------------ */
+
+.d-figura {
+  margin: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.d-figura > svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.fig-caja {
+  fill: var(--superficie);
+  stroke: var(--borde-fuerte);
+  stroke-width: 2.5;
+}
+
+.fig-caja--acento {
+  fill: var(--acento-suave);
+  stroke: var(--acento);
+  stroke-width: 3.5;
+}
+
+.fig-caja--actor {
+  fill: var(--fondo-sutil);
+  stroke: var(--borde);
+}
+
+.fig-caja--discontinua {
+  stroke-dasharray: 10 7;
+}
+
+.fig-marco {
+  fill: none;
+  stroke: var(--borde-fuerte);
+  stroke-width: 2.5;
+  stroke-dasharray: 12 9;
+}
+
+.fig-linea {
+  fill: none;
+  stroke: var(--texto-suave);
+  stroke-width: 3;
+}
+
+.fig-linea--discontinua {
+  stroke-dasharray: 9 7;
+}
+
+.fig-punta {
+  fill: var(--texto-suave);
+}
+
+.fig-texto {
+  fill: var(--texto);
+  font-family: var(--fuente);
+}
+
+.fig-texto--fuerte {
+  font-weight: 750;
+}
+
+.fig-texto--suave {
+  fill: var(--texto-suave);
+}
+
+.fig-texto--mono {
+  fill: var(--texto-suave);
+  font-family: var(--fuente-mono);
+}
+
+.fig-texto--rotulo {
+  fill: var(--acento);
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.fig-caja--acento ~ .fig-texto {
+  fill: var(--acento-fuerte);
+}
+
+/* ======================================================================= */
+/* Visor                                                                   */
+/* ======================================================================= */
+
+.visor {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background: var(--fondo-sutil);
+}
+
+.visor[data-inactivo] {
+  cursor: none;
+}
+
+/* Lámina, bordes pulsables y controles comparten la misma celda: se superponen
+ * sin posicionamiento absoluto. */
+.visor__escenario {
+  display: grid;
+  grid-template-areas: "capa";
+  place-items: center;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.visor__escenario > * {
+  grid-area: capa;
+}
+
+.visor__escenario > .lienzo {
+  box-shadow: var(--sombra-3);
+}
+
+.visor__borde {
+  align-self: stretch;
+  width: 12%;
+  min-width: var(--tactil);
+  border: 0;
+  background: transparent;
+  color: var(--texto-tenue);
+  font-size: var(--t-2xl);
+  cursor: pointer;
+}
+
+.visor__borde > span {
+  visibility: hidden;
+}
+
+.visor__borde:hover:not(:disabled) > span,
+.visor__borde:focus-visible > span {
+  visibility: visible;
+}
+
+.visor__borde:disabled {
+  cursor: default;
+}
+
+.visor__borde--anterior {
+  justify-self: start;
+}
+
+.visor__borde--siguiente {
+  justify-self: end;
+}
+
+.visor__controles {
+  justify-self: center;
+  align-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--e-1);
+  max-width: calc(100% - var(--e-4));
+  margin: var(--e-2);
+  padding: var(--e-1);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  background: var(--superficie);
+  box-shadow: var(--sombra-2);
+}
+
+.visor[data-inactivo] .visor__controles:not(:focus-within) {
+  visibility: hidden;
+}
+
+.visor__controles kbd {
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  padding: 0 var(--e-1);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--r-sm);
+  color: var(--texto-tenue);
+}
+
+.visor__notas {
+  max-height: 34dvh;
+  overflow-y: auto;
+  display: grid;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  border-top: 1px solid var(--borde);
+  background: var(--superficie);
+  font-size: var(--t-lg);
+}
+
+.visor__notas-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e-2);
+  color: var(--texto-suave);
+  font-size: var(--t-base);
+}
+
+.visor__notas-titulo {
+  font-weight: 650;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.visor__siguiente {
+  color: var(--texto-tenue);
+  font-size: var(--t-base);
+}
+
+.notas__texto {
+  max-width: 80ch;
+  overflow-wrap: break-word;
+}
+
+.notas__presentador {
+  color: var(--acento);
+}
+
+.notas__vacio {
+  color: var(--texto-tenue);
+}
+
+@media (min-width: 768px) {
+  .visor__notas {
+    padding: var(--e-4) var(--e-6);
+  }
+}
+
+/* ======================================================================= */
+/* Guion: revisión en pantalla y lectura en teléfono                       */
+/* ======================================================================= */
+
+.guion {
+  width: 100%;
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+  padding: var(--e-4);
+  display: grid;
+  gap: var(--e-6);
+  min-width: 0;
+}
+
+.guion--impresion {
+  display: none;
+}
+
+.guion__cabecera {
+  display: grid;
+  gap: var(--e-4);
+}
+
+.guion__identidad {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  min-width: 0;
+}
+
+.guion__identidad > div {
+  display: grid;
+  gap: var(--e-1);
+  min-width: 0;
+}
+
+.guion__titulo {
+  font-size: var(--t-2xl);
+}
+
+.guion__resumen,
+.guion__fuente {
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.guion__alerta {
+  color: var(--peligro);
+}
+
+.guion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+
+.guion__pagina {
+  display: grid;
+  gap: var(--e-3);
+  min-width: 0;
+  scroll-margin-top: var(--e-4);
+}
+
+.guion__marco {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  box-shadow: var(--sombra-2);
+}
+
+.guion__marco > .lienzo {
+  box-shadow: none;
+}
+
+.guion__notas {
+  display: grid;
+  gap: var(--e-2);
+}
+
+.guion__rotulo {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.guion__presenta {
+  font-weight: 500;
+  color: var(--acento);
+}
+
+.guion--sin-notas .guion__notas > :not(.guion__rotulo) {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .guion {
+    padding: var(--e-5);
+  }
+  .guion__cabecera {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .guion__acciones {
+    justify-content: flex-end;
+  }
+}
+
+/* -- Lectura en teléfono: la lámina se refluja ------------------------------ */
+
+@media screen {
+  /* Mismo marcado, sin lienzo fijo: la escala vuelve a la de la aplicación y
+   * cada diapositiva ocupa lo que necesita. */
+  .guion--lectura .lienzo {
+    --d-escala: 1;
+    --d-lateral: var(--e-4);
+    --d-superior: var(--e-5);
+    --d-franja: var(--e-2);
+
+    width: auto;
+    height: auto;
+    zoom: 1;
+    grid-template-rows: auto auto auto;
+  }
+
+  .guion--lectura .lamina__cuerpo {
+    overflow: visible;
+  }
+
+  .guion--lectura .lamina__cuerpo--con-figura {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guion--lectura .d-figura,
+  .guion--lectura .d-figura > svg {
+    height: auto;
+  }
+
+  .guion--lectura .d-tabla-contenedor {
+    overflow-x: auto;
+  }
+
+  .guion--lectura .d-tabla {
+    min-width: 34rem;
+  }
+
+  .guion--lectura .d-resultado {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guion--lectura .portada {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: var(--e-5);
+  }
+
+  .guion--lectura .portada__texto .d-parrafo:first-of-type .d-linea:first-child {
+    font-size: calc(var(--t-2xl) * 1.5);
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  .guion--lectura .portada__logo > svg {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .guion--lectura .portadilla {
+    padding-block: var(--e-5);
+    gap: var(--e-3);
+  }
+
+  .guion--lectura .portadilla > * {
+    min-width: 0;
+  }
+
+  .guion--lectura .portadilla__numero {
+    font-size: var(--t-base);
+  }
+
+  .guion--lectura .portadilla__titulo {
+    font-size: var(--t-2xl);
+    overflow-wrap: break-word;
+  }
+
+  .guion--lectura .lienzo__logo {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+/* ======================================================================= */
+/* Índice                                                                  */
+/* ======================================================================= */
+
+.inicio {
+  width: 100%;
+  max-width: var(--ancho-contenido);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--e-4);
+  display: grid;
+  gap: var(--e-5);
+  align-content: start;
+}
+
+.inicio__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e-3);
+}
+
+.inicio__antetitulo {
+  color: var(--acento);
+  font-weight: 650;
+  font-size: var(--t-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inicio__titulo {
+  font-size: var(--t-2xl);
+}
+
+.inicio__descripcion {
+  color: var(--texto-suave);
+  max-width: 62ch;
+}
+
+.inicio__decks {
+  display: grid;
+  gap: var(--e-4);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tarjeta-deck__cuerpo {
+  display: grid;
+  gap: var(--e-3);
+}
+
+/* En el índice conviven los dos logotipos y la identidad se declara por
+ * página: aquí se dibujan con el acento común en lugar de con un color que
+ * no les corresponde. */
+.tarjeta-deck__marca {
+  --marca-1: var(--acento);
+  --marca-2: var(--acento);
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  min-width: 0;
+}
+
+.tarjeta-deck__nombre {
+  font-size: var(--t-xl);
+}
+
+.tarjeta-deck__leyenda {
+  text-align: left;
+  font-weight: 650;
+  padding-bottom: var(--e-2);
+}
+
+.inicio__teclas kbd {
+  font-family: var(--fuente-mono);
+  font-size: var(--t-sm);
+  white-space: normal;
+}
+
+@media (min-width: 768px) {
+  .inicio {
+    padding: var(--e-6);
+  }
+  .inicio__decks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ======================================================================= */
+/* Impresión: una diapositiva por página, con sus notas debajo             */
+/* ======================================================================= */
+
+@page {
+  size: landscape;
+  margin: 12mm;
+}
+
+@media print {
+  body {
+    background: var(--superficie);
+  }
+
+  .visor,
+  .guion__cabecera,
+  .guion__aviso {
+    display: none !important;
+  }
+
+  /* 250 mm de ancho: cabe en A4 y en carta apaisados y deja sitio a las notas. */
+  .guion,
+  .guion--impresion,
+  .guion--revision,
+  .guion--lectura {
+    --zoom: 0.4921 !important;
+    display: block;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .guion .lienzo {
+    width: 1920px;
+    height: 1080px;
+    zoom: var(--zoom);
+    --d-escala: 1.75;
+    --d-lateral: calc(var(--e-7) * 2.5);
+    --d-superior: calc(var(--e-7) * 1.5);
+    --d-franja: calc(var(--e-4) * 1.5);
+    grid-template-rows: minmax(0, 1fr) auto auto;
+  }
+
+  .guion__pagina {
+    display: grid;
+    gap: 4mm;
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  .guion__pagina:last-child {
+    break-after: auto;
+  }
+
+  .guion__marco {
+    width: fit-content;
+    border: 0.3mm solid var(--borde-fuerte);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* En papel las notas salen siempre, aunque en pantalla estuvieran ocultas. */
+  .guion__notas {
+    display: grid !important;
+    gap: 2mm;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .guion__notas > * {
+    display: block !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

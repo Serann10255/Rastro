@@ -106,6 +106,7 @@ cotejo/               Programa de auditoría (proyecto de Auditoría de Sistemas
   cotejo/cotejo/      Ejecutor, papeles de trabajo, informe
   cotejo/api/         Interfaz HTTP, restringida al rol auditor
   cotejo/web/         Interfaz de auditoría (React + TypeScript)
+presentacion/         Diapositivas de sustentación, generadas desde documentacion/sustentacion/
 documentacion/        Toda la documentación del repositorio
 ```
 

@@ -17,6 +17,7 @@ formato ISO.
 | `pruebas/` | [Plan y trazabilidad](../pruebas/plan-y-trazabilidad.md): cada requisito con la prueba que lo comprueba |
 | `despliegue/` | [Cómo se usa cada app](../despliegue/como-usar-cada-app.md) y [entorno AWS](../despliegue/entorno-aws.md): credenciales, etapas, coste y migración |
 | `cambios/` | Bitácora por fecha |
+| `sustentacion/` | [Guiones de las dos sustentaciones](../sustentacion/README.md): la fuente de las diapositivas del módulo `presentacion` |
 
 ## Módulos documentados
 
@@ -37,6 +38,7 @@ formato ISO.
 | Programa de auditoría | [`cotejo`](../modulos/cotejo/README.md) |
 | API de auditoría | [`cotejo-api`](../modulos/cotejo-api/README.md) |
 | Interfaz de auditoría | [`cotejo-web`](../modulos/cotejo-web/README.md) |
+| Diapositivas de sustentación | [`presentacion`](../modulos/presentacion/README.md) |
 
 ## Decisiones registradas
 

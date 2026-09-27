@@ -1,0 +1,4 @@
+# Lo compilado se regenera desde los Markdown de documentacion/sustentacion/.
+# Versionarlo permitiría que el sitio y el guion dijeran cosas distintas.
+dist/
+node_modules/

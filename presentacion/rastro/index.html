@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Sustentación de Rastro: trazabilidad verificable de envíos." />
+    <link rel="icon" type="image/svg+xml" href="../../web/public/icono.svg" />
+    <title>Rastro · sustentación</title>
+    <script>
+      try {
+        var tema = localStorage.getItem("presentacion.tema") || "claro";
+        if (tema !== "sistema") document.documentElement.setAttribute("data-tema", tema);
+      } catch (e) {
+        document.documentElement.setAttribute("data-tema", "claro");
+      }
+    </script>
+  </head>
+  <body>
+    <div id="raiz"></div>
+    <noscript>Las diapositivas requieren JavaScript. El guion está en documentacion/sustentacion/sustentacion-rastro.md.</noscript>
+    <script type="module" src="/src/entradas/rastro.tsx"></script>
+  </body>
+</html>
