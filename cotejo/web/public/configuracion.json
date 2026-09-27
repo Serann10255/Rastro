@@ -1,7 +1,7 @@
 {
   "_nota": "Generado por deploy/aws/60-sitios.sh. No editar a mano.",
   "entorno": "aws",
-  "url_cotejo": "",
+  "url_cotejo": "http://localhost:8007",
   "url_rastro": "https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com",
-  "generado_en": "2026-09-26T22:48:19Z"
+  "generado_en": "2026-09-26T23:12:09Z"
 }
