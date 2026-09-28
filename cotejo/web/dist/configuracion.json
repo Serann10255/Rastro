@@ -1,0 +1,6 @@
+{
+  "_nota": "Configuracion leida en tiempo de ejecucion. url_cotejo apunta al programa de auditoria; url_rastro, al proveedor de identidad y al sistema auditado.",
+  "entorno": "local",
+  "url_cotejo": "http://localhost:8007",
+  "url_rastro": "http://localhost:8080"
+}
