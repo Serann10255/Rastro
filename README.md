@@ -135,7 +135,7 @@ El sistema corre igual en local y en AWS; lo que cambia es dónde está cada pie
 | AWS Lambda | Un contenedor por microservicio |
 | DynamoDB | DynamoDB Local |
 | S3 + KMS | MinIO (sin KMS) |
-| Sitio estático en S3 | Contenedor nginx con el sitio compilado |
+| Sitio estático en S3, servido por HTTPS a través de API Gateway | Contenedor nginx con el sitio compilado |
 
 Las diferencias no se disimulan. El cifrado con llave administrada, el registro
 de actividad y el bloqueo de acceso público **no existen** en el entorno local:

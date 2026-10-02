@@ -1,6 +1,6 @@
 # Cómo se usa cada aplicación
 
-Fecha: 2026-09-10 · Versión: 0.3
+Fecha: 2026-10-02 · Versión: 0.4
 
 El repositorio contiene **cuatro aplicaciones** con usuarios distintos. Esta
 guía dice qué hace cada una, cómo se levanta y cómo se usa, tanto en el entorno
@@ -8,7 +8,7 @@ local como desplegada en AWS.
 
 | Aplicación | Local | En AWS | Quién la usa |
 |---|---|---|---|
-| **Rastro — interfaz de operación** | http://localhost:5173 | Sitio estático en S3 | Despachador, conductor, auditor, administrador |
+| **Rastro — interfaz de operación** | http://localhost:5173 | Sitio estático en S3, servido por HTTPS a través de API Gateway | Despachador, conductor, auditor, administrador |
 | **Rastro — consulta pública** | http://localhost:5173/rastreo | La misma, ruta `/rastreo` | Destinatario, **sin cuenta** |
 | **Rastro — API** | http://localhost:8080 | API Gateway | Las interfaces; también auditable con `curl` |
 | **Cotejo — interfaz de auditoría** | http://localhost:5175 | En la máquina del auditor | Solo el rol auditor |
@@ -30,7 +30,7 @@ pieza y de dónde salen los identificadores.
 | Evidencias | MinIO, **sin cifrado KMS** | S3 + KMS |
 | Identidad | Microservicio `auth` | El mismo servicio `auth`, desplegado como función |
 | Registro de actividad | **No existe** | CloudTrail |
-| Interfaces | Contenedor nginx | Sitio estático en S3 |
+| Interfaces | Contenedor nginx | Sitio estático en S3, servido por HTTPS a través de API Gateway (ADR-012) |
 
 ### Por qué no se pisan
 
@@ -362,6 +362,10 @@ La secuencia de despliegue compila y publica las interfaces automáticamente:
 
 La etapa `60-sitios.sh` compila, crea el contenedor del sitio, escribe el
 `configuracion.json` con la dirección real de la API y sincroniza los archivos.
+La etapa `65-sitio-https.sh` publica esos mismos archivos por HTTPS e imprime
+la dirección que hay que compartir, `https://<id>.execute-api.us-east-1.amazonaws.com`.
+La del sitio de S3 sigue funcionando, pero solo por HTTP
+([ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md)).
 
 **La interfaz de Cotejo no se publica por omisión.** El almacén de papeles de
 trabajo concentra información sobre las debilidades del sistema auditado, y

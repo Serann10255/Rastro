@@ -11,6 +11,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/comun.sh"
 source "${RAIZ_PROYECTO}/config/.identidad.env"
 # shellcheck source=/dev/null
 source "${RAIZ_PROYECTO}/config/.api.env"
+# La entrada HTTPS del sitio es opcional para este archivo: si falta, la clave
+# queda vacia y el resto del despliegue sigue siendo valido.
+if [[ -f "${RAIZ_PROYECTO}/config/.sitio.env" ]]; then
+  # shellcheck source=/dev/null
+  source "${RAIZ_PROYECTO}/config/.sitio.env"
+fi
 
 paso "Archivo de configuracion"
 
@@ -36,6 +42,7 @@ cat > "${ARCHIVO_CONFIG}" <<JSON
   "vigencia_token_segundos": 3600,
   "vigencia_refresco_segundos": 43200,
   "url_publica_api": "${URL_API}",
+  "url_sitio": "${URL_SITIO:-}",
   "registro_actividad": "${NOMBRE_RASTRO_CLOUDTRAIL}",
   "supuesto_su01": "${SU01}",
   "vigencia_enlace_segundos": 300

@@ -1,0 +1,26 @@
+# comando: bash deploy/aws/10-datos.sh
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-10-02T15:12:06Z
+---
+
+=== Tablas de DynamoDB ===
+  [ok] tabla ya existente: rastro-envios
+  [ok] tabla ya existente: rastro-bitacora
+  [ok] tabla ya existente: rastro-maestros
+
+=== Llave de cifrado administrada por el cliente ===
+  [ok] llave ya existente: alias/rastro
+
+=== Contenedores de objetos ===
+  [ok] contenedor ya existente: rastro-evidencias-484948252891
+  [ok] contenedor ya existente: rastro-registro-484948252891
+  [ok] bloqueo de acceso publico activo en rastro-evidencias-484948252891
+  [ok] versionado activo en rastro-evidencias-484948252891
+  [ok] cifrado por omision con alias/rastro en rastro-evidencias-484948252891
+  [ok] politica que rechaza cargas sin cifrado en rastro-evidencias-484948252891
+  [ok] CORS de carga directa en rastro-evidencias-484948252891 para http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com,https://td70a5indc.execute-api.us-east-1.amazonaws.com
+  [ok] bloqueo de acceso publico activo en rastro-registro-484948252891
+
+=== Capa de datos lista ===
+---
+# codigo de salida: 0

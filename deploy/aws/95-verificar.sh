@@ -73,6 +73,38 @@ fi
 comprobar "registro de actividad ${NOMBRE_RASTRO_CLOUDTRAIL}" \
   aws cloudtrail get-trail-status --name "${NOMBRE_RASTRO_CLOUDTRAIL}" --region "${REGION}"
 
+paso "Sitio por HTTPS"
+if [[ -f "${RAIZ_PROYECTO}/config/.sitio.env" ]]; then
+  # shellcheck source=/dev/null
+  source "${RAIZ_PROYECTO}/config/.sitio.env"
+  comprobar "interfaz del sitio ${ID_SITIO}" aws apigatewayv2 get-api --api-id "${ID_SITIO}" --region "${REGION}"
+
+  # La raiz y un enlace directo deben dar 200: el segundo es el que el sitio de
+  # S3 responde con 404.
+  for camino in / /rastreo; do
+    CODIGO="$(curl -s -o /dev/null -w '%{http_code}' "${URL_SITIO}${camino}" || echo "000")"
+    if [[ "${CODIGO}" == "200" ]]; then
+      ok "${camino} responde 200 por HTTPS"
+    else
+      aviso "${camino} respondio ${CODIGO} por HTTPS"
+      FALLOS=$((FALLOS + 1))
+    fi
+  done
+
+  # La configuracion de ejecucion debe llegar como archivo y no como el indice:
+  # si su ruta faltara, la interfaz recibiria HTML y no encontraria la API.
+  CONFIGURACION="$(curl -s "${URL_SITIO}/configuracion.json" || true)"
+  if [[ "${CONFIGURACION}" == *"url_publica_api"* ]]; then
+    ok "la configuracion de ejecucion se sirve por HTTPS"
+  else
+    aviso "configuracion.json no llega por HTTPS"
+    FALLOS=$((FALLOS + 1))
+  fi
+else
+  aviso "no hay entrada HTTPS al sitio; ejecute 65-sitio-https.sh"
+  FALLOS=$((FALLOS + 1))
+fi
+
 paso "Resultado"
 if [[ "${FALLOS}" -eq 0 ]]; then
   echo "  Todos los componentes verificados."

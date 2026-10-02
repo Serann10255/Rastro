@@ -1,8 +1,15 @@
 # Despliegue en AWS
 
-Fecha: 2026-09-26 · Versión: 0.3
+Fecha: 2026-10-02 · Versión: 0.4
 
 ## Estado de verificación
+
+> **2026-10-02 — sitio por HTTPS.** Se añadió la etapa `65-sitio-https.sh` y se
+> ejecutó contra la misma cuenta: el sitio responde por HTTPS con certificado
+> válido y `95-verificar.sh` confirma todos los componentes, incluidas las
+> comprobaciones nuevas del sitio. Una segunda ejecución de la etapa no duplica
+> nada. Detalle en la
+> [bitácora del 2026-10-02](../cambios/2026-10-02-sitio-https.md).
 
 > **Ejecutado contra la cuenta del laboratorio el 2026-09-26**, desde Windows
 > con Git Bash, en una cuenta vacía. La secuencia completa (`desplegar.sh`)
@@ -176,14 +183,15 @@ modo que un tercero pueda repetir la verificación.
 
 | Etapa | Qué crea |
 |---|---|
-| `10-datos.sh` | Tablas con sus índices, llave de cifrado con rotación, contenedores con cifrado, versionado, bloqueo público, política que rechaza cargas sin cifrar y CORS para la carga directa desde el sitio (origen en `RASTRO_ORIGENES_WEB`) |
+| `10-datos.sh` | Tablas con sus índices, llave de cifrado con rotación, contenedores con cifrado, versionado, bloqueo público, política que rechaza cargas sin cifrar y CORS para la carga directa desde el sitio (sus dos orígenes, o los de `RASTRO_ORIGENES_WEB`) |
 | `20-identidad.sh` | Aprovisiona las dos organizaciones, sus diez usuarios con las contraseñas derivadas y sus datos maestros, ejecutando **el mismo guion que prepara el entorno local** apuntado a la cuenta |
 | `30-funciones.sh` | Empaqueta y despliega los ocho microservicios como funciones Lambda. **Se niega a desplegar** si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32 caracteres |
 | `40-api.sh` | Interfaz HTTP con CORS, prueba del validador de tokens (SU-01), rutas e integraciones. Con el proveedor propio el validador **no se asocia** a las rutas: rechazaría todo token HS256 |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
 | `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
+| `65-sitio-https.sh` | Interfaz `rastro-sitio` que sirve el sitio por HTTPS, con enlaces directos en 200, y añade su origen a la regla CORS de evidencias |
 | `90-configuracion.sh` | Escribe `config/deployment.json` y comprueba que no queden identificadores literales |
-| `95-verificar.sh` | Confirma que cada componente existe y que el punto público responde |
+| `95-verificar.sh` | Confirma que cada componente existe, que el punto público responde y que el sitio responde por HTTPS |
 
 **`auth` sí se despliega en AWS**, como una función más: el sistema tiene su
 propio directorio de usuarios. La versión anterior delegaba en Amazon Cognito y
@@ -216,19 +224,37 @@ local y para AWS. Si alguien introdujera una variable de entorno de compilación
 con la URL, REQ-09 dejaría de cumplirse aunque el resto siguiera igual. Véase
 [ADR-005](../decisiones/adr-005-react-con-configuracion-en-ejecucion.md).
 
+### El sitio por HTTPS
+
+El alojamiento estático de S3 solo responde por HTTP, y CloudFront, el arreglo
+habitual, está impedido en el laboratorio (RE-05). La etapa `65-sitio-https.sh`
+crea una segunda interfaz de API Gateway, `rastro-sitio`, que sirve los mismos
+archivos por HTTPS con el certificado de Amazon para
+`*.execute-api.us-east-1.amazonaws.com`, y los lee del contenedor también por
+HTTPS. Diseño y alternativas en
+[ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md).
+
+| Dirección | Protocolo | Enlaces directos | Uso |
+|---|---|---|---|
+| `https://<id-sitio>.execute-api.us-east-1.amazonaws.com` | HTTPS, certificado válido | 200 | **La que se comunica** |
+| `http://rastro-web-<cuenta>.s3-website-us-east-1.amazonaws.com` | Solo HTTP | 404 con el índice | Se conserva para no romper enlaces ya compartidos |
+
+El identificador de la interfaz queda en `config/.sitio.env` y en la clave
+`url_sitio` de `config/deployment.json`.
+
+**El origen HTTPS es un origen nuevo para el contenedor de evidencias.** La
+regla CORS admite los dos; sin ello la consulta funcionaría por HTTPS y la carga
+de evidencias fallaría en el navegador del mensajero. La regla vive en
+`comun.sh` y la aplican tanto `10-datos.sh` como `65-sitio-https.sh`.
+
 ### Limitaciones conocidas del sitio
 
-- **Los enlaces directos responden 404, aunque la página se muestre bien.** El
-  sitio estático de S3 no conoce las rutas de la aplicación (`/rastreo`,
-  `/envios/<id>`): entrega `index.html` como documento de error, con estado 404,
-  y la aplicación resuelve la ruta en el navegador. El usuario no lo nota, pero
-  la consola del navegador y cualquier monitor de disponibilidad sí. Corregirlo
-  exige CloudFront delante del contenedor, que no se usa para no añadir un
-  componente más.
-- **HTTP y no HTTPS.** El sitio de S3 solo se sirve por HTTP. La interfaz sí va
-  por HTTPS, de modo que el token no viaja en claro, pero el propio sitio podría
-  ser alterado en tránsito. Es la misma razón para CloudFront, y se declara
-  como limitación.
+- **Solo `GET`.** Una petición `HEAD` a la dirección HTTPS responde 404. Los
+  navegadores no la usan; algún monitor de disponibilidad sí.
+- **Sin compresión.** API Gateway entrega los archivos tal como están en S3. El
+  sitio pesa poco y no compensa añadir otra pieza para comprimirlo.
+- **La dirección HTTP sigue abierta**, con sus dos defectos de siempre: puede
+  alterarse en tránsito y sus enlaces directos responden 404.
 
 ---
 
@@ -240,6 +266,8 @@ con la URL, REQ-09 dejaría de cumplirse aunque el resto siguiera igual. Véase
 | RE-02: la invocación anónima de URL de función está impedida | Se usa API Gateway y no URL de función |
 | RE-03: solo `us-east-1`, 50 dólares | Ningún diseño multirregión; se excluye todo recurso que facture entre sesiones |
 | RE-04: el entorno se pierde al terminar el curso | Toda la configuración es reproducible por comandos versionados |
+| RE-05: CloudFront está impedido (ni siquiera se pueden listar distribuciones) | El sitio se sirve por HTTPS a través de API Gateway ([ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md)) |
+| RE-06: con la sesión cerrada, una política de la organización de AWS Academy puede impedir que `LabRole` descifre o lea | Las funciones no arrancan y la API responde 5xx; el sitio carga igual. **Abrir la sesión antes de usar el sistema.** Observado el 2026-10-02 y no en el cierre anterior ([bitácora](../cambios/2026-10-02-sitio-https.md#1-la-caida)) |
 
 ### Coste
 
@@ -319,8 +347,8 @@ concluye que el control está bien.
 
 ## Después de desplegar
 
-1. Abrir la interfaz en la dirección que imprime `60-sitios.sh` y comprobar el
-   acceso con una de las cuentas sintéticas.
+1. Abrir la interfaz en la dirección HTTPS que imprime `65-sitio-https.sh` y
+   comprobar el acceso con una de las cuentas sintéticas.
 2. Ejecutar el programa de auditoría:
 
 ```bash

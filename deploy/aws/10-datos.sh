@@ -155,24 +155,9 @@ aws s3api put-bucket-policy --bucket "${BUCKET_EVIDENCIAS}" --policy "{
 }"
 ok "politica que rechaza cargas sin cifrado en ${BUCKET_EVIDENCIAS}"
 
-# El dispositivo del mensajero sube la evidencia directamente al contenedor con
-# un enlace prefirmado, desde el origen del sitio web. Sin CORS el navegador
-# bloquea esa carga aunque la firma sea valida. En local no se nota porque
-# MinIO acepta cualquier origen. Solo se admite el origen del sitio de Rastro
-# (o los de RASTRO_ORIGENES_WEB, separados por comas): la firma autoriza la
-# peticion, y el origen acota desde donde puede hacerse.
-ORIGENES_WEB="${RASTRO_ORIGENES_WEB:-http://${BUCKET_WEB}.s3-website-${REGION}.amazonaws.com}"
-ORIGENES_JSON="\"${ORIGENES_WEB//,/\",\"}\""
-aws s3api put-bucket-cors --bucket "${BUCKET_EVIDENCIAS}" --cors-configuration "{
-  \"CORSRules\": [{
-    \"AllowedOrigins\": [${ORIGENES_JSON}],
-    \"AllowedMethods\": [\"PUT\", \"GET\"],
-    \"AllowedHeaders\": [\"content-type\", \"x-amz-server-side-encryption\", \"x-amz-server-side-encryption-aws-kms-key-id\"],
-    \"ExposeHeaders\": [\"ETag\", \"x-amz-version-id\"],
-    \"MaxAgeSeconds\": 3600
-  }]
-}"
-ok "CORS de carga directa en ${BUCKET_EVIDENCIAS} para ${ORIGENES_WEB}"
+# CORS de la carga directa de evidencias. La regla vive en comun.sh porque la
+# etapa 65-sitio-https la vuelve a aplicar al crear la entrada HTTPS del sitio.
+aplicar_cors_evidencias
 
 aws s3api put-public-access-block --bucket "${BUCKET_REGISTRO}" \
   --public-access-block-configuration \

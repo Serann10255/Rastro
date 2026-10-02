@@ -1,0 +1,15 @@
+# comando: bash deploy/aws/90-configuracion.sh
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-10-02T15:13:04Z
+---
+
+=== Archivo de configuracion ===
+  [ok] escrito /c/Users/User/Downloads/Rastro/config/deployment.json
+  [ok] la interfaz web tiene su configuracion de ejecucion
+
+=== Verificacion de que no quedan identificadores escritos a mano ===
+  [ok] ningun identificador de cuenta escrito a mano en el codigo
+
+=== Configuracion lista ===
+---
+# codigo de salida: 0

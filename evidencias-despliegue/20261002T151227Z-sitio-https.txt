@@ -1,0 +1,27 @@
+# comando: bash deploy/aws/65-sitio-https.sh
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-10-02T15:12:27Z
+---
+
+=== Interfaz del sitio ===
+  [ok] interfaz ya existente: td70a5indc
+
+=== Rutas ===
+  [ok] ruta ya existente: GET /
+  [ok] ruta ya existente: GET /{proxy+}
+  [ok] ruta ya existente: GET /assets/{proxy+}
+  [ok] ruta ya existente: GET /configuracion.json
+  [ok] ruta ya existente: GET /icono.svg
+
+=== Etapa de despliegue ===
+  [ok] etapa por omision ya existente
+
+=== CORS de la carga de evidencias ===
+  [ok] CORS de carga directa en rastro-evidencias-484948252891 para http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com,https://td70a5indc.execute-api.us-east-1.amazonaws.com
+
+=== Comprobacion ===
+  [ok] un enlace directo responde 200 por HTTPS
+
+=== Sitio disponible por HTTPS en https://td70a5indc.execute-api.us-east-1.amazonaws.com ===
+---
+# codigo de salida: 0

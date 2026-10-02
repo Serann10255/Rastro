@@ -34,6 +34,7 @@ BUCKET_REGISTRO="${PREFIJO}-registro-${CUENTA}"
 BUCKET_WEB="${PREFIJO}-web-${CUENTA}"
 ALIAS_LLAVE="alias/${PREFIJO}"
 NOMBRE_API="${PREFIJO}-api"
+NOMBRE_API_SITIO="${PREFIJO}-sitio"
 NOMBRE_RASTRO_CLOUDTRAIL="${PREFIJO}-actividad"
 GRUPO_USUARIOS="${PREFIJO}-usuarios"
 
@@ -103,3 +104,45 @@ registrar_evidencia() {
 existe_tabla() { aws dynamodb describe-table --table-name "$1" --region "${REGION}" >/dev/null 2>&1; }
 existe_bucket() { aws s3api head-bucket --bucket "$1" >/dev/null 2>&1; }
 existe_funcion() { aws lambda get-function --function-name "$1" --region "${REGION}" >/dev/null 2>&1; }
+
+# Origenes desde los que el sitio puede subir evidencias: el sitio de S3 por
+# HTTP y, si ya existe, su entrada por HTTPS (etapa 65-sitio-https). La entrada
+# se busca por nombre y no se lee de un archivo, de modo que la etapa de datos
+# y la del sitio dejan la misma regla en cualquier orden. RASTRO_ORIGENES_WEB,
+# separados por comas, sustituye la lista entera.
+origenes_web() {
+  if [[ -n "${RASTRO_ORIGENES_WEB:-}" ]]; then
+    printf '%s' "${RASTRO_ORIGENES_WEB}"
+    return
+  fi
+  local origenes="http://${BUCKET_WEB}.s3-website-${REGION}.amazonaws.com"
+  local id_sitio
+  id_sitio="$(primer_resultado apigatewayv2 get-apis --region "${REGION}" \
+    --query "Items[?Name=='${NOMBRE_API_SITIO}'].ApiId | [0]")" || id_sitio="None"
+  if [[ "${id_sitio}" != "None" && -n "${id_sitio}" ]]; then
+    origenes+=",https://${id_sitio}.execute-api.${REGION}.amazonaws.com"
+  fi
+  printf '%s' "${origenes}"
+}
+
+# El dispositivo del mensajero sube la evidencia directamente al contenedor con
+# un enlace prefirmado, desde el origen del sitio web. Sin CORS el navegador
+# bloquea esa carga aunque la firma sea valida. En local no se nota porque
+# MinIO acepta cualquier origen. Solo se admiten los origenes del sitio de
+# Rastro: la firma autoriza la peticion, y el origen acota desde donde puede
+# hacerse.
+aplicar_cors_evidencias() {
+  local origenes origenes_json
+  origenes="$(origenes_web)"
+  origenes_json="\"${origenes//,/\",\"}\""
+  aws s3api put-bucket-cors --bucket "${BUCKET_EVIDENCIAS}" --cors-configuration "{
+    \"CORSRules\": [{
+      \"AllowedOrigins\": [${origenes_json}],
+      \"AllowedMethods\": [\"PUT\", \"GET\"],
+      \"AllowedHeaders\": [\"content-type\", \"x-amz-server-side-encryption\", \"x-amz-server-side-encryption-aws-kms-key-id\"],
+      \"ExposeHeaders\": [\"ETag\", \"x-amz-version-id\"],
+      \"MaxAgeSeconds\": 3600
+    }]
+  }"
+  ok "CORS de carga directa en ${BUCKET_EVIDENCIAS} para ${origenes}"
+}
