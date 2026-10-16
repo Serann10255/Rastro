@@ -107,6 +107,13 @@ integrante distinto del que desarrolló el ejecutor.
 **El informe se muestra con ancho fijo y desplazamiento propio.** Usa 78
 columnas y su alineación es parte del formato: reflujarlo lo haría ilegible.
 
+**Una revisión en la nube se espera, no se recibe.** Desplegada en AWS, la API
+responde a «Revisar ahora» con `202` y un identificador; la interfaz pregunta su
+estado cada tres segundos (`esperarEjecucion`) y muestra el resultado al
+terminar, o el motivo si falló. En local la respuesta trae la revisión hecha y no
+se espera nada. El botón sigue en «Revisando…» en los dos casos
+([ADR-015](../../decisiones/adr-015-cotejo-desplegado-en-aws.md)).
+
 ## Comportamiento responsive
 
 Mismo enfoque mobile-first y mismos breakpoints que Rastro, porque es

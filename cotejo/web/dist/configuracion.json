@@ -1,6 +1,7 @@
 {
-  "_nota": "Configuracion leida en tiempo de ejecucion. url_cotejo apunta al programa de auditoria; url_rastro, al proveedor de identidad y al sistema auditado.",
-  "entorno": "local",
-  "url_cotejo": "http://localhost:8007",
-  "url_rastro": "http://localhost:8080"
+  "_nota": "Generado por deploy/aws/60-sitios.sh. No editar a mano.",
+  "entorno": "aws",
+  "url_cotejo": "https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com",
+  "url_rastro": "https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com",
+  "generado_en": "2026-10-16T16:19:04Z"
 }

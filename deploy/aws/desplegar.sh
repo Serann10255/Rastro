@@ -19,7 +19,9 @@ INICIO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "Despliegue de Rastro"
 echo "Inicio: ${INICIO}"
 
-for etapa in 10-datos 20-identidad 30-funciones 40-api 50-registro 60-sitios 65-sitio-https 90-configuracion; do
+# 55 y 67 despliegan Cotejo en AWS y solo actuan con RASTRO_PUBLICAR_COTEJO=si;
+# sin la variable informan y siguen.
+for etapa in 10-datos 20-identidad 30-funciones 40-api 50-registro 55-cotejo-api 60-sitios 65-sitio-https 67-cotejo-sitio-https 90-configuracion; do
   echo
   echo "########################################"
   echo "# Etapa ${etapa}"

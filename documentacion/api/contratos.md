@@ -818,8 +818,20 @@ Recorre el catálogo completo en una sola invocación.
 { "solo": ["C-05", "C-06"] }
 ```
 
-`solo` es opcional; vacío ejecuta todo. Devuelve `201` con la cobertura, el
-resultado por control y los hallazgos.
+`solo` es opcional; vacío ejecuta todo. En local devuelve `201` con la
+cobertura, el resultado por control y los hallazgos.
+
+Desplegado en AWS devuelve **`202`** y la ejecución sigue aparte, porque API
+Gateway corta a los 30 segundos ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)):
+
+```json
+{ "ejecucion_id": "20261016T161816310Z-1b7404", "estado": "en_curso", "anotado_en": "...", "solicitada_por": "u-..." }
+```
+
+### `GET /ejecuciones/{id}/estado`
+
+`{ "ejecucion_id": "...", "estado": "en_curso" | "lista" | "fallida", "motivo": "..." }`.
+Con `lista`, el detalle se lee en `GET /ejecuciones/{id}`.
 
 Un fallo en un control no detiene el resto: queda marcado como `NO_EJECUTADA` con
 su motivo.

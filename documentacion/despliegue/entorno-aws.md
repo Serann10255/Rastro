@@ -1,8 +1,26 @@
 # Despliegue en AWS
 
-Fecha: 2026-10-02 · Versión: 0.4
+Fecha: 2026-10-16 · Versión: 0.5
 
 ## Estado de verificación
+
+> **2026-10-16 — modo ruta y Cotejo en AWS.** Se desplegó la secuencia completa
+> con las rutas de entrega y, con `RASTRO_PUBLICAR_COTEJO=si`, Cotejo entero:
+> su API como función Lambda (`55-cotejo-api.sh`) y su interfaz por HTTPS
+> (`67-cotejo-sitio-https.sh`). `95-verificar.sh` confirma todos los
+> componentes, Cotejo incluido. Se recorrió el modo ruta contra la cuenta (salir
+> a ruta, posiciones, seguimiento, consulta pública con el mapa moviéndose,
+> entrega con foto cifrada con KMS, cierre) y una revisión de Cotejo encargada
+> desde su API: 8 de 11 conformes y los 3 de secretos no ejecutados, porque en
+> la función no hay repositorio git ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)).
+> Detalle en la [bitácora del despliegue](../cambios/2026-10-16-despliegue-modo-ruta-y-cotejo.md).
+>
+> | Qué | Dirección |
+> |---|---|
+> | Rastro (operación y consulta pública) | `https://td70a5indc.execute-api.us-east-1.amazonaws.com` |
+> | API de Rastro | `https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com` |
+> | Cotejo (interfaz de auditoría) | `https://osgo93nahb.execute-api.us-east-1.amazonaws.com` |
+> | API de Cotejo | `https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com` |
 
 > **2026-10-02 — sitio por HTTPS.** Se añadió la etapa `65-sitio-https.sh` y se
 > ejecutó contra la misma cuenta: el sitio responde por HTTPS con certificado
@@ -188,8 +206,10 @@ modo que un tercero pueda repetir la verificación.
 | `30-funciones.sh` | Empaqueta y despliega los ocho microservicios como funciones Lambda. **Se niega a desplegar** si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32 caracteres |
 | `40-api.sh` | Interfaz HTTP con CORS, prueba del validador de tokens (SU-01), rutas e integraciones. Con el proveedor propio el validador **no se asocia** a las rutas: rechazaría todo token HS256 |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
+| `55-cotejo-api.sh` | **Solo con `RASTRO_PUBLICAR_COTEJO=si`.** Contenedor privado y versionado de papeles de trabajo, función `rastro-cotejo` y su interfaz HTTP. Escribe `config/.cotejo.env` ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)) |
 | `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
 | `65-sitio-https.sh` | Interfaz `rastro-sitio` que sirve el sitio por HTTPS, con enlaces directos en 200, y añade su origen a la regla CORS de evidencias |
+| `67-cotejo-sitio-https.sh` | **Solo con `RASTRO_PUBLICAR_COTEJO=si`.** Interfaz `rastro-cotejo-sitio` que sirve la interfaz de Cotejo por HTTPS |
 | `90-configuracion.sh` | Escribe `config/deployment.json` y comprueba que no queden identificadores literales |
 | `95-verificar.sh` | Confirma que cada componente existe, que el punto público responde y que el sitio responde por HTTPS |
 
@@ -209,11 +229,19 @@ aparecería en producción, no en local.
 datos reales deben sustituirse; se pasan por variable de entorno para no dejarlas
 escritas en el repositorio.
 
-La interfaz de **Cotejo no se publica por omisión**: el almacén de papeles de
-trabajo concentra información sobre las debilidades del sistema auditado, y
-publicarla en un sitio de lectura pública ampliaría la superficie sin necesidad.
-Se sirve en la máquina del auditor, o se publica de forma explícita con
-`RASTRO_PUBLICAR_COTEJO=si`.
+**Cotejo no se despliega por omisión**: un programa de auditoría que corre en
+la cuenta auditada, con su mismo rol, pierde independencia, y su almacén de
+papeles concentra información sobre las debilidades del sistema. Por omisión se
+ejecuta desde la máquina del auditor. Con `RASTRO_PUBLICAR_COTEJO=si` se
+despliega entero —API, papeles en S3 e interfaz por HTTPS— y lo que eso cuesta
+queda declarado en el [ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md):
+
+```bash
+RASTRO_PUBLICAR_COTEJO=si ./deploy/aws/desplegar.sh
+```
+
+La API de Cotejo valida el token del auditor con el mismo secreto que Rastro:
+`55-cotejo-api.sh` lo lee de `config/.jwt.env` igual que `30-funciones.sh`.
 
 ### Las interfaces y REQ-09
 
@@ -344,6 +372,20 @@ referencia. La separación es deliberada: quien despliega no debería ser quien
 concluye que el control está bien.
 
 ---
+
+### Si falta `config/.jwt.env`
+
+El archivo no viaja con el repositorio. En otro equipo, antes de ejecutar
+`30-funciones.sh` o `55-cotejo-api.sh`, hay dos opciones: **recuperar el secreto
+desplegado**, para que las sesiones abiertas sigan valiendo (lo que se hizo el
+2026-10-16), o generar uno nuevo, que las cierra todas:
+
+```bash
+printf 'RASTRO_JWT_SECRETO=%s\n' "$(aws lambda get-function-configuration --function-name rastro-auth --query Environment.Variables.RASTRO_JWT_SECRETO --output text)" > config/.jwt.env
+```
+
+El valor no se imprime ni se copia a ningún otro sitio: `config/.jwt.env` está
+excluido del control de versiones.
 
 ### Rutas de entrega (2026-10-16)
 

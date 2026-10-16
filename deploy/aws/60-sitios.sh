@@ -14,6 +14,11 @@
 source "$(dirname "${BASH_SOURCE[0]}")/comun.sh"
 # shellcheck source=/dev/null
 source "${RAIZ_PROYECTO}/config/.api.env"
+# La direccion de la API de Cotejo, si se desplego en AWS (55-cotejo-api.sh).
+if [[ -z "${COTEJO_URL_API:-}" && -f "${RAIZ_PROYECTO}/config/.cotejo.env" ]]; then
+  # shellcheck source=/dev/null
+  source "${RAIZ_PROYECTO}/config/.cotejo.env"
+fi
 
 BUCKET_COTEJO="${PREFIJO}-cotejo-${CUENTA}"
 
@@ -118,8 +123,8 @@ ok "configuración de Cotejo escrita"
 
 if [[ -z "${COTEJO_URL_API:-}" ]]; then
   aviso "COTEJO_URL_API está vacía: la interfaz de auditoría no encontrará su programa."
-  aviso "Cotejo no se despliega como función en AWS; se ejecuta desde la máquina del auditor."
-  aviso "Exporte COTEJO_URL_API con la dirección donde lo publique, o use la línea de comandos."
+  aviso "Por omisión Cotejo se ejecuta desde la máquina del auditor. Para desplegarlo en AWS,"
+  aviso "ejecute 55-cotejo-api.sh con RASTRO_PUBLICAR_COTEJO=si, o exporte COTEJO_URL_API."
 fi
 
 publicar_sitio "Rastro" "${RAIZ_PROYECTO}/web" "${BUCKET_WEB}"

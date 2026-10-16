@@ -1,0 +1,42 @@
+
+=== Comprobación de herramientas ===
+  [ok] npm 11.8.0
+
+=== Configuración en tiempo de ejecución ===
+  [ok] configuración de Rastro escrita
+  [ok] configuración de Cotejo escrita
+
+=== Sitio Rastro ===
+  [ok] contenedor ya existente: rastro-web-484948252891
+  [ok] sitio estático habilitado con reescritura a index.html
+  [ok] compilado Rastro
+  [ok] recursos publicados con caché larga
+  [ok] índice y configuración publicados sin caché
+  URL: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+=== Sitio Cotejo ===
+  [ok] contenedor creado: rastro-cotejo-484948252891
+  [ok] sitio estático habilitado con reescritura a index.html
+  [ok] compilado Cotejo
+  [ok] recursos publicados con caché larga
+  [ok] índice y configuración publicados sin caché
+  URL: http://rastro-cotejo-484948252891.s3-website-us-east-1.amazonaws.com
+
+=== Sitios publicados ===
+  Rastro: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+=== Interfaz del sitio de Cotejo ===
+  [ok] interfaz creada: osgo93nahb
+
+=== Rutas ===
+  [ok] ruta creada: GET /
+  [ok] ruta creada: GET /{proxy+}
+  [ok] ruta creada: GET /assets/{proxy+}
+  [ok] ruta creada: GET /configuracion.json
+  [ok] ruta creada: GET /icono.svg
+  [ok] etapa por omision creada
+
+=== Comprobacion ===
+  [ok] la interfaz de Cotejo responde 200 por HTTPS
+
+=== Cotejo disponible por HTTPS en https://osgo93nahb.execute-api.us-east-1.amazonaws.com ===

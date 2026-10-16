@@ -27,6 +27,7 @@ import {
   api,
   configuracionActual,
   ErrorApi,
+  esperarEjecucion,
   fechaLegible,
 } from "@/api/cliente";
 import type {
@@ -320,7 +321,11 @@ function Consola({ sesion, onSalir }: { sesion: SesionAuditor; onSalir: () => vo
   }, [ejecuciones.data, ejecucionId]);
 
   const ejecutar = useMutation({
-    mutationFn: () => api.ejecutar(),
+    mutationFn: async () => {
+      const datos = await api.ejecutar();
+      if ("estado" in datos && datos.estado === "en_curso") await esperarEjecucion(datos.ejecucion_id);
+      return datos;
+    },
     onSuccess: async (datos) => {
       setEjecucionId(datos.ejecucion_id);
       await cliente.invalidateQueries({ queryKey: ["ejecuciones"] });
@@ -569,7 +574,7 @@ function VistaEjecucion({
         <p className="encabezado-pagina__descripcion">
           Al pulsar el botón, Cotejo comprueba de una sola vez las{" "}
           {catalogo?.controles.length ?? 8} cosas de la lista, sin que nadie tenga que ir
-          una por una. Tarda unos segundos.
+          una por una. Tarda alrededor de un minuto.
         </p>
       </header>
 

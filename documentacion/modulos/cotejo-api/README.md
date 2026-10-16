@@ -12,7 +12,8 @@ el auditor pueda operar sin línea de comandos.
 | `GET /salud` | Estado del programa y sistema auditado. Sin autenticación |
 | `GET /catalogo` | Matriz de controles y hallazgos permanentes |
 | `GET /ejecuciones` | Ejecuciones almacenadas, de la más reciente a la más antigua |
-| `POST /ejecuciones` | Recorre el catálogo completo en una sola invocación |
+| `POST /ejecuciones` | Recorre el catálogo completo. En local responde `201` con el resultado; en AWS, `202` y la ejecución sigue aparte |
+| `GET /ejecuciones/{id}/estado` | Si una ejecución encargada sigue en curso, terminó o falló (con su motivo) |
 | `GET /ejecuciones/{id}` | Cobertura, resultado por control y hallazgos |
 | `GET /ejecuciones/{id}/informe.txt` | Informe en texto plano |
 | `GET /ejecuciones/{id}/papeles/{control}` | Evidencia literal, con la huella recalculada |
@@ -42,6 +43,20 @@ papel sirve además como comprobación de que nadie lo editó.
 **Los identificadores se validan contra recorrido de directorios.** Un
 identificador con `/`, `\` o `..` se rechaza antes de tocar el sistema de
 archivos.
+
+**En AWS la ejecución se encarga y se espera** (ADR-015). API Gateway corta a
+los 30 segundos y una revisión completa puede tardar más. Con un lanzador
+configurado —lo fija `aws.py`, el punto de entrada de la función—, `POST
+/ejecuciones` anota el estado «en curso» en `papeles/_estados/`, invoca la misma
+función de forma asíncrona y responde `202`. La invocación ejecuta el mismo
+`completar_ejecucion` que la petición local y anota «lista» o «fallida». El
+estado va fuera de la carpeta de la ejecución porque esa carpeta es evidencia y
+se verifica por su huella.
+
+**En AWS los papeles viven en S3.** El disco de la función no dura: `aws.py` trae
+del contenedor de papeles lo que falte antes de cada petición y sube después lo
+escrito. Cubierto por `cotejo/tests/test_api_en_aws.py`, con S3 y Lambda
+simulados.
 
 ## Dependencias y relaciones
 

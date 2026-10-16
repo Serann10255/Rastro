@@ -91,6 +91,22 @@ if [[ -f "${RAIZ_PROYECTO}/config/.sitio.env" ]]; then
     fi
   done
 
+  # Cotejo, solo si se desplego en AWS (ADR-015): su API y su interfaz.
+  if [[ -f "${RAIZ_PROYECTO}/config/.cotejo.env" ]]; then
+    # shellcheck source=/dev/null
+    source "${RAIZ_PROYECTO}/config/.cotejo.env"
+    for destino in "${COTEJO_URL_API:-}/salud" "${URL_SITIO_COTEJO:-}/"; do
+      [[ "${destino}" == /* ]] && continue
+      CODIGO="$(curl -s -o /dev/null -w '%{http_code}' "${destino}" || echo "000")"
+      if [[ "${CODIGO}" == "200" ]]; then
+        ok "Cotejo: ${destino} responde 200"
+      else
+        aviso "Cotejo: ${destino} respondio ${CODIGO}"
+        FALLOS=$((FALLOS + 1))
+      fi
+    done
+  fi
+
   # La configuracion de ejecucion debe llegar como archivo y no como el indice:
   # si su ruta faltara, la interfaz recibiria HTML y no encontraria la API.
   CONFIGURACION="$(curl -s "${URL_SITIO}/configuracion.json" || true)"

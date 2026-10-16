@@ -17,9 +17,9 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
-from fastapi import Depends, FastAPI, Header, Query
+from fastapi import Depends, FastAPI, Header, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -33,7 +33,13 @@ from rastro_core.errors import NoAutorizadoError, RastroError  # noqa: E402
 from rastro_core.security import extraer_token, identidad_desde_token  # noqa: E402
 
 from cotejo.contexto import Contexto, ErrorContexto  # noqa: E402
-from cotejo.ejecutor import ErrorCatalogo, cargar_catalogo, cobertura, ejecutar  # noqa: E402
+from cotejo.ejecutor import (  # noqa: E402
+    ErrorCatalogo,
+    cargar_catalogo,
+    cobertura,
+    ejecutar,
+    nuevo_id_ejecucion,
+)
 from cotejo.informe import construir_hallazgos, escribir, redactar  # noqa: E402
 from cotejo.modelos import marca_tiempo  # noqa: E402
 from cotejo.papeles import (  # noqa: E402
@@ -221,15 +227,33 @@ async def listar_ejecuciones(_: dict = Depends(auditor)) -> dict:
     return {"ejecuciones": ejecuciones}
 
 
-@app.post("/ejecuciones", status_code=201, tags=["ejecuciones"], summary="Ejecutar el catálogo")
-async def crear_ejecucion(
-    solicitud: SolicitudEjecucion | None = None, quien: dict = Depends(auditor)
-) -> dict:
-    """Recorre el catálogo completo en una sola invocación, sin intervención manual.
+#: Cómo lanzar una ejecución en segundo plano. Vacío —en local—, la ejecución
+#: corre dentro de la petición y la respuesta trae el resultado. En AWS lo fija
+#: el punto de entrada de la función (``aws.py``): API Gateway corta toda
+#: petición a los 30 segundos y una revisión completa tarda más, de modo que la
+#: petición solo la encarga y la interfaz pregunta por su estado.
+LANZADOR: Callable[[str, list[str] | None, dict], None] | None = None
 
-    Un fallo en un control no detiene el resto: queda marcado como NO_EJECUTADA
-    con su motivo. Una ejecución interrumpida produciría papeles incompletos que
-    podrían confundirse con pruebas fallidas.
+#: Dónde se anota el estado de una ejecución encargada. Va fuera de la carpeta de
+#: la ejecución para no mezclarse con sus papeles: lo que hay en esa carpeta es
+#: evidencia y se verifica por su huella; esto es solo un aviso de progreso.
+DIR_ESTADOS = DIR_PAPELES / "_estados"
+
+
+def anotar_estado(ejecucion_id: str, estado: str, **datos: Any) -> dict:
+    DIR_ESTADOS.mkdir(parents=True, exist_ok=True)
+    registro = {"ejecucion_id": ejecucion_id, "estado": estado, "anotado_en": marca_tiempo(), **datos}
+    (DIR_ESTADOS / f"{_segmento_seguro(ejecucion_id)}.json").write_text(
+        json.dumps(registro, ensure_ascii=False), encoding="utf-8"
+    )
+    return registro
+
+
+def completar_ejecucion(ejecucion_id: str | None, solo: list[str] | None, quien: dict) -> dict:
+    """Recorre el catálogo, escribe los papeles y el informe, y devuelve el resultado.
+
+    Es lo mismo se llame dentro de la petición o en segundo plano: una sola
+    implementación del recorrido, como con la línea de comandos.
     """
     catalogo = cargar_catalogo()
     ctx = Contexto.desde_entorno()
@@ -238,7 +262,7 @@ async def crear_ejecucion(
     # más que el usuario del sistema operativo, y en un contenedor ni eso.
     ctx.identidad_declarada = f"{quien['email']} (interfaz web)"
     try:
-        almacen, metadatos = ejecutar(ctx, catalogo, solo=(solicitud.solo if solicitud else None))
+        almacen, metadatos = ejecutar(ctx, catalogo, ejecucion_id=ejecucion_id, solo=solo)
     finally:
         ctx.cerrar()
 
@@ -255,6 +279,65 @@ async def crear_ejecucion(
         "controles": [papel.como_dict() for papel in almacen.papeles],
         "hallazgos": [hallazgo.como_dict() for hallazgo in hallazgos],
     }
+
+
+def completar_en_segundo_plano(ejecucion_id: str, solo: list[str] | None, quien: dict) -> None:
+    """Lo que ejecuta la invocación diferida. Deja constancia de cómo terminó.
+
+    Si falla antes de producir el informe, el estado lo dice con el motivo: una
+    revisión que nunca termina y nadie explica se confunde con una que sigue en
+    curso.
+    """
+    try:
+        completar_ejecucion(ejecucion_id, solo, quien)
+    except Exception as exc:  # noqa: BLE001 - se informa, no se pierde
+        anotar_estado(ejecucion_id, "fallida", motivo=f"{type(exc).__name__}: {exc}")
+        raise
+    anotar_estado(ejecucion_id, "lista")
+
+
+@app.post("/ejecuciones", status_code=201, tags=["ejecuciones"], summary="Ejecutar el catálogo")
+async def crear_ejecucion(
+    respuesta: Response,
+    solicitud: SolicitudEjecucion | None = None,
+    quien: dict = Depends(auditor),
+) -> dict:
+    """Recorre el catálogo completo en una sola invocación, sin intervención manual.
+
+    Un fallo en un control no detiene el resto: queda marcado como NO_EJECUTADA
+    con su motivo. Una ejecución interrumpida produciría papeles incompletos que
+    podrían confundirse con pruebas fallidas.
+
+    Con un lanzador configurado (AWS), responde 202 con el identificador y la
+    ejecución sigue en segundo plano; su avance se consulta en
+    ``GET /ejecuciones/{id}/estado``.
+    """
+    solo = solicitud.solo if solicitud else None
+    if LANZADOR is None:
+        return completar_ejecucion(None, solo, quien)
+
+    ejecucion_id = nuevo_id_ejecucion()
+    estado = anotar_estado(ejecucion_id, "en_curso", solicitada_por=quien["sub"])
+    LANZADOR(ejecucion_id, solo, quien)
+    respuesta.status_code = 202
+    return estado
+
+
+@app.get(
+    "/ejecuciones/{ejecucion_id}/estado",
+    tags=["ejecuciones"],
+    summary="Si una ejecución encargada ya terminó",
+)
+async def estado_ejecucion(ejecucion_id: str, _: dict = Depends(auditor)) -> dict:
+    from rastro_core.errors import NoEncontradoError
+
+    segmento = _segmento_seguro(ejecucion_id)
+    if (DIR_PAPELES / segmento / "informe.json").is_file():
+        return {"ejecucion_id": ejecucion_id, "estado": "lista"}
+    ruta = DIR_ESTADOS / f"{segmento}.json"
+    if ruta.is_file():
+        return json.loads(ruta.read_text(encoding="utf-8"))
+    raise NoEncontradoError("No existe esa ejecución.")
 
 
 @app.get("/ejecuciones/{ejecucion_id}", tags=["ejecuciones"], summary="Detalle de una ejecución")

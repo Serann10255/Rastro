@@ -325,11 +325,15 @@ export const api = {
   salud: () => peticion<Salud>("/salud", { autenticada: false }),
   catalogo: () => peticion<Catalogo>("/catalogo"),
   ejecuciones: () => peticion<{ ejecuciones: ResumenEjecucion[] }>("/ejecuciones"),
+  /* En local la respuesta trae la revisión terminada. En AWS solo la encarga
+   * —API Gateway corta a los 30 s y una revisión tarda más— y responde con su
+   * estado «en_curso»; `esperarEjecucion` pregunta hasta que termina. */
   ejecutar: (solo?: string[]) =>
-    peticion<Ejecucion & { ejecucion_id: string }>("/ejecuciones", {
+    peticion<(Ejecucion & { ejecucion_id: string }) | EstadoEjecucion>("/ejecuciones", {
       metodo: "POST",
       cuerpo: { solo: solo ?? null },
     }),
+  estadoEjecucion: (id: string) => peticion<EstadoEjecucion>(`/ejecuciones/${id}/estado`),
   ejecucion: (id: string) => peticion<Ejecucion>(`/ejecuciones/${id}`),
   informeTexto: (id: string) => peticion<{ texto: string }>(`/ejecuciones/${id}/informe.txt`),
   papel: (id: string, controlId: string) =>
@@ -339,6 +343,27 @@ export const api = {
   comparar: (a: string, b: string) =>
     peticion<Comparacion>(`/comparacion?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
 };
+
+export interface EstadoEjecucion {
+  ejecucion_id: string;
+  estado: "en_curso" | "lista" | "fallida";
+  motivo?: string;
+}
+
+/** Espera a que termine una revisión encargada. Pregunta cada tres segundos y
+ *  se rinde a los seis minutos: la función que la ejecuta tiene cinco. */
+export async function esperarEjecucion(id: string): Promise<void> {
+  const limite = Date.now() + 6 * 60_000;
+  while (Date.now() < limite) {
+    await new Promise((resolver) => setTimeout(resolver, 3_000));
+    const estado = await api.estadoEjecucion(id);
+    if (estado.estado === "lista") return;
+    if (estado.estado === "fallida") {
+      throw new ErrorApi(500, "EJECUCION_FALLIDA", estado.motivo ?? "La revisión no terminó.");
+    }
+  }
+  throw new ErrorApi(504, "SIN_RESPUESTA", "La revisión sigue sin terminar. Vuelva a mirar en unos minutos.");
+}
 
 export function fechaLegible(iso: string | undefined): string {
   if (!iso) return "";

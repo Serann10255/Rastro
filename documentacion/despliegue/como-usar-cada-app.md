@@ -11,7 +11,7 @@ local como desplegada en AWS.
 | **Rastro — interfaz de operación** | http://localhost:5173 | Sitio estático en S3, servido por HTTPS a través de API Gateway | Despachador, conductor, auditor, administrador |
 | **Rastro — consulta pública** | http://localhost:5173/rastreo | La misma, ruta `/rastreo` | Destinatario, **sin cuenta** |
 | **Rastro — API** | http://localhost:8080 | API Gateway | Las interfaces; también auditable con `curl` |
-| **Cotejo — interfaz de auditoría** | http://localhost:5175 | En la máquina del auditor | Solo el rol auditor |
+| **Cotejo — interfaz de auditoría** | http://localhost:5175 | Por omisión, en la máquina del auditor. Con `RASTRO_PUBLICAR_COTEJO=si`, en AWS por HTTPS con su API en Lambda ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)) | Solo el rol auditor |
 
 ---
 
@@ -396,15 +396,28 @@ la dirección que hay que compartir, `https://<id>.execute-api.us-east-1.amazona
 La del sitio de S3 sigue funcionando, pero solo por HTTP
 ([ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md)).
 
-**La interfaz de Cotejo no se publica por omisión.** El almacén de papeles de
-trabajo concentra información sobre las debilidades del sistema auditado, y
-publicarla en un sitio de lectura pública ampliaría la superficie sin necesidad.
-Se sirve en la máquina del auditor con `npm run dev`, o se publica de forma
-explícita:
+**Cotejo no se despliega por omisión**: se ejecuta desde la máquina del
+auditor, con `npm run dev` o la línea de comandos. Para mostrarlo desde
+cualquier equipo se despliega entero en AWS —API como función, papeles en S3 e
+interfaz por HTTPS—, aceptando la pérdida de independencia que declara el
+[ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md):
 
 ```bash
-RASTRO_PUBLICAR_COTEJO=si ./deploy/aws/60-sitios.sh
+RASTRO_PUBLICAR_COTEJO=si ./deploy/aws/desplegar.sh
 ```
+
+Direcciones del despliegue del 2026-10-16:
+
+| Qué | Dirección |
+|---|---|
+| Rastro | https://td70a5indc.execute-api.us-east-1.amazonaws.com |
+| Cotejo | https://osgo93nahb.execute-api.us-east-1.amazonaws.com |
+
+En Cotejo se entra con una cuenta del rol **auditor** de Rastro. Al pulsar
+**Revisar ahora**, la revisión se encarga a la nube y la pantalla espera a que
+termine (unos quince segundos). Los tres controles de secretos salen *sin
+revisar*: en la función no hay repositorio git; se ejecutan desde la línea de
+comandos en una copia del repositorio.
 
 Detalles del despliegue, restricciones del laboratorio y migración entre cuentas
 en [`entorno-aws.md`](entorno-aws.md).

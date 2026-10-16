@@ -1,0 +1,294 @@
+Despliegue de Rastro
+Inicio: 2026-10-16T16:03:28Z
+
+########################################
+# Etapa 10-datos
+########################################
+
+=== Tablas de DynamoDB ===
+  [ok] tabla ya existente: rastro-envios
+  [ok] retencion del recorrido activada (atributo expira_en)
+  [ok] tabla ya existente: rastro-bitacora
+  [ok] tabla ya existente: rastro-maestros
+
+=== Llave de cifrado administrada por el cliente ===
+  [ok] llave ya existente: alias/rastro
+
+=== Contenedores de objetos ===
+  [ok] contenedor ya existente: rastro-evidencias-484948252891
+  [ok] contenedor ya existente: rastro-registro-484948252891
+  [ok] bloqueo de acceso publico activo en rastro-evidencias-484948252891
+  [ok] versionado activo en rastro-evidencias-484948252891
+  [ok] cifrado por omision con alias/rastro en rastro-evidencias-484948252891
+  [ok] politica que rechaza cargas sin cifrado en rastro-evidencias-484948252891
+  [ok] CORS de carga directa en rastro-evidencias-484948252891 para http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com,https://td70a5indc.execute-api.us-east-1.amazonaws.com
+  [ok] bloqueo de acceso publico activo en rastro-registro-484948252891
+
+=== Capa de datos lista ===
+
+########################################
+# Etapa 20-identidad
+########################################
+
+=== Aprovisionamiento de organizaciones y usuarios ===
+  [ok] interprete: /c/Users/User/Downloads/Rastro/.venv/Scripts/python.exe
+  Derivando contrasenas con PBKDF2. Tarda unos segundos por usuario: es
+  el proposito del algoritmo, no una lentitud del guion.
+# comando: /c/Users/User/Downloads/Rastro/.venv/Scripts/python.exe /c/Users/User/Downloads/Rastro/deploy/local/preparar_entorno.py
+# cuenta: 484948252891  region: us-east-1
+# fecha: 2026-10-16T16:03:56Z
+---
+  [ok] tabla ya existente: rastro-envios
+  [ok] tabla ya existente: rastro-bitacora
+  [ok] tabla ya existente: rastro-maestros
+  [ok] contenedor creado: rastro-evidencias-484948252891
+  [ok] versionado: aplicado
+  [ok] bloqueo de acceso publico: aplicado
+  [ok] datos maestros: ya existen, no se duplican
+  [ok] roles: 0 aprovisionados, 8 ya personalizables
+  [ok] modulos: 4 nuevos, 30 actualizados conservando su estado
+  [ok] envios sinteticos: ya existen, no se duplican
+
+Entorno local preparado.
+
+=== Comprobacion del directorio ===
+  [ok] registros en la tabla de maestros: 67
+
+=== Identidad lista ===
+  Proveedor: directorio propio en rastro-maestros
+  Las contrasenas se almacenan derivadas con PBKDF2-HMAC-SHA256.
+
+  IMPORTANTE: el secreto de firma del token debe fijarse con
+  RASTRO_JWT_SECRETO antes de desplegar las funciones. Sin el, se usa el
+  valor de desarrollo, que esta en el repositorio y no protege nada.
+
+########################################
+# Etapa 30-funciones
+########################################
+
+=== Empaquetado de las funciones ===
+
+[notice] A new release of pip is available: 25.3 -> 26.2.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+  [ok] dependencias instaladas para linux/x86_64 y python 3.12
+  [ok] capa comun incluida en el paquete
+
+=== Despliegue de las funciones ===
+  [ok] secreto de firma configurado (64 caracteres)
+  [ok] funcion actualizada: rastro-auth
+  [ok] funcion actualizada: rastro-shipments
+  [ok] funcion actualizada: rastro-tracking
+  [ok] funcion actualizada: rastro-evidence
+  [ok] funcion actualizada: rastro-public
+  [ok] funcion actualizada: rastro-audit
+  [ok] funcion actualizada: rastro-masters
+  [ok] funcion actualizada: rastro-dashboard
+
+=== Funciones desplegadas ===
+
+########################################
+# Etapa 40-api
+########################################
+
+=== Interfaz HTTP ===
+  [ok] interfaz ya existente: l7ymvbqqc4
+  [ok] CORS aplicado
+
+=== Validador de tokens (supuesto SU-01) ===
+  [ok] proveedor de identidad propio: la validacion la hace cada servicio
+  [!!] SU-01 INDETERMINADO: el validador no se creo por un motivo ajeno a los permisos.
+  [!!] Respuesta del proveedor:  aws: [ERROR]: An error occurred (BadRequestException) when calling the CreateAuthorizer operation: Caught exception when connecting to https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com/.well-known/openid-configuration for issuer https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com. Please tr
+  [!!] El sistema sigue operando: cada servicio valida el token por su cuenta.
+  [ok] validador NO asociado a las rutas: el proveedor propio firma con HS256
+
+=== Rutas ===
+  [ok] ruta ya existente: POST /auth/token
+  [ok] ruta ya existente: POST /auth/refrescar
+  [ok] ruta ya existente: GET /auth/roles
+  [ok] ruta ya existente: POST /auth/salir
+  [ok] ruta ya existente: GET /auth/yo
+  [ok] ruta ya existente: POST /auth/clave
+  [ok] ruta ya existente: GET /usuarios
+  [ok] ruta ya existente: POST /usuarios
+  [ok] ruta ya existente: POST /usuarios/{correo}
+  [ok] ruta ya existente: GET /empresa
+  [ok] ruta ya existente: GET /equipo/mensajeros
+  [ok] ruta ya existente: GET /roles
+  [ok] ruta ya existente: POST /roles
+  [ok] ruta ya existente: POST /roles/{clave}
+  [ok] ruta ya existente: POST /roles/{clave}/eliminar
+  [ok] ruta ya existente: POST /envios
+  [ok] ruta ya existente: GET /envios
+  [ok] ruta ya existente: POST /envios/lote
+  [ok] ruta ya existente: GET /envios/exportar
+  [ok] ruta ya existente: POST /envios/etiquetas
+  [ok] ruta ya existente: GET /envios/{envio_id}
+  [ok] ruta ya existente: POST /envios/{envio_id}/asignacion
+  [ok] ruta ya existente: GET /envios/{envio_id}/transiciones
+  [ok] ruta ya existente: POST /envios/{envio_id}/eventos
+  [ok] ruta creada: POST /rutas -> rastro-tracking (auth)
+  [ok] ruta creada: GET /rutas -> rastro-tracking (auth)
+  [ok] ruta creada: GET /rutas/activa -> rastro-tracking (auth)
+  [ok] ruta creada: GET /rutas/{ruta_id} -> rastro-tracking (auth)
+  [ok] ruta creada: POST /rutas/{ruta_id}/posiciones -> rastro-tracking (auth)
+  [ok] ruta creada: POST /rutas/{ruta_id}/finalizacion -> rastro-tracking (auth)
+  [ok] ruta ya existente: POST /envios/{envio_id}/evidencias
+  [ok] ruta ya existente: GET /envios/{envio_id}/evidencias
+  [ok] ruta ya existente: POST /envios/{envio_id}/evidencias/{evidencia_id}/confirmacion
+  [ok] ruta ya existente: GET /catalogos/estados
+  [ok] ruta ya existente: GET /catalogos/modulos
+  [ok] ruta ya existente: POST /catalogos/modulos/{clave}
+  [ok] ruta ya existente: GET /tiendas
+  [ok] ruta ya existente: POST /tiendas
+  [ok] ruta ya existente: POST /tiendas/{tienda_id}
+  [ok] ruta ya existente: POST /tiendas/{tienda_id}/eliminar
+  [ok] ruta ya existente: GET /clientes
+  [ok] ruta ya existente: POST /clientes
+  [ok] ruta ya existente: POST /clientes/{cliente_id}
+  [ok] ruta ya existente: POST /clientes/{cliente_id}/eliminar
+  [ok] ruta ya existente: GET /transportistas
+  [ok] ruta ya existente: POST /transportistas
+  [ok] ruta ya existente: POST /transportistas/{transportista_id}
+  [ok] ruta ya existente: POST /transportistas/{transportista_id}/eliminar
+  [ok] ruta ya existente: GET /tablero
+  [ok] ruta ya existente: GET /bitacora
+  [ok] ruta ya existente: GET /bitacora/verificacion
+  [ok] ruta ya existente: GET /publico/envios/{envio_id}
+  [ok] ruta creada: GET /publico/envios/{envio_id}/ubicacion -> rastro-public (abierta)
+
+=== Etapa de despliegue ===
+  [ok] etapa por omision ya existente
+
+=== Interfaz disponible en https://l7ymvbqqc4.execute-api.us-east-1.amazonaws.com ===
+
+########################################
+# Etapa 50-registro
+########################################
+
+=== Politica del contenedor de registro ===
+  [ok] politica aplicada a rastro-registro-484948252891
+
+=== Registro de actividad ===
+  [ok] registro ya existente: rastro-actividad
+  [ok] registro activo
+
+=== Eventos de datos (componente condicionado) ===
+  [ok] eventos de datos NO habilitados; exporte RASTRO_EVENTOS_DE_DATOS=si para activarlos
+
+=== Registro de actividad listo ===
+
+########################################
+# Etapa 60-sitios
+########################################
+
+=== Comprobación de herramientas ===
+  [ok] npm 11.8.0
+
+=== Configuración en tiempo de ejecución ===
+  [ok] configuración de Rastro escrita
+  [ok] configuración de Cotejo escrita
+  [!!] COTEJO_URL_API está vacía: la interfaz de auditoría no encontrará su programa.
+  [!!] Cotejo no se despliega como función en AWS; se ejecuta desde la máquina del auditor.
+  [!!] Exporte COTEJO_URL_API con la dirección donde lo publique, o use la línea de comandos.
+
+=== Sitio Rastro ===
+  [ok] contenedor ya existente: rastro-web-484948252891
+  [ok] sitio estático habilitado con reescritura a index.html
+  [ok] compilado Rastro
+  [ok] recursos publicados con caché larga
+  [ok] índice y configuración publicados sin caché
+  URL: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+=== Sitio Cotejo ===
+  [ok] no publicado (exporte RASTRO_PUBLICAR_COTEJO=si para hacerlo)
+  La interfaz de auditoría se sirve en la máquina del auditor:
+    cd cotejo/web && npm run dev
+
+=== Sitios publicados ===
+  Rastro: http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com
+
+########################################
+# Etapa 65-sitio-https
+########################################
+
+=== Interfaz del sitio ===
+  [ok] interfaz ya existente: td70a5indc
+
+=== Rutas ===
+  [ok] ruta ya existente: GET /
+  [ok] ruta ya existente: GET /{proxy+}
+  [ok] ruta ya existente: GET /assets/{proxy+}
+  [ok] ruta ya existente: GET /configuracion.json
+  [ok] ruta ya existente: GET /icono.svg
+
+=== Etapa de despliegue ===
+  [ok] etapa por omision ya existente
+
+=== CORS de la carga de evidencias ===
+  [ok] CORS de carga directa en rastro-evidencias-484948252891 para http://rastro-web-484948252891.s3-website-us-east-1.amazonaws.com,https://td70a5indc.execute-api.us-east-1.amazonaws.com
+
+=== Comprobacion ===
+  [ok] un enlace directo responde 200 por HTTPS
+
+=== Sitio disponible por HTTPS en https://td70a5indc.execute-api.us-east-1.amazonaws.com ===
+
+########################################
+# Etapa 90-configuracion
+########################################
+
+=== Archivo de configuracion ===
+  [ok] escrito /c/Users/User/Downloads/Rastro/config/deployment.json
+  [ok] la interfaz web tiene su configuracion de ejecucion
+
+=== Verificacion de que no quedan identificadores escritos a mano ===
+  [ok] ningun identificador de cuenta escrito a mano en el codigo
+
+=== Configuracion lista ===
+
+########################################
+# Verificacion posterior al despliegue
+########################################
+
+=== Componentes de datos ===
+  [ok] tabla de envios rastro-envios
+  [ok] tabla de bitacora rastro-bitacora
+  [ok] tabla de maestros rastro-maestros
+  [ok] llave de cifrado alias/rastro
+  [ok] contenedor de evidencias
+  [ok] contenedor de registro
+
+=== Funciones ===
+  [ok] funcion rastro-auth
+  [ok] funcion rastro-shipments
+  [ok] funcion rastro-tracking
+  [ok] funcion rastro-evidence
+  [ok] funcion rastro-public
+  [ok] funcion rastro-audit
+  [ok] funcion rastro-masters
+  [ok] funcion rastro-dashboard
+
+=== Interfaz y registro ===
+  [ok] interfaz HTTP l7ymvbqqc4
+
+=== Prueba de extremo a extremo del punto publico ===
+  [ok] el punto publico responde a traves de la interfaz (404 esperado)
+
+=== Prueba de extremo a extremo del catalogo de estados ===
+  [ok] el catalogo de estados responde a traves de la interfaz
+
+=== Estado del supuesto SU-01 ===
+  SU-01 (validador de tokens en API Gateway): indeterminado
+  Nota: el sistema valida el token en cada servicio, de modo que
+  funciona igual con o sin validador en la puerta.
+  [ok] registro de actividad rastro-actividad
+
+=== Sitio por HTTPS ===
+  [ok] interfaz del sitio td70a5indc
+  [ok] / responde 200 por HTTPS
+  [ok] /rastreo responde 200 por HTTPS
+  [ok] la configuracion de ejecucion se sirve por HTTPS
+
+=== Resultado ===
+  Todos los componentes verificados.
+
+Despliegue completo. Inicio 2026-10-16T16:03:28Z, fin 2026-10-16T16:11:50Z.

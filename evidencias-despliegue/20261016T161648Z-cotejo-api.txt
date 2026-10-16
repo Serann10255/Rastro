@@ -1,0 +1,26 @@
+
+=== Contenedor de papeles de trabajo ===
+  [ok] contenedor creado: rastro-cotejo-papeles-484948252891
+  [ok] privado, versionado y cifrado
+
+=== Empaquetado de la funcion ===
+
+[notice] A new release of pip is available: 25.3 -> 26.2.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+  [ok] dependencias instaladas para linux/x86_64 y python 3.12
+  [ok] paquete: 9.4M
+
+=== Funcion rastro-cotejo ===
+  [ok] funcion creada: rastro-cotejo
+  [ok] invocacion asincrona sin reintentos
+
+=== Interfaz rastro-cotejo-api ===
+  [ok] interfaz creada: 2amcyjn5b8
+  [ok] ruta creada: ANY /
+  [ok] ruta creada: ANY /{proxy+}
+  [ok] etapa por omision creada
+
+=== Comprobacion ===
+  [ok] Cotejo responde en https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com/salud
+
+=== Cotejo disponible en https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com ===

@@ -91,6 +91,14 @@ literal dejaría fuera:
 | `test_las_credenciales_invalidas_no_distinguen_usuario_de_clave` | Distinguirlas permitiría enumerar cuentas |
 | `test_el_punto_publico_no_admite_identificadores_que_no_sean_aleatorios` | El sondeo no debe costar ni una lectura del almacenamiento |
 
+### Cotejo en AWS (2026-10-16)
+
+`cotejo/tests/test_api_en_aws.py`, con S3 y Lambda simulados: encargar una
+ejecución responde `202` y la lanza de forma asíncrona con su estado ya en el
+almacén; la ejecución diferida deja sus papeles en S3; otro contenedor los
+recupera byte a byte; lo traído no se vuelve a subir; una ejecución que falla
+queda anotada con su motivo y no se relanza; y en local nada cambia.
+
 ### Rutas de entrega (2026-10-16)
 
 `tests/e2e/test_rutas.py` y `tests/unit/test_reglas_de_rutas.py`. Lo que fijan,
