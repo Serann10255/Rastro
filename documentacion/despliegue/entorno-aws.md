@@ -267,7 +267,7 @@ de evidencias fallaría en el navegador del mensajero. La regla vive en
 | RE-03: solo `us-east-1`, 50 dólares | Ningún diseño multirregión; se excluye todo recurso que facture entre sesiones |
 | RE-04: el entorno se pierde al terminar el curso | Toda la configuración es reproducible por comandos versionados |
 | RE-05: CloudFront está impedido (ni siquiera se pueden listar distribuciones) | El sitio se sirve por HTTPS a través de API Gateway ([ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md)) |
-| RE-06: con la sesión cerrada, una política de la organización de AWS Academy puede impedir que `LabRole` descifre o lea | Las funciones no arrancan y la API responde 5xx; el sitio carga igual. **Abrir la sesión antes de usar el sistema.** Observado el 2026-10-02 y no en el cierre anterior ([bitácora](../cambios/2026-10-02-sitio-https.md#1-la-caida)) |
+| RE-06: con la sesión cerrada, una política de la organización de AWS Academy puede impedir que `LabRole` descifre o lea | Las funciones no arrancan y la API responde 5xx; el sitio carga igual. **Abrir la sesión antes de usar el sistema.** Observado el 2026-10-02 y de nuevo el 2026-10-05 (500 en toda ruta que pase por una función); no ocurrió en el cierre del 2026-09-27 y 28 ([bitácora](../cambios/2026-10-02-sitio-https.md#1-la-caida)) |
 
 ### Coste
 
