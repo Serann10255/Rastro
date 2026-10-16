@@ -196,6 +196,13 @@ def _git(raiz: Path, *argumentos: str, codigos_validos=(0,)) -> str:
     return salida.stdout.decode("utf-8", "replace")
 
 
+def _remoto(raiz: Path) -> str | None:
+    """De donde viene la copia revisada, si tiene remoto. Va en el papel: en AWS
+    la copia es un clon del repositorio publicado, y el papel tiene que decir de
+    cual."""
+    return _git(raiz, "config", "--get", "remote.origin.url", codigos_validos=(0, 1)).strip() or None
+
+
 def revisar_arbol(raiz: Path) -> tuple[list[Hallado], dict]:
     """Secretos en el commit al que apunta HEAD."""
     commit = _git(raiz, "rev-parse", "--short", "HEAD").strip()
@@ -218,7 +225,11 @@ def revisar_arbol(raiz: Path) -> tuple[list[Hallado], dict]:
         if NOMBRE_SENSIBLE.search(ruta) and ruta not in con_contenido:
             hallados.append(Hallado(tipo="archivo_sensible", ruta=ruta))
 
-    return hallados, {"commit_revisado": commit, "archivos_revisados": len(archivos)}
+    return hallados, {
+        "commit_revisado": commit,
+        "archivos_revisados": len(archivos),
+        "remoto": _remoto(raiz),
+    }
 
 
 def revisar_historial(raiz: Path) -> tuple[list[Hallado], dict]:
@@ -260,7 +271,11 @@ def revisar_historial(raiz: Path) -> tuple[list[Hallado], dict]:
         h for h in hallados
         if not (h.tipo == "archivo_sensible" and (h.commit, h.ruta) in rutas_con_contenido)
     ]
-    return hallados, {"commits_revisados": total, "referencias": "todas (--all)"}
+    return hallados, {
+        "commits_revisados": total,
+        "referencias": "todas (--all)",
+        "remoto": _remoto(raiz),
+    }
 
 
 def _describir(hallado: Hallado) -> str:

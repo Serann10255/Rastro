@@ -1,0 +1,44 @@
+# Cotejo como funcion de AWS Lambda, en imagen de contenedor (ADR-015).
+#
+# Es imagen y no paquete .zip por una sola razon: git. Los controles de
+# secretos (C-09) revisan el repositorio con git, igual que en el equipo del
+# auditor, y el entorno de Python de Lambda no lo trae. Instalarlo aqui es la
+# forma de que la revision en la nube use exactamente los mismos comandos que
+# la local, en lugar de una segunda implementacion que pudiera divergir.
+#
+# El contexto de construccion es la raiz del repositorio: Cotejo reutiliza
+# rastro_core para validar el token del auditor, como en local.
+#
+#   docker build --platform linux/amd64 --provenance=false \
+#     -f cotejo/Dockerfile.lambda -t rastro-cotejo .
+
+FROM public.ecr.aws/lambda/python:3.12
+
+# git-core trae git y sus ayudantes de transporte por HTTPS, que es como se
+# clona el repositorio publicado. Nada mas: ni documentacion ni editores.
+RUN dnf install -y git-core \
+ && dnf clean all \
+ && rm -rf /var/cache/dnf
+
+RUN pip install --no-cache-dir --target "${LAMBDA_TASK_ROOT}" \
+      fastapi pydantic mangum pyjwt cryptography httpx pyyaml
+
+# La misma disposicion que en el repositorio: la capa comun de Rastro en la
+# raiz y Cotejo en cotejo/, con su catalogo. Los papeles locales no viajan.
+COPY libs/rastro_core/ ${LAMBDA_TASK_ROOT}/rastro_core/
+COPY cotejo/cotejo/ ${LAMBDA_TASK_ROOT}/cotejo/cotejo/
+COPY cotejo/api/ ${LAMBDA_TASK_ROOT}/cotejo/api/
+COPY cotejo/catalogo/ ${LAMBDA_TASK_ROOT}/cotejo/catalogo/
+
+# El punto de entrada vive en cotejo/api/aws.py; Lambda lo busca como modulo de
+# primer nivel en la raiz de la tarea.
+RUN printf '%s\n' \
+      '"""Punto de entrada de la funcion. La logica esta en cotejo/api/aws.py."""' \
+      'import sys' \
+      '' \
+      'sys.path.insert(0, "/var/task/cotejo/api")' \
+      '' \
+      'from aws import manejador  # noqa: E402,F401' \
+      > "${LAMBDA_TASK_ROOT}/manejador.py"
+
+CMD ["manejador.manejador"]

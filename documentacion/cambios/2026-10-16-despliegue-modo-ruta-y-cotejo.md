@@ -61,6 +61,46 @@ Salida literal de cada etapa en `evidencias-despliegue/20261016T16*`. Ningún
 archivo de evidencia contiene el secreto de firma ni claves (comprobado con
 `grep`).
 
+## Actualización: los controles de secretos (C-09) en AWS
+
+Al revisar la interfaz de Cotejo en AWS, los tres C-09 salían **SIN REVISAR**
+con «git no esta instalado en esta maquina»: la primera versión de la función
+era un paquete .zip, y el entorno de Python de Lambda no trae git ni hay
+repositorio que revisar. Se corrigió el mismo día:
+
+- `cotejo/Dockerfile.lambda` — la función pasa a ser **imagen de contenedor**
+  con `git-core` sobre la imagen base de Lambda para Python 3.12. Se sube al
+  repositorio `rastro-cotejo` de ECR, con análisis de vulnerabilidades al subir.
+- `cotejo/api/aws.py` — antes de cada revisión **clona el repositorio
+  publicado** (`https://github.com/Serann10255/Rastro`), desnudo, con todas las
+  ramas y de cero cada vez; tarda unos 7 s.
+- `cotejo/cotejo/pruebas/secretos.py` — C-09a y C-09b anotan en el papel el
+  `remoto` de la copia revisada.
+- `55-cotejo-api.sh` — construye y sube la imagen; como una función no cambia de
+  .zip a imagen, retira la anterior y la crea de nuevo (los papeles están en S3 y
+  no se pierden).
+- `cotejo/tests/test_api_en_aws.py` — tres pruebas más: el clon trae todas las
+  ramas y el papel dice de dónde salió; cada revisión ve lo último publicado; si
+  el clon falla, C-09 no revisa otra carpeta por error.
+
+Antes de desplegar se construyó la imagen en local y, dentro de ella, se clonó
+el repositorio publicado y se corrieron las revisiones de árbol e historial.
+
+Revisión en AWS tras el cambio (`20261016T164718872Z-3e6a7d`):
+
+| Control | Resultado |
+|---|---|
+| C-01 a C-08 | CONFORME |
+| C-09a | CONFORME — ningún secreto en el árbol publicado (commit `ead33e3`, 311 archivos); solo el valor de desarrollo declarado |
+| C-09b | **DESVIADO** — el secreto de firma de `config/.jwt.env` en el commit `be75812` sigue en el historial publicado: es el hallazgo **H-01** |
+| C-09c | CONFORME — los dos secretos de firma hallados son rechazados por firma inválida: el de H-01 se rotó |
+
+**11 de 11 ejecutados: 10 conformes, 1 desviado.** El desviado es correcto: el
+historial publicado todavía contiene el secreto. Quitarlo exigiría reescribir el
+historial y forzar la publicación en GitHub, una decisión del equipo que no se
+tomó aquí. El almacén de papeles verificó íntegro y los registros de la función
+no contienen el secreto.
+
 ## Qué no se verificó
 
 - **Las pantallas con sesión en el navegador** (Entregas, Seguimiento, la consola

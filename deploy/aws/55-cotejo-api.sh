@@ -6,11 +6,16 @@
 # aqui lo pone dentro de la cuenta auditada y con su mismo rol (LabRole): es una
 # perdida de independencia que se declara en el ADR-015, no un detalle.
 #
-# Crea tres cosas:
+# Crea cuatro cosas:
 #   - el contenedor de papeles de trabajo, privado, cifrado y con versionado:
 #     el disco de una funcion no dura, y los papeles son evidencia;
-#   - la funcion rastro-cotejo, con el mismo codigo que corre en local;
+#   - el repositorio de imagenes rastro-cotejo en ECR;
+#   - la funcion rastro-cotejo, como imagen de contenedor con el mismo codigo
+#     que corre en local y con git, que los controles de secretos (C-09)
+#     necesitan para revisar el repositorio publicado;
 #   - la interfaz HTTP rastro-cotejo-api, que la expone.
+#
+# Necesita Docker para construir la imagen.
 #
 # Escribe config/.cotejo.env con la direccion, que 60-sitios.sh pone en la
 # configuracion de la interfaz de Cotejo.
@@ -30,6 +35,21 @@ fi
 NOMBRE_FUNCION="${PREFIJO}-cotejo"
 NOMBRE_API_COTEJO="${PREFIJO}-cotejo-api"
 BUCKET_PAPELES="${PREFIJO}-cotejo-papeles-${CUENTA}"
+REPOSITORIO_IMAGENES="${PREFIJO}-cotejo"
+REGISTRO="${CUENTA}.dkr.ecr.${REGION}.amazonaws.com"
+
+# Lo que revisa C-09: el repositorio publicado, no la copia de quien despliega.
+# Por omision, el remoto origin de esta copia; COTEJO_REPOSITORIO_REMOTO lo
+# sustituye.
+REMOTO="${COTEJO_REPOSITORIO_REMOTO:-$(git -C "${RAIZ_PROYECTO}" remote get-url origin 2>/dev/null || true)}"
+if [[ -z "${REMOTO}" ]]; then
+  aviso "No hay remoto origin: C-09 quedara sin ejecutar en AWS (exporte COTEJO_REPOSITORIO_REMOTO)."
+fi
+
+if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+  aviso "Docker no esta disponible: la funcion de Cotejo se construye como imagen."
+  exit 1
+fi
 
 if [[ -z "${RASTRO_JWT_SECRETO:-}" && -f "${RAIZ_PROYECTO}/config/.jwt.env" ]]; then
   # shellcheck source=/dev/null
@@ -42,7 +62,7 @@ if [[ "${#SECRETO_COTEJO}" -lt 32 ]]; then
 fi
 
 if ! PYTHON="$(elegir_python)"; then
-  aviso "Se necesita Python para empaquetar la funcion."
+  aviso "Se necesita Python para preparar la configuracion de la funcion."
   exit 1
 fi
 
@@ -76,48 +96,34 @@ ok "privado, versionado y cifrado"
 
 # --------------------------------------------------------------------------- #
 
-paso "Empaquetado de la funcion"
+paso "Imagen de la funcion"
 
-python -m pip install --quiet --no-compile \
-  --target "${DIR_TRABAJO}/paquete" \
-  --platform manylinux2014_x86_64 --platform manylinux_2_28_x86_64 \
-  --implementation cp --python-version 3.12 --only-binary=:all: --upgrade \
-  fastapi pydantic mangum pyjwt cryptography httpx pyyaml >/dev/null
-ok "dependencias instaladas para linux/x86_64 y python 3.12"
+if aws ecr describe-repositories --region "${REGION}" \
+     --repository-names "${REPOSITORIO_IMAGENES}" >/dev/null 2>&1; then
+  ok "repositorio de imagenes ya existente: ${REPOSITORIO_IMAGENES}"
+else
+  aws ecr create-repository --region "${REGION}" \
+    --repository-name "${REPOSITORIO_IMAGENES}" \
+    --image-scanning-configuration scanOnPush=true \
+    --tags Key=proyecto,Value="${PREFIJO}" >/dev/null
+  ok "repositorio de imagenes creado: ${REPOSITORIO_IMAGENES} (con analisis al subir)"
+fi
 
-# La misma disposicion que en el repositorio: la capa comun de Rastro en la
-# raiz y Cotejo en cotejo/, con su catalogo. Los papeles locales no viajan.
-cp -r "${RAIZ_PROYECTO}/libs/rastro_core" "${DIR_TRABAJO}/paquete/"
-mkdir -p "${DIR_TRABAJO}/paquete/cotejo"
-cp -r "${RAIZ_PROYECTO}/cotejo/cotejo" "${RAIZ_PROYECTO}/cotejo/api" \
-  "${RAIZ_PROYECTO}/cotejo/catalogo" "${DIR_TRABAJO}/paquete/cotejo/"
-find "${DIR_TRABAJO}/paquete" -name "__pycache__" -type d -prune -exec rm -rf {} +
+# La etiqueta es la hora: cada despliegue deja su imagen y la funcion apunta a
+# una concreta, no a una etiqueta movil que cambiaria por debajo.
+ETIQUETA="$(date -u +%Y%m%dT%H%M%SZ)"
+IMAGEN="${REGISTRO}/${REPOSITORIO_IMAGENES}:${ETIQUETA}"
 
-cat > "${DIR_TRABAJO}/paquete/manejador.py" <<'PY'
-"""Punto de entrada de la funcion. La logica esta en cotejo/api/aws.py."""
-import sys
+# --provenance=false: Lambda no acepta el indice de manifiestos que Docker
+# anade por omision para la procedencia, solo el manifiesto de la imagen.
+docker build --quiet --platform linux/amd64 --provenance=false \
+  -f "${RAIZ_PROYECTO}/cotejo/Dockerfile.lambda" -t "${IMAGEN}" "${RAIZ_PROYECTO}" >/dev/null
+ok "imagen construida: ${ETIQUETA}"
 
-sys.path.insert(0, "/var/task/cotejo/api")
-
-from aws import manejador  # noqa: E402,F401
-PY
-
-ARCHIVO_ZIP="${DIR_TRABAJO}/cotejo.zip"
-"${PYTHON}" - "${DIR_TRABAJO}/paquete" "${ARCHIVO_ZIP}" <<'PY'
-import os, sys, zipfile
-origen, destino = sys.argv[1], sys.argv[2]
-with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as archivo:
-    for raiz, _, nombres in os.walk(origen):
-        for nombre in nombres:
-            ruta = os.path.join(raiz, nombre)
-            info = zipfile.ZipInfo(os.path.relpath(ruta, origen).replace(os.sep, "/"))
-            info.create_system = 3
-            info.external_attr = 0o100644 << 16
-            info.compress_type = zipfile.ZIP_DEFLATED
-            with open(ruta, "rb") as fuente:
-                archivo.writestr(info, fuente.read())
-PY
-ok "paquete: $(du -h "${ARCHIVO_ZIP}" | cut -f1)"
+aws ecr get-login-password --region "${REGION}" \
+  | docker login --username AWS --password-stdin "${REGISTRO}" >/dev/null 2>&1
+docker push --quiet "${IMAGEN}" >/dev/null
+ok "imagen subida a ECR"
 
 # --------------------------------------------------------------------------- #
 
@@ -131,7 +137,7 @@ paso "Funcion ${NOMBRE_FUNCION}"
 # Los valores pasan a Python por el entorno y no interpolados en su codigo: un
 # caracter raro en una clave romperia el guion, o algo peor.
 ARCHIVO_VARIABLES="${DIR_TRABAJO}/variables.json"
-V_URL_API="${URL_API}" V_CUENTA="${CUENTA}" V_BUCKET="${BUCKET_EVIDENCIAS}" V_LLAVE="${ALIAS_LLAVE}" V_REGISTRO="${NOMBRE_RASTRO_CLOUDTRAIL}" V_BITACORA="${TABLA_BITACORA}" V_MAESTROS="${TABLA_MAESTROS}" V_EMISOR="${EMISOR}" V_AUDIENCIA="${AUDIENCIA}" V_PAPELES="${BUCKET_PAPELES}" V_SECRETO="${RASTRO_JWT_SECRETO}" V_SEMILLA="${RAIZ_PROYECTO}/seed/organizaciones.json" "${PYTHON}" - "${ARCHIVO_VARIABLES}" <<'PY'
+V_URL_API="${URL_API}" V_CUENTA="${CUENTA}" V_BUCKET="${BUCKET_EVIDENCIAS}" V_LLAVE="${ALIAS_LLAVE}" V_REGISTRO="${NOMBRE_RASTRO_CLOUDTRAIL}" V_BITACORA="${TABLA_BITACORA}" V_MAESTROS="${TABLA_MAESTROS}" V_EMISOR="${EMISOR}" V_AUDIENCIA="${AUDIENCIA}" V_PAPELES="${BUCKET_PAPELES}" V_REMOTO="${REMOTO}" V_SECRETO="${RASTRO_JWT_SECRETO}" V_SEMILLA="${RAIZ_PROYECTO}/seed/organizaciones.json" "${PYTHON}" - "${ARCHIVO_VARIABLES}" <<'PY'
 import json, os, sys
 e = os.environ
 semilla = json.load(open(e["V_SEMILLA"], encoding="utf-8"))
@@ -150,6 +156,7 @@ variables = {
     "COTEJO_DIR_PAPELES": "/tmp/papeles",
     "COTEJO_BUCKET_PAPELES": e["V_PAPELES"],
     "COTEJO_CLAVES": json.dumps(claves),
+    "COTEJO_REPOSITORIO_REMOTO": e["V_REMOTO"],
     "RASTRO_ENTORNO": "aws",
     "RASTRO_JWT_EMISOR": e["V_EMISOR"],
     "RASTRO_JWT_AUDIENCIA": e["V_AUDIENCIA"],
@@ -158,14 +165,25 @@ variables = {
 json.dump({"Variables": variables}, open(sys.argv[1], "w", encoding="utf-8"))
 PY
 VARIABLES="file://$(ruta_nativa "${ARCHIVO_VARIABLES}")"
-ZIP="fileb://$(ruta_nativa "${ARCHIVO_ZIP}")"
+
+# Una funcion no cambia de paquete .zip a imagen: la de la primera version de
+# esta etapa (2026-10-16, sin git) se sustituye. Los papeles no estan en la
+# funcion sino en su contenedor de S3, de modo que no se pierde nada.
+if existe_funcion "${NOMBRE_FUNCION}"; then
+  TIPO="$(aws lambda get-function-configuration --region "${REGION}" \
+    --function-name "${NOMBRE_FUNCION}" --query PackageType --output text)"
+  if [[ "${TIPO}" != "Image" ]]; then
+    aws lambda delete-function --region "${REGION}" --function-name "${NOMBRE_FUNCION}" >/dev/null
+    ok "funcion .zip anterior retirada para crearla como imagen"
+  fi
+fi
 
 # Cinco minutos y 1 GB: la ejecucion completa corre en la invocacion asincrona,
-# sin el limite de 30 segundos de API Gateway, y entra varias veces a Rastro
-# como distintos usuarios.
+# sin el limite de 30 segundos de API Gateway, clona el repositorio publicado y
+# entra varias veces a Rastro como distintos usuarios.
 if existe_funcion "${NOMBRE_FUNCION}"; then
   aws lambda update-function-code --region "${REGION}" \
-    --function-name "${NOMBRE_FUNCION}" --zip-file "${ZIP}" >/dev/null
+    --function-name "${NOMBRE_FUNCION}" --image-uri "${IMAGEN}" >/dev/null
   aws lambda wait function-updated --region "${REGION}" --function-name "${NOMBRE_FUNCION}"
   aws lambda update-function-configuration --region "${REGION}" \
     --function-name "${NOMBRE_FUNCION}" --environment "${VARIABLES}" \
@@ -175,12 +193,11 @@ if existe_funcion "${NOMBRE_FUNCION}"; then
 else
   aws lambda create-function --region "${REGION}" \
     --function-name "${NOMBRE_FUNCION}" \
-    --runtime python3.12 \
+    --package-type Image \
+    --code ImageUri="${IMAGEN}" \
     --role "${ROL_EJECUCION}" \
-    --handler manejador.manejador \
     --timeout 300 \
     --memory-size 1024 \
-    --zip-file "${ZIP}" \
     --environment "${VARIABLES}" \
     --tags proyecto="${PREFIJO}" >/dev/null
   aws lambda wait function-active --region "${REGION}" --function-name "${NOMBRE_FUNCION}"
@@ -245,7 +262,13 @@ if ! aws apigatewayv2 get-stage --api-id "${ID_COTEJO}" --stage-name '$default' 
 fi
 
 URL_COTEJO="https://${ID_COTEJO}.execute-api.${REGION}.amazonaws.com"
-cat > "${RAIZ_PROYECTO}/config/.cotejo.env" <<ENV
+# Solo se reescriben las lineas de esta etapa: las del sitio por HTTPS las
+# escribe 67-cotejo-sitio-https.sh, y ejecutar esta etapa sola no debe
+# borrarlas (95-verificar.sh dejaria de comprobar el sitio sin avisar).
+ARCHIVO_COTEJO="${RAIZ_PROYECTO}/config/.cotejo.env"
+touch "${ARCHIVO_COTEJO}"
+sed -i "/^ID_COTEJO=/d; /^COTEJO_URL_API=/d; /^BUCKET_PAPELES=/d" "${ARCHIVO_COTEJO}"
+cat >> "${ARCHIVO_COTEJO}" <<ENV
 ID_COTEJO=${ID_COTEJO}
 COTEJO_URL_API=${URL_COTEJO}
 BUCKET_PAPELES=${BUCKET_PAPELES}

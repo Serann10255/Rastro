@@ -97,7 +97,10 @@ literal dejaría fuera:
 ejecución responde `202` y la lanza de forma asíncrona con su estado ya en el
 almacén; la ejecución diferida deja sus papeles en S3; otro contenedor los
 recupera byte a byte; lo traído no se vuelve a subir; una ejecución que falla
-queda anotada con su motivo y no se relanza; y en local nada cambia.
+queda anotada con su motivo y no se relanza; y en local nada cambia. Para C-09:
+el clon del repositorio publicado trae todas sus ramas y el papel dice de dónde
+salió; cada revisión clona de nuevo y ve lo último publicado; y si el clon falla,
+C-09 no revisa otra carpeta por error.
 
 ### Rutas de entrega (2026-10-16)
 

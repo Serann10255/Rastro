@@ -13,6 +13,11 @@ que Lambda cambia:
    petición de ejecutar solo la encarga: la función se invoca a sí misma de
    forma asíncrona, la ejecución corre sin ese límite y la interfaz pregunta por
    su estado.
+3. **En la función no hay repositorio.** Los controles de secretos (C-09)
+   revisan el código con git, igual que en local. La imagen de la función trae
+   git, y antes de cada revisión se clona **el repositorio publicado** —lo que
+   cualquiera puede descargar, que es justo lo que C-09 pregunta—, con todo su
+   historial.
 
 Cotejo corre así **dentro de la cuenta auditada y con su mismo rol**. Es una
 pérdida de independencia que se declara (ADR-015), no un detalle de despliegue.
@@ -22,6 +27,9 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import stat
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -111,6 +119,52 @@ def _lanzar(ejecucion_id: str, solo: list[str] | None, quien: dict) -> None:
 
 main.LANZADOR = _lanzar
 
+#: Dónde se clona el código que revisa C-09. De dónde se clona lo dice
+#: ``COTEJO_REPOSITORIO_REMOTO``, que el despliegue fija con el remoto del
+#: repositorio (``git remote get-url origin``).
+DIR_REPOSITORIO = Path("/tmp/repositorio.git")
+
+
+def _forzar_borrado(funcion, ruta, excepcion) -> None:
+    """Borra también lo que git deja de solo lectura (sus paquetes de objetos)."""
+    if isinstance(excepcion, FileNotFoundError):
+        return
+    os.chmod(ruta, stat.S_IWRITE)
+    funcion(ruta)
+
+
+def _preparar_repositorio() -> None:
+    """Clona el repositorio publicado para que C-09 lo revise con git.
+
+    Se clona de cero en cada revisión, sin reutilizar el de una anterior: lo que
+    se revisa tiene que ser lo publicado en ese momento, no lo que había cuando
+    el contenedor arrancó. Es un clon desnudo (``--bare``): trae todas las ramas
+    y su historial —C-09b recorre ``--all``— sin desplegar archivos que nadie va
+    a leer, y su HEAD es la rama principal del remoto.
+
+    Si el clon falla, C-09 queda sin ejecutar con el error de git sobre esta
+    ruta, que es lo honesto: no se revisó.
+    """
+    remoto = os.environ.get("COTEJO_REPOSITORIO_REMOTO", "").strip()
+    if not remoto:
+        return
+    os.environ["COTEJO_REPOSITORIO"] = str(DIR_REPOSITORIO)
+    shutil.rmtree(DIR_REPOSITORIO, onexc=_forzar_borrado)
+    try:
+        resultado = subprocess.run(
+            ["git", "clone", "--bare", "--quiet", remoto, str(DIR_REPOSITORIO)],
+            capture_output=True,
+            timeout=120,
+            # Sin HOME, git busca su configuración en una carpeta que en Lambda
+            # no existe; y sin terminal no debe quedarse pidiendo credenciales.
+            env={**os.environ, "HOME": "/tmp", "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        print(f"No se pudo clonar {remoto}: {exc!r}")
+        return
+    if resultado.returncode != 0:
+        print(f"No se pudo clonar {remoto}: {resultado.stderr.decode('utf-8', 'replace')[:500]}")
+
 
 def manejador(evento: dict, contexto) -> dict | None:
     DIR_PAPELES.mkdir(parents=True, exist_ok=True)
@@ -123,6 +177,7 @@ def manejador(evento: dict, contexto) -> dict | None:
     inicio = time.time() - 2
     try:
         if evento.get("cotejo") == "ejecutar":
+            _preparar_repositorio()
             try:
                 main.completar_en_segundo_plano(
                     evento["ejecucion_id"], evento.get("solo"), evento["quien"]

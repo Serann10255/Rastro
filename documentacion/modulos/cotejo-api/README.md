@@ -53,6 +53,13 @@ función de forma asíncrona y responde `202`. La invocación ejecuta el mismo
 estado va fuera de la carpeta de la ejecución porque esa carpeta es evidencia y
 se verifica por su huella.
 
+**En AWS la función es una imagen con git y revisa lo publicado.** Los
+controles de secretos (C-09) usan git, como en local. La imagen
+(`cotejo/Dockerfile.lambda`) añade `git-core` a la base de Lambda, y antes de
+cada revisión `aws.py` clona de cero el repositorio publicado
+(`COTEJO_REPOSITORIO_REMOTO`), con todas sus ramas. El papel anota el remoto y el
+commit revisados. En local, C-09 sigue revisando la copia del auditor.
+
 **En AWS los papeles viven en S3.** El disco de la función no dura: `aws.py` trae
 del contenedor de papeles lo que falte antes de cada petición y sube después lo
 escrito. Cubierto por `cotejo/tests/test_api_en_aws.py`, con S3 y Lambda

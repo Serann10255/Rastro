@@ -1,0 +1,27 @@
+
+=== Contenedor de papeles de trabajo ===
+  [ok] contenedor ya existente: rastro-cotejo-papeles-484948252891
+  [ok] privado, versionado y cifrado
+
+=== Imagen de la funcion ===
+  [ok] repositorio de imagenes creado: rastro-cotejo (con analisis al subir)
+  [ok] imagen construida: 20261016T164602Z
+  [ok] imagen subida a ECR
+
+=== Funcion rastro-cotejo ===
+{
+    "StatusCode": 204
+}
+  [ok] funcion .zip anterior retirada para crearla como imagen
+  [ok] funcion creada: rastro-cotejo
+  [ok] invocacion asincrona sin reintentos
+
+=== Interfaz rastro-cotejo-api ===
+  [ok] interfaz ya existente: 2amcyjn5b8
+  [ok] ruta ya existente: ANY /
+  [ok] ruta ya existente: ANY /{proxy+}
+
+=== Comprobacion ===
+  [ok] Cotejo responde en https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com/salud
+
+=== Cotejo disponible en https://2amcyjn5b8.execute-api.us-east-1.amazonaws.com ===

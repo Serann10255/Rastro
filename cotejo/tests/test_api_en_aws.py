@@ -210,3 +210,89 @@ def test_en_local_la_ejecucion_sigue_dentro_de_la_peticion(nube, monkeypatch):
 
     assert respuesta.status_code == 201
     assert nube["lambda"].invocaciones == []
+
+
+# --------------------------------------------------------------------------- #
+# El repositorio que revisa C-09
+# --------------------------------------------------------------------------- #
+
+
+def _git(*argumentos, cwd=None):
+    import subprocess
+
+    subprocess.run(["git", *argumentos], cwd=cwd, check=True, capture_output=True)
+
+
+@pytest.fixture
+def publicado(tmp_path):
+    """Un repositorio con dos ramas, como el publicado."""
+    origen = tmp_path / "publicado"
+    origen.mkdir()
+    _git("init", "-q", "-b", "main", cwd=origen)
+    _git("config", "user.email", "prueba@cotejo.test", cwd=origen)
+    _git("config", "user.name", "Prueba", cwd=origen)
+    (origen / "README.md").write_text("Rastro\n", encoding="utf-8")
+    _git("add", ".", cwd=origen)
+    _git("commit", "-q", "-m", "inicio", cwd=origen)
+    _git("checkout", "-q", "-b", "otra-rama", cwd=origen)
+    (origen / "nota.txt").write_text("rama aparte\n", encoding="utf-8")
+    _git("add", ".", cwd=origen)
+    _git("commit", "-q", "-m", "otra", cwd=origen)
+    _git("checkout", "-q", "main", cwd=origen)
+    return origen
+
+
+def test_antes_de_revisar_se_clona_el_repositorio_publicado_con_todas_sus_ramas(
+    nube, monkeypatch, tmp_path, publicado
+):
+    from cotejo.pruebas.secretos import revisar_arbol, revisar_historial
+
+    destino = tmp_path / "clon.git"
+    monkeypatch.setattr(nube["aws"], "DIR_REPOSITORIO", destino)
+    monkeypatch.setenv("COTEJO_REPOSITORIO_REMOTO", str(publicado))
+    monkeypatch.delenv("COTEJO_REPOSITORIO", raising=False)
+
+    nube["aws"]._preparar_repositorio()
+
+    import os
+
+    assert os.environ["COTEJO_REPOSITORIO"] == str(destino)
+    _, arbol = revisar_arbol(destino)
+    _, historial = revisar_historial(destino)
+    assert arbol["archivos_revisados"] == 1, "el HEAD del clon es la rama principal"
+    assert historial["commits_revisados"] == 2, "el historial incluye la otra rama"
+    assert arbol["remoto"] == str(publicado), "el papel dice de donde salio la copia"
+
+
+def test_cada_revision_clona_de_nuevo_y_ve_lo_ultimo_publicado(
+    nube, monkeypatch, tmp_path, publicado
+):
+    from cotejo.pruebas.secretos import revisar_historial
+
+    destino = tmp_path / "clon.git"
+    monkeypatch.setattr(nube["aws"], "DIR_REPOSITORIO", destino)
+    monkeypatch.setenv("COTEJO_REPOSITORIO_REMOTO", str(publicado))
+    nube["aws"]._preparar_repositorio()
+
+    (publicado / "otro.txt").write_text("nuevo\n", encoding="utf-8")
+    _git("add", ".", cwd=publicado)
+    _git("commit", "-q", "-m", "posterior", cwd=publicado)
+    nube["aws"]._preparar_repositorio()
+
+    assert revisar_historial(destino)[1]["commits_revisados"] == 3
+
+
+def test_si_el_clon_falla_c09_no_revisa_otra_carpeta_por_error(nube, monkeypatch, tmp_path):
+    import os
+
+    from cotejo.pruebas.secretos import ErrorRepositorio, revisar_arbol
+
+    destino = tmp_path / "clon.git"
+    monkeypatch.setattr(nube["aws"], "DIR_REPOSITORIO", destino)
+    monkeypatch.setenv("COTEJO_REPOSITORIO_REMOTO", str(tmp_path / "no-existe"))
+
+    nube["aws"]._preparar_repositorio()
+
+    assert os.environ["COTEJO_REPOSITORIO"] == str(destino)
+    with pytest.raises(ErrorRepositorio):
+        revisar_arbol(destino)

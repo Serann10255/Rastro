@@ -11,8 +11,11 @@ Fecha: 2026-10-16 · Versión: 0.5
 > componentes, Cotejo incluido. Se recorrió el modo ruta contra la cuenta (salir
 > a ruta, posiciones, seguimiento, consulta pública con el mapa moviéndose,
 > entrega con foto cifrada con KMS, cierre) y una revisión de Cotejo encargada
-> desde su API: 8 de 11 conformes y los 3 de secretos no ejecutados, porque en
-> la función no hay repositorio git ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)).
+> desde su API. La función de Cotejo es una imagen con git que clona el
+> repositorio publicado antes de cada revisión, de modo que se ejecutan los
+> **11 controles**: 10 conformes y C-09b desviado, que es el hallazgo conocido
+> H-01 (el secreto rotado sigue en el historial publicado)
+> ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)).
 > Detalle en la [bitácora del despliegue](../cambios/2026-10-16-despliegue-modo-ruta-y-cotejo.md).
 >
 > | Qué | Dirección |
@@ -206,7 +209,7 @@ modo que un tercero pueda repetir la verificación.
 | `30-funciones.sh` | Empaqueta y despliega los ocho microservicios como funciones Lambda. **Se niega a desplegar** si `RASTRO_JWT_SECRETO` no está definido o tiene menos de 32 caracteres |
 | `40-api.sh` | Interfaz HTTP con CORS, prueba del validador de tokens (SU-01), rutas e integraciones. Con el proveedor propio el validador **no se asocia** a las rutas: rechazaría todo token HS256 |
 | `50-registro.sh` | CloudTrail con validación de integridad de sus archivos |
-| `55-cotejo-api.sh` | **Solo con `RASTRO_PUBLICAR_COTEJO=si`.** Contenedor privado y versionado de papeles de trabajo, función `rastro-cotejo` y su interfaz HTTP. Escribe `config/.cotejo.env` ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)) |
+| `55-cotejo-api.sh` | **Solo con `RASTRO_PUBLICAR_COTEJO=si`. Necesita Docker.** Contenedor privado y versionado de papeles de trabajo; imagen de la función con git (`cotejo/Dockerfile.lambda`), subida al repositorio `rastro-cotejo` de ECR; función `rastro-cotejo` con el remoto que clonará C-09 (`origin`, o `COTEJO_REPOSITORIO_REMOTO`); y su interfaz HTTP. Escribe `config/.cotejo.env` ([ADR-015](../decisiones/adr-015-cotejo-desplegado-en-aws.md)) |
 | `60-sitios.sh` | Compila las interfaces, crea el contenedor del sitio y las publica |
 | `65-sitio-https.sh` | Interfaz `rastro-sitio` que sirve el sitio por HTTPS, con enlaces directos en 200, y añade su origen a la regla CORS de evidencias |
 | `67-cotejo-sitio-https.sh` | **Solo con `RASTRO_PUBLICAR_COTEJO=si`.** Interfaz `rastro-cotejo-sitio` que sirve la interfaz de Cotejo por HTTPS |

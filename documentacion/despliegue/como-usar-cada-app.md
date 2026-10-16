@@ -415,9 +415,11 @@ Direcciones del despliegue del 2026-10-16:
 
 En Cotejo se entra con una cuenta del rol **auditor** de Rastro. Al pulsar
 **Revisar ahora**, la revisión se encarga a la nube y la pantalla espera a que
-termine (unos quince segundos). Los tres controles de secretos salen *sin
-revisar*: en la función no hay repositorio git; se ejecutan desde la línea de
-comandos en una copia del repositorio.
+termine (unos veinte segundos). Se revisan los once controles; los de secretos
+(C-09) clonan antes el repositorio publicado en GitHub, y su papel dice de cuál
+y en qué commit. C-09b sale **MAL** a propósito: es el hallazgo H-01, el secreto
+que se rotó y sigue en el historial publicado; C-09c confirma que ya no abre el
+sistema.
 
 Detalles del despliegue, restricciones del laboratorio y migración entre cuentas
 en [`entorno-aws.md`](entorno-aws.md).
