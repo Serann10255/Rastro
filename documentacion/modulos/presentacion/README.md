@@ -19,13 +19,30 @@ vuelve a construir, cambia el deck. En desarrollo basta con guardar el archivo.
 
 ## Cómo se usa
 
+Para presentar, con Docker y sin Node en el equipo:
+
+```bash
+docker compose up -d --build presentacion   # http://localhost:5177
+docker compose stop presentacion
+```
+
+La imagen compila el sitio y lo sirve con nginx. El guion queda dentro de la
+imagen: tras editar el Markdown, `--build` lo vuelve a compilar (unos segundos;
+las dependencias quedan en caché). Un guion que no compila detiene la
+construcción con el mismo error que `npm run build`.
+
+Para editar, con Node:
+
 ```bash
 cd presentacion
 npm install
-npm run dev        # http://localhost:5177
+npm run dev        # http://localhost:5177, recarga al guardar el Markdown
 npm test           # pruebas del compilador de guiones (Node 22.6 o superior)
 npm run build      # sitio estático en presentacion/dist/
 ```
+
+El contenedor y el servidor de desarrollo usan el mismo puerto: no pueden
+correr a la vez.
 
 | Tecla | Acción |
 |---|---|
@@ -193,6 +210,29 @@ no se leía desde el fondo de la sala. La prueba de los guiones ya no cuenta
 portadillas: comprueba que los siete bloques aparecen, en orden, con al menos
 una diapositiva cada uno.
 
+**Imagen de Docker con el sitio compilado** (2026-10-16). Para presentar sin
+instalar Node ni dependencias en el equipo de la sala. Sigue el patrón de
+`web/` y `cotejo/web/`: una etapa compila con Node y la final es nginx con los
+archivos, sin Node. El contexto es la raíz del repositorio y las rutas dentro
+de la imagen reproducen las del repositorio, para que los alias de
+`vite.config.ts` resuelvan sin cambios. Dos detalles propios:
+
+- **Su propio `Dockerfile.dockerignore`.** El `.dockerignore` de la raíz deja
+  fuera toda la documentación, y este módulo necesita `documentacion/sustentacion/`.
+  En lugar de abrir esa excepción para todas las imágenes, el de este módulo es
+  una lista de lo permitido: entran sus fuentes, `design/`, los estilos y
+  `public/` de las dos interfaces y los guiones. El contexto pesa unos pocos KB.
+- **`absolute_redirect off` en nginx.** `/rastro` redirige a `/rastro/`, como
+  en desarrollo. Con la redirección absoluta, nginx escribiría el puerto en el
+  que escucha dentro del contenedor (80) y no el publicado (5177).
+
+Descartados: servir `npm run dev` en el contenedor con el Markdown montado como
+volumen, que recargaría al guardar pero arrastra Node y `node_modules` a la
+imagen y depende de que la vigilancia de archivos atraviese el montaje en
+Windows; para editar ya está `npm run dev` sin Docker. Y un servicio con perfil
+aparte en el compose: la sustentación también muestra la pila, así que conviene
+que `docker compose up -d` la levante con todo.
+
 **Descartado:** calcular el número por posición; una biblioteca de presentaciones
 (reveal.js y similares) por la regla de código propio; leer el Markdown en el
 navegador, que habría hecho del guion un recurso más que servir y habría
@@ -206,7 +246,9 @@ contradiciéndose, y la completa ya está en el historial y en PDF.
 - **Usa**: el sistema de diseño de [`design/`](../sistema-de-diseno/README.md)
   —fichas, base, componentes y logotipos— y los `identidad.css` de
   [`interfaz-web`](../interfaz-web/README.md) y [`cotejo-web`](../cotejo-web/README.md).
-- **No depende de la API** ni de ningún servicio: es contenido estático.
+- **No depende de la API** ni de ningún servicio: es contenido estático. En
+  `docker-compose.yml` es el servicio `presentacion`, sin `depends_on`, y se
+  puede levantar solo.
 - **Nadie depende de él.**
 
 ## Comportamiento responsive

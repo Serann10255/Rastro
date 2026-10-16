@@ -1,0 +1,21 @@
+# Contexto de la imagen de diapositivas. Sustituye al .dockerignore de la raíz
+# solo para presentacion/Dockerfile (BuildKit busca <Dockerfile>.dockerignore
+# junto al Dockerfile).
+#
+# Es una lista de lo permitido y no de lo excluido: el de la raíz deja fuera
+# toda la documentación, y este módulo necesita justo una carpeta de ella. Así
+# entran los guiones y nada más; el resto de documentacion/ —PDF incluidos— no
+# viaja al demonio en cada construcción.
+
+*
+
+!presentacion
+presentacion/node_modules
+presentacion/dist
+
+!design
+!web/src/estilos
+!web/public
+!cotejo/web/src/estilos
+!cotejo/web/public
+!documentacion/sustentacion

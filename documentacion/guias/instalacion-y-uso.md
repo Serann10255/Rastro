@@ -42,6 +42,7 @@ docker compose ps
 | Rastro — API | http://localhost:8080 |
 | Cotejo — interfaz de auditoría | http://localhost:5175 |
 | Cotejo — API | http://localhost:8007 |
+| Diapositivas de sustentación | http://localhost:5177 |
 | Consola del almacenamiento | http://localhost:9001 (`local` / `localsecreto`) |
 
 El recorrido de cada aplicación está en
@@ -154,13 +155,28 @@ aplicación: si `npm run build` falla al resolver `@design/...`, falta el alias 
 
 ## Presentar la sustentación
 
-Las diapositivas no necesitan Docker ni la API: solo Node.
+Las diapositivas no necesitan la API ni el resto de la pila. La forma rápida,
+con Docker y sin instalar nada más:
+
+```bash
+docker compose up -d --build presentacion
+```
+
+Levanta solo las diapositivas, ya compiladas, en http://localhost:5177. Si se
+levantó la pila completa con `docker compose up -d`, ya están incluidas. El
+guion se compila al construir la imagen: tras editar
+`documentacion/sustentacion/*.md`, la misma orden con `--build` lo actualiza.
+Para apagarlas: `docker compose stop presentacion`.
+
+Para editar el guion con recarga al guardar, sin Docker, con Node:
 
 ```bash
 cd presentacion
 npm install
 npm run dev
 ```
+
+Las dos formas usan el puerto 5177: hay que detener una para usar la otra.
 
 | Qué | Dirección |
 |---|---|

@@ -24,7 +24,9 @@ config/.identidad.env
 config/.api.env
 seed/envios-creados.json
 
-# Documentación y entregables: no forman parte de ninguna imagen.
+# Documentación y entregables: no forman parte de ninguna imagen. La de
+# diapositivas, que sí necesita los guiones, usa su propio archivo:
+# presentacion/Dockerfile.dockerignore, que sustituye a este.
 documentacion
 *.md
 !README.md

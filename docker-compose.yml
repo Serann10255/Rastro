@@ -263,6 +263,23 @@ services:
     depends_on:
       - cotejo-api
 
+  # ----------------------------------------------------------------------- #
+  # Diapositivas de sustentacion
+  # ----------------------------------------------------------------------- #
+  #
+  # No depende de nada: se puede levantar sola, sin la pila, con
+  #   docker compose up -d --build presentacion
+  # El guion se compila al construir la imagen; tras editar
+  # documentacion/sustentacion/*.md hay que volver a construirla (--build).
+
+  presentacion:
+    build:
+      context: .
+      dockerfile: presentacion/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5177:80"
+
 volumes:
   datos-dynamodb:
   datos-minio:

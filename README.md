@@ -26,7 +26,7 @@ docker compose up -d
 ```
 
 Levanta la pila entera: DynamoDB Local, MinIO, los ocho microservicios, la
-puerta de enlace y las dos interfaces web, y siembra datos sintéticos —dos
+puerta de enlace, las dos interfaces web y las diapositivas, y siembra datos sintéticos —dos
 empresas, diez usuarios, catálogos y veinte envíos con recorridos variados—.
 
 | Componente | Dirección |
@@ -36,7 +36,11 @@ empresas, diez usuarios, catálogos y veinte envíos con recorridos variados—.
 | Rastro — API | http://localhost:8080 |
 | Cotejo — interfaz de auditoría | http://localhost:5175 |
 | Cotejo — API | http://localhost:8007 |
+| Diapositivas de sustentación | http://localhost:5177 |
 | Consola del almacenamiento | http://localhost:9001 |
+
+Para presentar basta con las diapositivas, sin el resto de la pila:
+`docker compose up -d --build presentacion`.
 
 Cómo se usa cada una:
 [guía de aplicaciones](documentacion/despliegue/como-usar-cada-app.md).
