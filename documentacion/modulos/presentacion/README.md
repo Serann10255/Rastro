@@ -63,27 +63,38 @@ actualiza al avanzar, así que recargar retoma donde se estaba.
 
 | Formato | Cómo | Qué sale |
 |---|---|---|
-| Guion | Ctrl+P desde cualquier modo, o **Imprimir guion** en `?guion` | Una diapositiva por página horizontal, con su número, quién la presenta, el tiempo estimado, su texto hablado, la indicación y la respuesta preparada. **Con el tema que se está viendo** |
+| Guion | Ctrl+P desde cualquier modo, o **Imprimir guion** en `?guion` | **Un documento de texto en vertical, sin las láminas, una hoja por diapositiva**: la hoja N es la diapositiva N, con su bloque, número y título, quién la presenta, el tiempo estimado, el texto hablado, la indicación y la respuesta preparada. La primera hoja lleva además la cabecera con el reparto. **Con el tema que se está viendo** |
 | Solo diapositivas | **PDF de diapositivas** en `?guion`, o Ctrl+P desde `/rastro/?diapositivas` | Cada diapositiva a página completa de 16:9 (13,33 × 7,5 in), sin notas. **Con el tema que se está viendo**: claro u oscuro |
 
-Para el PDF, en el diálogo se elige *Guardar como PDF*; el tamaño de página ya
-viene dado. Probado con Edge: una página por diapositiva en los dos formatos
-(carta apaisada el guion, 960 × 540 pt las diapositivas); con la versión corta
-del 2026-10-16, 9 páginas Rastro y 10 Cotejo. Están en
-[`entregables/sustentacion/`](../../entregables/sustentacion/), junto a los de
-la versión completa de 35 páginas.
+**En el diálogo, el destino tiene que ser *Guardar como PDF*** (el del propio
+Edge o Chrome), con márgenes «Ninguno» y sin encabezados ni pies. El tamaño y
+la orientación los fija la hoja de estilos (`@page`), y el navegador solo los
+respeta con ese destino: con *Microsoft Print to PDF* o cualquier impresora del
+sistema manda el papel del controlador, carta vertical, y cada diapositiva sale
+en vertical y partida en dos hojas. Es el síntoma que se vio el 2026-10-16; la
+página del guion lo advierte debajo de los botones. Comprobado con el motor de
+Edge: respetando el CSS salen 960 × 540 pt las diapositivas, una por página,
+y el guion en carta vertical, una hoja por diapositiva; 9 páginas Rastro y 10
+Cotejo en los dos formatos. Están
+en [`entregables/sustentacion/`](../../entregables/sustentacion/), junto a los
+de la versión completa de 35 páginas.
 
-Sin diálogos, desde la terminal y con el servidor en marcha:
+**Sin diálogo, que es lo recomendable:** con el sitio en el puerto 5177 (el
+contenedor o `npm run dev`),
 
 ```bash
-"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf="Rastro-diapositivas.pdf" "http://localhost:5177/rastro/?diapositivas&tema=claro"
+cd presentacion
+npm install --no-save playwright-core@1.56.1
+npm run pdf                    # los cuatro PDF, tema claro
+npm run pdf -- --tema=oscuro   # los cuatro, tema oscuro, con «oscuro» en el nombre
 ```
 
-Para el guion impreso, la misma orden con `http://localhost:5177/rastro/?tema=claro`.
-Desde Git Bash, la ruta de salida va con barras `/`: con `\` delante de una
-variable, Bash no la expande y el PDF cae en la carpeta de arriba con un nombre
-literal. Para la versión oscura, `tema=oscuro` en lugar de `tema=claro`. `?tema=` abre la
-página con ese tema sin guardarlo como preferencia.
+`exportar-pdf.mjs` imprime con el Edge instalado y `preferCSSPageSize`, escribe
+en `documentacion/entregables/sustentacion/` y dice cuántas páginas salieron.
+`?tema=` abre la página con ese tema sin guardarlo como preferencia; el guion
+también funciona con la orden cruda de Edge
+(`msedge --headless=new --no-pdf-header-footer --print-to-pdf=… "http://localhost:5177/rastro/?diapositivas&tema=claro"`),
+que es lo que se usaba antes.
 
 ## Formato del guion
 
@@ -281,8 +292,9 @@ aplicación.
 **Se imprime lo que se ve.** El guion y el PDF de solo diapositivas salen con el
 tema que se está viendo; si es el del sistema, se resuelve en el momento de
 imprimir y se fija, para no depender de cómo trate cada navegador esa
-preferencia. La hoja no lleva margen de página sino relleno propio: con margen,
-el navegador pinta los bordes con su color y en oscuro quedaba un marco negro. Se decide en el evento `beforeprint`,
+preferencia. Ninguna hoja lleva margen de página sino relleno propio: el margen
+de página no se pinta, y en oscuro quedaba un marco blanco. Se decide en el
+evento `beforeprint`,
 que Chrome y Edge lanzan con Ctrl+P y con `window.print()`; la impresión sin
 interfaz de Edge no lo lanza, y por eso ahí el tema se fija con `?tema=`. Es una copia del componente de `web/`: moverlo a `design/` exigiría
 tocar las dos interfaces y queda como mejora.
@@ -293,6 +305,29 @@ sueltas usan una página con nombre (`@page diapositiva`) que solo se asigna
 cuando la raíz lleva `data-impresion="diapositivas"`. El lienzo se imprime a
 0,6666: un pelo por debajo de 2/3, porque a 2/3 exactos el redondeo empuja cada
 lámina a una segunda página en blanco.
+
+**El guion impreso no lleva las láminas** (2026-10-16). Hasta este día cada
+hoja del guion era una diapositiva apaisada con sus notas debajo. Nunca tuvo
+sitio de sobra: iba justa (689–807 px de los 816 de una carta apaisada) y en
+cuanto el diálogo añadía sus márgenes de 10 mm casi todas se pasaban, el
+sobrante saltaba a una hoja casi vacía y las notas seguían bajo la diapositiva
+siguiente. Se probó fijar cada hoja a `100vh` con la lámina más pequeña y las
+notas en dos columnas, y seguía siendo un equilibrio frágil que dependía del
+papel y de los márgenes. La salida fue quitar la lámina: el guion es un
+documento de texto en vertical con una hoja por diapositiva —la hoja N es la
+diapositiva N, y la primera lleva además la cabecera con el reparto—, así que
+nada puede recortarse ni saltar: la entrada más larga ocupa poco más de media
+hoja. Las láminas ya se descargan aparte con **PDF de diapositivas**, que es
+donde se ven a tamaño completo; en el documento basta el bloque, el número y el
+título para saber en cuál se está. Sale con el tema que se está viendo, como
+las diapositivas, y por eso tampoco lleva margen de página sino relleno propio
+de 16 × 18 mm en cada hoja: el margen de página no se pinta y en oscuro dejaba
+un marco blanco. En el formato de solo diapositivas, cada lámina es
+exactamente una hoja (`100vh`, con el sobrante recortado) y la escala se
+calcula desde el área de página (`tan(atan2(100vw, 1920px))`, que es cómo se
+dividen dos longitudes en CSS) dentro de `@supports`, de modo que con márgenes
+impuestos la lámina se encoge en lugar de salirse; sin soporte, queda la escala
+fija de 0,6666.
 
 **Portadillas opcionales y el bloque sobre el título** (2026-10-16). Con cinco
 minutos por sustentación, siete portadillas eran siete clics sin contenido. Se

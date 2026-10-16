@@ -76,6 +76,24 @@ export function duracion(palabras: number): string {
   return resto === 0 ? `≈ ${minutos} min` : `≈ ${minutos} min ${resto} s`;
 }
 
+/** «1–3, 7» a partir de [1, 2, 3, 7]: las diapositivas que presenta alguien. */
+export function rangos(numeros: number[]): string {
+  const partes: string[] = [];
+  let inicio = numeros[0];
+  let previo = numeros[0];
+  for (const n of [...numeros.slice(1), Number.NaN]) {
+    if (inicio === undefined || previo === undefined) break;
+    if (n === previo + 1) {
+      previo = n;
+      continue;
+    }
+    partes.push(inicio === previo ? String(inicio) : `${inicio}–${previo}`);
+    inicio = n;
+    previo = n;
+  }
+  return partes.join(", ");
+}
+
 /** «RIESGOS Y CONTROLES» → «Riesgos y controles». Solo si todo va en mayúsculas:
  *  un título escrito con mayúsculas propias se respeta tal cual. */
 export function tituloLegible(titulo: string): string {

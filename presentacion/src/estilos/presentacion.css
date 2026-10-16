@@ -834,6 +834,19 @@
   color: var(--peligro);
 }
 
+/* Cómo imprimir bien: debajo de los botones y a lo ancho de la cabecera. */
+.guion__ayuda {
+  grid-column: 1 / -1;
+  max-width: 80ch;
+  color: var(--texto-suave);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+.guion__ayuda .d-codigo {
+  font-size: inherit;
+}
+
 .guion__acciones {
   display: flex;
   flex-wrap: wrap;
@@ -875,6 +888,13 @@
 }
 
 .guion--sin-notas .guion__notas > :not(.guion__rotulo) {
+  display: none;
+}
+
+/* Solo en papel: la cabecera del documento y el bloque de cada diapositiva,
+ * que en pantalla ya se ven en la lámina. */
+.guion__documento,
+.guion__bloque {
   display: none;
 }
 
@@ -1107,19 +1127,28 @@
 }
 
 /* ======================================================================= */
-/* Impresión: una diapositiva por página, con sus notas debajo             */
+/* Impresión                                                               */
 /* ======================================================================= */
 
-/* Sin margen de página: el margen lo pone cada hoja con su relleno. Así el fondo
- * del tema cubre la hoja entera; con margen de página, el navegador pinta los
- * bordes con su propio color y en tema oscuro quedaba un marco casi negro. */
+/* Dos salidas con el mismo marcado (véase impresion.ts):
+ *
+ * - El guion (por omisión): un documento de texto en vertical, una hoja por
+ *   diapositiva —la hoja N es la diapositiva N— con su número, quién la
+ *   presenta, el tiempo estimado, lo que se dice, la indicación y la respuesta
+ *   preparada. No lleva las láminas, que se descargan aparte: así el texto
+ *   nunca se recorta ni salta a una hoja vacía.
+ * - Solo diapositivas (`data-impresion="diapositivas"`): cada lámina a página
+ *   completa de 16:9 (13,33 × 7,5 pulgadas, 1920 × 1080 a dos tercios), sin
+ *   notas.
+ *
+ * Las dos salen con el tema que se está viendo, y por eso ninguna lleva margen
+ * de página sino relleno propio: el margen de página no se pinta, y en oscuro
+ * dejaba un marco blanco alrededor de cada hoja. */
 @page {
-  size: landscape;
+  size: portrait;
   margin: 0;
 }
 
-/* Solo diapositivas: página panorámica de 13,33 × 7,5 pulgadas y sin márgenes,
- * que es exactamente el lienzo de 1920 × 1080 a dos tercios (1280 × 720 px). */
 @page diapositiva {
   size: 13.333in 7.5in;
   margin: 0;
@@ -1136,88 +1165,170 @@
     display: none !important;
   }
 
-  /* 220 mm de ancho (0,4331 del lienzo): cabe en A4 y en carta apaisados y
-   * deja bajo la lámina unos 55 mm para el guion hablado y sus indicaciones. */
   .guion,
   .guion--impresion,
   .guion--revision,
   .guion--lectura {
-    --zoom: 0.4331 !important;
     display: block;
     max-width: none;
     padding: 0;
     margin: 0;
   }
 
-  .guion .lienzo {
-    width: 1920px;
-    height: 1080px;
-    zoom: var(--zoom);
-    --d-escala: 1.75;
-    --d-lateral: calc(var(--e-7) * 2.5);
-    --d-superior: calc(var(--e-7) * 1.5);
-    --d-franja: calc(var(--e-4) * 1.5);
-    grid-template-rows: minmax(0, 1fr) auto auto;
+  /* -- El guion: texto, sin láminas -------------------------------------- */
+
+  /* La cabecera comparte la primera hoja con la diapositiva 1, para que el
+   * número de hoja coincida con el de diapositiva. */
+  .guion__documento {
+    display: block;
+    padding: 16mm 18mm 4mm;
+    border-bottom: 0.4mm solid var(--borde-fuerte);
   }
 
-  .guion__pagina {
-    display: grid;
-    gap: 4mm;
-    padding: 12mm;
-    break-after: page;
-    break-inside: avoid;
+  .guion__documento-antetitulo {
+    font-size: 9.5pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--acento);
   }
 
-  .guion__pagina:last-child {
-    break-after: auto;
+  .guion__documento-titulo {
+    margin: 1mm 0 2mm;
+    font-size: 20pt;
+    font-weight: 750;
+    line-height: 1.15;
+  }
+
+  .guion__documento p {
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--texto-suave);
+  }
+
+  .guion__documento-reparto {
+    margin-top: 1.5mm;
   }
 
   .guion__marco {
-    width: fit-content;
-    border: 0.3mm solid var(--borde-fuerte);
-    border-radius: 0;
-    box-shadow: none;
+    display: none !important;
+  }
+
+  /* Cada diapositiva en su hoja. El relleno hace de margen en cada una; si
+   * una entrada fuera más larga que la hoja, seguiría en la siguiente. */
+  .guion__pagina {
+    display: block;
+    margin: 0;
+    padding: 16mm 18mm;
+    break-before: page;
+    break-inside: avoid;
+  }
+
+  .guion__documento + .guion__pagina {
+    padding-top: 6mm;
+    break-before: auto;
   }
 
   /* En papel las notas salen siempre, aunque en pantalla estuvieran ocultas. */
   .guion__notas {
-    display: grid !important;
-    gap: 1.5mm;
-    font-size: 11.5pt;
-    line-height: 1.35;
+    display: block !important;
+    font-size: 11pt;
+    line-height: 1.4;
+    orphans: 3;
+    widows: 3;
   }
 
   .guion__notas > * {
     display: block !important;
+    margin: 0 0 2mm;
   }
 
-  /* En papel el guion usa todo el ancho de la página: con el límite de lectura
-   * de pantalla, las diapositivas de guion largo pasaban a una segunda hoja. */
+  .guion__bloque {
+    margin-bottom: 0.5mm;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--acento);
+  }
+
+  .guion__rotulo {
+    margin-bottom: 2.5mm;
+    font-size: 13pt;
+    font-weight: 750;
+  }
+
+  .guion__presenta {
+    font-weight: 600;
+  }
+
+  /* En papel el texto usa todo el ancho de la hoja. */
   .notas__guion,
   .notas__apoyo {
     max-width: none;
   }
 
-  /* -- Solo diapositivas, sin notas: `data-impresion="diapositivas"` -- */
+  .notas__apoyo {
+    font-size: 0.9em;
+  }
+
+  /* -- Solo diapositivas: `data-impresion="diapositivas"` ----------------- */
 
   /* Un pelo por debajo de 2/3 para que el redondeo no empuje la lámina a una
    * segunda página en blanco. */
   :root[data-impresion="diapositivas"] .guion {
-    --zoom: 0.6666 !important;
+    --zoom: 0.6666;
   }
 
-  :root[data-impresion="diapositivas"] .guion__pagina {
-    page: diapositiva;
-    gap: 0;
-    padding: 0;
+  :root[data-impresion="diapositivas"] .guion__documento,
+  :root[data-impresion="diapositivas"] .guion__notas {
+    display: none !important;
   }
 
   :root[data-impresion="diapositivas"] .guion__marco {
+    display: block !important;
+    width: fit-content;
     border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
-  :root[data-impresion="diapositivas"] .guion__notas {
-    display: none !important;
+  :root[data-impresion="diapositivas"] .guion .lienzo {
+    width: 1920px;
+    height: 1080px;
+    zoom: var(--zoom);
+  }
+
+  /* Cada lámina es exactamente una hoja: la altura es la del área de página
+   * (100vh en impresión), y lo que sobre por redondeo se recorta en lugar de
+   * fragmentar la caja en una hoja vacía. */
+  :root[data-impresion="diapositivas"] .guion__pagina {
+    page: diapositiva;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    break-before: auto;
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  :root[data-impresion="diapositivas"] .guion__pagina:last-child {
+    break-after: auto;
+  }
+
+  /* Si el diálogo impone márgenes o un papel distinto, la lámina se ajusta al
+   * área de página en lugar de salirse: la escala es la razón entre el área y
+   * el lienzo (tan(atan2(a, b)) = a / b, que es la forma de dividir dos
+   * longitudes en CSS). Donde no se entienda, queda la escala fija de arriba. */
+  @supports (zoom: tan(atan2(1px, 1px))) {
+    :root[data-impresion="diapositivas"] .guion {
+      --zoom: min(tan(atan2(100vw, 1920px)), tan(atan2(100vh, 1080px)));
+    }
   }
 
   * {

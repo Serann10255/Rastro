@@ -9,7 +9,7 @@
 import type { ComponentType } from "react";
 
 import type { PropiedadesLogotipo } from "@/deck/Diapositiva";
-import { duracion, PALABRAS_POR_MINUTO, recuento } from "@/deck/formato";
+import { duracion, PALABRAS_POR_MINUTO, rangos, recuento } from "@/deck/formato";
 import { SelectorTema } from "@/deck/SelectorTema";
 import type { Deck } from "@/deck/tipos";
 
@@ -29,23 +29,6 @@ const TECLAS: [string, string][] = [
   ["Z o clic en una captura", "Ampliar la captura de pantalla a toda la ventana; Esc para volver"],
   ["Ctrl+P", "Imprimir el guion: una diapositiva por página, con su texto hablado debajo"],
 ];
-
-function rangos(numeros: number[]): string {
-  const partes: string[] = [];
-  let inicio = numeros[0];
-  let previo = numeros[0];
-  for (const n of [...numeros.slice(1), Number.NaN]) {
-    if (inicio === undefined || previo === undefined) break;
-    if (n === previo + 1) {
-      previo = n;
-      continue;
-    }
-    partes.push(inicio === previo ? String(inicio) : `${inicio}–${previo}`);
-    inicio = n;
-    previo = n;
-  }
-  return partes.join(", ");
-}
 
 function texto(valor: string | string[] | undefined): string {
   return Array.isArray(valor) ? valor.join(", ") : (valor ?? "");

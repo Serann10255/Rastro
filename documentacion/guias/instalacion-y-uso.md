@@ -190,11 +190,17 @@ diapositiva, `f` para pantalla completa, `z` (o un clic) para ampliar la captura
 de pantalla de la diapositiva y `Esc` para volver. `/rastro#7` abre directamente
 la diapositiva 7. Las capturas de las aplicaciones están en
 `presentacion/capturas/`; para regenerarlas con la pila levantada, véase el
-[README del módulo](../modulos/presentacion/README.md#capturas-de-pantalla). Ctrl+P imprime el guion, una diapositiva por página con el texto
-que dice cada integrante debajo. Para un PDF
-con **solo las diapositivas**, a página completa de 16:9, se pulsa **PDF de
-diapositivas** en `/rastro/?guion` y se elige *Guardar como PDF*. El PDF y el
-guion salen con el tema que se esté viendo, claro u oscuro.
+[README del módulo](../modulos/presentacion/README.md#capturas-de-pantalla). Ctrl+P imprime el guion: un documento de texto en vertical, sin
+las láminas, una hoja por diapositiva —qué decir, cómo y qué responder—. Para
+un PDF con **solo las diapositivas**, a página completa de 16:9, se pulsa
+**PDF de diapositivas** en `/rastro/?guion` y se elige *Guardar como PDF*. Los
+dos salen con el tema que se esté viendo, claro u oscuro.
+
+> **Si el PDF sale vertical y con cada diapositiva partida en dos hojas**, el
+> destino elegido en el diálogo fue una impresora del sistema (*Microsoft Print
+> to PDF* u otra), que impone su papel. Hay que elegir *Guardar como PDF*, el del
+> navegador, con márgenes «Ninguno». O generar los cuatro PDF sin diálogo, con
+> el sitio en marcha: `cd presentacion && npm install --no-save playwright-core@1.56.1 && npm run pdf`.
 
 El contenido sale de `documentacion/sustentacion/*.md`: para cambiar una
 diapositiva se edita el Markdown y se guarda. Antes de presentar:

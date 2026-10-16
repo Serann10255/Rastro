@@ -2,8 +2,9 @@
  *
  * Dos formatos con el mismo marcado:
  *
- * - `guion` (por omisión): una diapositiva por página horizontal con sus notas
- *   debajo, para llevar en papel.
+ * - `guion` (por omisión): un documento de texto en vertical con una entrada
+ *   por diapositiva —qué decir, cómo y qué responder—, sin las láminas, para
+ *   llevar en papel.
  * - `diapositivas`: solo las diapositivas, cada una a página completa de 16:9
  *   (13,33 × 7,5 pulgadas, el formato panorámico de un deck), para guardar como
  *   PDF y entregar o proyectar desde otro equipo.

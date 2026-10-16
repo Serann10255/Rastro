@@ -9,6 +9,8 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.json",
+    "pdf": "node exportar-pdf.mjs",
+    "capturas": "node capturas/capturar.mjs",
     "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"compilador/*.test.ts\""
   },
   "dependencies": {

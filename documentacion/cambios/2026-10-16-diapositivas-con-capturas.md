@@ -74,16 +74,40 @@ Documentación: [módulo presentacion](../modulos/presentacion/README.md),
 ## PDF
 
 Regenerados en [`entregables/sustentacion/`](../entregables/sustentacion/) con
-Edge sin interfaz y tema claro: `Rastro · sustentación.pdf` y `… guion.pdf`
-(9 páginas), `Cotejo · sustentación.pdf` y `… guion.pdf` (10 páginas). En papel
-cada galería muestra su elemento de reposo: la primera pantalla en las portadas
-y la última en el resto.
+`npm run pdf` y tema claro: `Rastro · sustentación.pdf` (9 páginas) y
+`Cotejo · sustentación.pdf` (10), una diapositiva por página; y
+`… guion.pdf`, el documento de texto, una hoja por diapositiva (9 y 10). En
+las diapositivas cada galería muestra su elemento de reposo: la primera
+pantalla en las portadas y la última en el resto.
+
+## Exportar el PDF sin el diálogo
+
+Al exportar desde el diálogo del navegador, las diapositivas y el guion salían
+**en vertical y partidos en dos hojas**. La causa no está en el deck: la hoja
+de estilos fija tamaño y orientación con `@page`, y el navegador solo los
+respeta cuando el destino es *Guardar como PDF*; con *Microsoft Print to PDF*
+u otra impresora del sistema manda el papel del controlador, carta vertical.
+Comprobado con el motor de Edge: respetando el CSS salen 960 × 540 pt y carta
+apaisada, una página por diapositiva.
+
+| Qué | Dónde |
+|---|---|
+| `npm run pdf`: genera los cuatro PDF con el Edge instalado y `preferCSSPageSize`, sin diálogo; `--tema=oscuro` para la versión oscura | `presentacion/exportar-pdf.mjs`, `package.json` |
+| Aviso bajo los botones de la página del guion: elegir *Guardar como PDF*, sin márgenes ni encabezados | `src/deck/Guion.tsx`, `presentacion.css` |
+| **El guion impreso ya no lleva las láminas**: es un documento de texto en vertical, una hoja por diapositiva —la hoja N es la diapositiva N—, con bloque, número y título, quién la presenta, tiempo, guion, indicación y respuesta preparada, y la cabecera con el reparto en la primera hoja. Sale con el tema que se está viendo, y por eso sin margen de página sino relleno propio. Antes cada hoja era la lámina con las notas debajo: con los márgenes del diálogo el sobrante producía hojas casi en blanco y notas bajo la diapositiva siguiente, y fijar cada hoja a una página seguía siendo frágil | `src/deck/Guion.tsx`, `presentacion.css` |
+| En el PDF de solo diapositivas cada lámina es exactamente una hoja y se escala al área de página (`tan(atan2(100vw, 1920px))` bajo `@supports`), así que cabe aunque el diálogo imponga márgenes o papel carta | `presentacion.css` |
+| Cómo imprimir y qué hacer si sale vertical | [README del módulo](../modulos/presentacion/README.md#cómo-se-usa), [guía de uso](../guias/instalacion-y-uso.md#presentar-la-sustentación) |
 
 ## Verificación
 
 - `npm test`: 25 pruebas, 0 fallos; `npm run typecheck` sin errores; los dos
   guiones compilan sin avisos.
 - `/rastro/?guion` y `/cotejo/?guion`: «Ninguna se desborda».
+- Impresión comprobada con el motor de Edge, en claro y en oscuro: el guion
+  sale en vertical, una hoja por diapositiva y sin láminas, también forzando
+  carta con márgenes de 10 mm o A4 desde el diálogo; las diapositivas, 9 y 10
+  páginas de 960 × 540 pt respetando el CSS, y una por página aunque el
+  diálogo imponga carta o A4.
 - Visor: portadas, Rastro 2, 6 y 8, Cotejo 1, 2, 8 y 9 revisadas en claro y
   oscuro; la galería de Cotejo 2 llega al catálogo y se queda; `z` amplía y
   `Esc` cierra; sin errores en consola.
