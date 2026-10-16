@@ -102,7 +102,7 @@
   overflow: hidden;
 }
 
-.lamina__cuerpo--con-figura {
+.lamina__cuerpo--con-visual {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
@@ -114,6 +114,21 @@
   flex-direction: column;
   gap: calc(var(--d-hueco-sm) * 1.4);
   min-width: 0;
+}
+
+/* La columna derecha: figura, captura o galería, cada una a lo alto que
+ * necesite y nunca más de lo que hay. */
+.lamina__visual {
+  display: grid;
+  align-content: center;
+  gap: var(--d-hueco-sm);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.lamina__visual > * {
+  min-height: 0;
 }
 
 /* -- Portada ---------------------------------------------------------------- */
@@ -135,6 +150,31 @@
   gap: var(--d-hueco);
   min-width: 0;
   color: var(--texto-suave);
+}
+
+/* Con una captura o galería, la aplicación ocupa la derecha y el logotipo se
+ * recoge sobre el nombre. */
+.portada--con-visual {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: calc(var(--d-hueco) * 1.5);
+}
+
+.portada__marca {
+  margin-bottom: var(--d-hueco-sm);
+}
+
+.portada__visual {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.portada__visual > * {
+  min-height: 0;
+  transform: perspective(2400px) rotateY(-7deg) rotateX(1.5deg);
+  transform-origin: left center;
 }
 
 /* El primer párrafo es el nombre y el lema: «**RASTRO**» sobre su subtítulo. */
@@ -872,13 +912,58 @@
     overflow: visible;
   }
 
-  .guion--lectura .lamina__cuerpo--con-figura {
+  .guion--lectura .lamina__cuerpo--con-visual {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guion--lectura .lamina__visual {
+    height: auto;
   }
 
   .guion--lectura .d-figura,
   .guion--lectura .d-figura > svg {
     height: auto;
+  }
+
+  /* En el teléfono una galería no pasa sola: se ven todas sus pantallas, una
+   * debajo de otra, y los puntos sobran. */
+  .guion--lectura .d-galeria {
+    grid-template-areas: none;
+    gap: var(--e-3);
+  }
+
+  .guion--lectura .d-galeria__elemento {
+    grid-area: auto;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .guion--lectura .d-galeria__puntos {
+    display: none;
+  }
+
+  /* En una pantalla estrecha el título de la ventana se parte en dos líneas
+   * antes que cortarse. */
+  .guion--lectura .d-ventana__titulo {
+    white-space: normal;
+    padding-right: 0;
+  }
+
+  .guion--lectura .d-ventana__imagen {
+    height: auto;
+  }
+
+  .guion--lectura .portada--con-visual {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guion--lectura .portada__visual > * {
+    transform: none;
+  }
+
+  .guion--lectura .portada__marca > svg {
+    width: 4rem;
+    height: 4rem;
   }
 
   .guion--lectura .d-tabla-contenedor {
@@ -1138,5 +1223,481 @@
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+}
+
+/* ======================================================================= */
+/* Capturas de pantalla y galerías                                         */
+/* ======================================================================= */
+
+/* La captura va dentro de una ventana de navegador: la barra dice qué pantalla
+ * es y el marco la separa del fondo de la lámina, sea claro u oscuro. */
+.d-ventana {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  max-height: 100%;
+  border: 2px solid var(--borde);
+  border-radius: var(--d-radio);
+  background: var(--superficie-elevada);
+  box-shadow: var(--sombra-3);
+  overflow: hidden;
+}
+
+.d-ventana__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--d-hueco-sm);
+  padding: calc(var(--d-hueco-sm) * 0.55) var(--d-hueco-sm);
+  border-bottom: 2px solid var(--borde);
+  background: var(--fondo-sutil);
+  color: var(--texto-suave);
+  font-size: var(--d-minimo);
+  line-height: 1.2;
+}
+
+.d-ventana__puntos {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.d-ventana__puntos > i {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--borde-fuerte);
+}
+
+.d-ventana__titulo {
+  flex: 1;
+  min-width: 0;
+  /* Centrado respecto a la ventana, no al hueco que dejan los puntos. */
+  padding-right: calc(3 * 15px + 2 * 8px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-ventana__cuerpo {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--superficie);
+  color: inherit;
+  font: inherit;
+  overflow: hidden;
+}
+
+.d-ventana__cuerpo--pulsable {
+  cursor: zoom-in;
+}
+
+.d-ventana__cuerpo--pulsable:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: -3px;
+}
+
+.d-ventana__imagen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: top center;
+  transform-origin: 50% 35%;
+}
+
+.d-captura {
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Los elementos de una galería se apilan en la misma celda y solo se ve el
+ * activo; los demás esperan transparentes. Los puntos van sobre el borde
+ * inferior y solo aparecen en el visor, que es donde sirven para saltar. */
+.d-galeria {
+  margin: 0;
+  display: grid;
+  grid-template-areas: "capa";
+  align-items: center;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+}
+
+.d-galeria__elemento {
+  grid-area: capa;
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 700ms cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 700ms;
+}
+
+.d-galeria__elemento[data-activo] {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s;
+}
+
+.d-galeria__elemento--figura > svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.d-galeria__puntos {
+  grid-area: capa;
+  align-self: end;
+  justify-self: center;
+  display: none;
+  gap: 10px;
+  margin: 0 0 calc(var(--d-hueco-sm) * 0.8);
+  padding: 8px 12px;
+  list-style: none;
+  border-radius: var(--r-completo);
+  background: rgb(16 24 40 / 55%);
+  z-index: 1;
+}
+
+.visor .d-galeria__puntos {
+  display: flex;
+}
+
+.d-galeria__puntos > li {
+  display: flex;
+}
+
+.d-galeria__puntos button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid rgb(255 255 255 / 85%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    transform var(--transicion),
+    background var(--transicion);
+}
+
+.d-galeria__puntos > li[data-activo] button {
+  background: #ffffff;
+  transform: scale(1.2);
+}
+
+/* La ampliación: la captura a toda la ventana sobre un fondo oscurecido. Es
+ * interfaz del visor y no parte de la lámina, así que mide en unidades de
+ * pantalla y no del lienzo. */
+.visor__ampliacion {
+  align-self: stretch;
+  justify-self: stretch;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  min-width: 0;
+  padding: var(--e-5);
+  background: rgb(8 12 18 / 80%);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+  animation: aparecer 220ms both;
+}
+
+.visor__ampliacion-figura {
+  margin: 0;
+  display: grid;
+  gap: var(--e-3);
+  justify-items: center;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  animation: ampliacion-entrar 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.d-captura__imagen--grande,
+.visor__ampliacion-figura-svg {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 9rem);
+  width: auto;
+  height: auto;
+  border-radius: var(--r-md);
+  background: var(--superficie);
+  box-shadow: var(--sombra-3);
+}
+
+.visor__ampliacion-figura-svg {
+  width: min(100%, 60rem);
+  padding: var(--e-4);
+}
+
+.visor__ampliacion-figura-svg > svg {
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 11rem);
+}
+
+.visor__ampliacion-figura figcaption {
+  color: #ffffff;
+  font-size: var(--t-base);
+  text-align: center;
+}
+
+.visor__ampliacion-figura kbd {
+  font-family: var(--fuente-mono);
+  font-size: var(--t-xs);
+  padding: 0 var(--e-1);
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: var(--r-sm);
+}
+
+/* ======================================================================= */
+/* Movimiento: solo en el visor                                            */
+/* ======================================================================= */
+
+/* La lámina entra por el lado del avance y la anterior sale por el contrario;
+ * después el contenido aparece escalonado, de arriba abajo, en el orden en que
+ * se lee. Las tablas y las listas entran fila a fila; las cifras cuentan desde
+ * cero; las flechas de las figuras se trazan. Todo dura menos de dos segundos
+ * y no bloquea nada: se puede avanzar en mitad de la entrada. */
+
+@keyframes lienzo-entrar {
+  from {
+    opacity: 0;
+    transform: translateX(calc(56px * var(--direccion, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lienzo-salir {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(-56px * var(--direccion, 1)));
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes aparecer-visual {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hero-entrar {
+  from {
+    opacity: 0;
+    transform: perspective(2400px) translateX(90px) rotateY(-18deg) rotateX(1.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(2400px) rotateY(-7deg) rotateX(1.5deg);
+  }
+}
+
+@keyframes trazar {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes crecer-franja {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes avance {
+  from {
+    width: var(--desde);
+  }
+}
+
+@keyframes respirar {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes ampliacion-entrar {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.visor .lienzo--entra {
+  animation: lienzo-entrar 460ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.visor .lienzo--sale {
+  animation: lienzo-salir 380ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+.visor .lienzo--entra .lienzo__avance > span {
+  animation: avance 520ms 80ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.visor .lienzo--entra .lamina__encabezado::before {
+  transform-origin: left center;
+  animation: crecer-franja 620ms 120ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.visor .lienzo--entra .lamina__bloque {
+  animation: subir 520ms 90ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.visor .lienzo--entra .lamina__titulo {
+  animation: subir 560ms 170ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Cada bloque, en su orden; dentro de un bloque, cada fila en el suyo. */
+.visor .lienzo--entra .d-animable,
+.visor .lienzo--entra .d-tabla tr,
+.visor .lienzo--entra .d-lista > li,
+.visor .lienzo--entra .d-cifra,
+.visor .lienzo--entra .portada__texto > * {
+  animation: subir 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(240ms + var(--i, 0) * 120ms + var(--j, 0) * 70ms);
+}
+
+.visor .lienzo--entra .d-figura,
+.visor .lienzo--entra .d-captura,
+.visor .lienzo--entra .d-galeria {
+  animation: aparecer-visual 820ms 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.visor .lienzo--entra .portada__visual > * {
+  animation: hero-entrar 900ms 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Las figuras se dibujan por piezas, en el orden del archivo, y las flechas
+ * se trazan de principio a fin. */
+.visor .lienzo--entra .fig > * {
+  animation: aparecer 480ms both;
+  animation-delay: calc(560ms + var(--n, 0) * 65ms);
+}
+
+.visor .lienzo--entra .fig > .fig-linea:not(.fig-linea--discontinua) {
+  stroke-dasharray: 1;
+  animation:
+    aparecer 200ms both,
+    trazar 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(560ms + var(--n, 0) * 65ms);
+}
+
+.fig > :nth-child(1) { --n: 0; }
+.fig > :nth-child(2) { --n: 1; }
+.fig > :nth-child(3) { --n: 2; }
+.fig > :nth-child(4) { --n: 3; }
+.fig > :nth-child(5) { --n: 4; }
+.fig > :nth-child(6) { --n: 5; }
+.fig > :nth-child(7) { --n: 6; }
+.fig > :nth-child(8) { --n: 7; }
+.fig > :nth-child(9) { --n: 8; }
+.fig > :nth-child(10) { --n: 9; }
+.fig > :nth-child(11) { --n: 10; }
+.fig > :nth-child(12) { --n: 11; }
+.fig > :nth-child(13) { --n: 12; }
+.fig > :nth-child(14) { --n: 13; }
+.fig > :nth-child(15) { --n: 14; }
+.fig > :nth-child(16) { --n: 15; }
+.fig > :nth-child(17) { --n: 16; }
+.fig > :nth-child(18) { --n: 17; }
+.fig > :nth-child(19) { --n: 18; }
+.fig > :nth-child(20) { --n: 19; }
+.fig > :nth-child(21) { --n: 20; }
+.fig > :nth-child(22) { --n: 21; }
+.fig > :nth-child(23) { --n: 22; }
+.fig > :nth-child(24) { --n: 23; }
+.fig > :nth-child(n + 25) { --n: 24; }
+
+/* Las capturas respiran: un acercamiento lento y apenas visible mientras la
+ * diapositiva está en pantalla, para que no parezcan una imagen pegada. */
+.visor .d-ventana__imagen {
+  animation: respirar 16s ease-in-out infinite alternate;
+}
+
+/* Quien pide menos movimiento no recibe ninguno: ni transición ni entrada
+ * escalonada ni respiración. Las galerías siguen pasando, pero en seco. */
+@media (prefers-reduced-motion: reduce) {
+  .visor .lienzo,
+  .visor .lienzo *,
+  .visor__ampliacion,
+  .visor__ampliacion * {
+    animation: none !important;
+    transition-duration: 0s !important;
+  }
+}
+
+/* En papel nada se mueve ni se inclina. */
+@media print {
+  .lienzo,
+  .lienzo * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .portada__visual > * {
+    transform: none;
+  }
+
+  .d-galeria__puntos {
+    display: none !important;
   }
 }

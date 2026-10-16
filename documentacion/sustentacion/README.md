@@ -48,6 +48,28 @@ grupo. Los guiones pasaron de 28 diapositivas más 7 portadillas (≈ 15 min) a
 | 6 · Hallazgos y evidencias | 8 · Evidencias y hallazgo principal | 8 · Hallazgos · 9 · También nos auditamos |
 | 7 · Conclusiones y mejoras | 9 · Conclusiones y mejoras | 10 · Conclusiones y mejoras |
 
+## Capturas de pantalla (2026-10-16)
+
+Las diapositivas muestran la aplicación, no solo la describen. Una captura se
+cita como `![Título](captura:nombre)` y sale de `presentacion/capturas/`; dos o
+más seguidas forman una galería que en el visor pasa sola cada cinco segundos.
+El título es lo que se lee en la barra de la ventana: corto y concreto.
+
+| Diapositiva | Qué se ve |
+|---|---|
+| Rastro 1 · Portada | Galería que da vueltas: panel, detalle de un envío, consulta pública, bitácora |
+| Rastro 6 · Roles | Roles y permisos y, a los cinco segundos, la bitácora con la sesión del auditor |
+| Cotejo 1 · Portada | Galería que da vueltas: revisión, catálogo, repetición, papel de trabajo |
+| Cotejo 2 · El sistema auditado | El panel de Rastro y, después, el catálogo de Cotejo |
+| Cotejo 8 · Hallazgos | «Lo que hay que arreglar» en la pantalla de revisión |
+| Cotejo 9 · También nos auditamos | Un papel de trabajo abierto, con sus dos huellas |
+
+Las capturas son de la pila local con datos sintéticos, no del despliegue; en
+Cotejo, los controles que necesitan la cuenta de AWS salen SIN REVISAR y la
+respuesta preparada de la diapositiva 8 lo explica. Cómo regenerarlas y por qué
+así, en el [README del módulo](../modulos/presentacion/README.md#capturas-de-pantalla).
+Durante la sustentación, `z` amplía la captura de la diapositiva.
+
 ## Reglas para editar
 
 - **Ninguna cifra es decorativa.** Todas salen de la Entrega 2, de la

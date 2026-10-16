@@ -37,6 +37,8 @@ export interface OpcionesCompilacion {
   archivo: string;
   /** Identificadores de las figuras que existen en `src/figuras/`. */
   figuras: ReadonlySet<string>;
+  /** Nombres de las capturas de pantalla que existen en `presentacion/capturas/`. */
+  capturas: ReadonlySet<string>;
 }
 
 export interface Compilado {
@@ -181,14 +183,20 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
     }
     avisos.push(...leido.avisos.map((a) => `${opciones.archivo}: ${a}`));
 
-    for (const bloque of leido.bloques) {
-      if (bloque.tipo === "figura" && !opciones.figuras.has(bloque.id)) {
-        const disponibles = [...opciones.figuras].join(", ") || "ninguna";
-        throw error(
-          seccion.inicio,
-          `la figura «${bloque.id}» no existe en presentacion/src/figuras/. Disponibles: ${disponibles}.`,
-        );
-      }
+    // Una figura o una captura que no existe detiene la construcción: un hueco
+    // en la diapositiva parecería un deck roto delante del jurado.
+    const visuales = leido.bloques.flatMap((b) =>
+      b.tipo === "galeria" ? b.elementos : b.tipo === "figura" || b.tipo === "captura" ? [b] : [],
+    );
+    for (const visual of visuales) {
+      const existentes = visual.tipo === "figura" ? opciones.figuras : opciones.capturas;
+      if (existentes.has(visual.id)) continue;
+      const carpeta = visual.tipo === "figura" ? "presentacion/src/figuras/" : "presentacion/capturas/";
+      const disponibles = [...existentes].join(", ") || "ninguna";
+      throw error(
+        seccion.inicio,
+        `la ${visual.tipo} «${visual.id}» no existe en ${carpeta}. Disponibles: ${disponibles}.`,
+      );
     }
 
     const guion = leido.notas.filter((n) => n.tipo === "guion");

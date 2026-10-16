@@ -13,7 +13,11 @@ const ruta = (relativa: string) => fileURLToPath(new URL(relativa, import.meta.u
 // declara sobre `:root`: dos identidades en la misma página se pisarían.
 export default defineConfig({
   plugins: [
-    sustentacion({ raizRepositorio: ruta(".."), carpetaFiguras: ruta("./src/figuras") }),
+    sustentacion({
+      raizRepositorio: ruta(".."),
+      carpetaFiguras: ruta("./src/figuras"),
+      carpetaCapturas: ruta("./capturas"),
+    }),
     rutasDeDeck(["rastro", "cotejo"]),
     react(),
   ],

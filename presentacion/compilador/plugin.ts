@@ -11,7 +11,7 @@
  * dejan seguir, porque son decisiones del autor que conviene revisar.
  */
 
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { relative } from "node:path";
 
 import type { Connect, Plugin } from "vite";
@@ -23,14 +23,25 @@ interface Opciones {
   raizRepositorio: string;
   /** Carpeta de las figuras: una figura existe si existe su archivo. */
   carpetaFiguras: string;
+  /** Carpeta de las capturas de pantalla: igual, una por archivo de imagen. */
+  carpetaCapturas: string;
 }
 
-export function sustentacion({ raizRepositorio, carpetaFiguras }: Opciones): Plugin {
+/** Extensiones de imagen que `src/capturas.ts` recoge con `import.meta.glob`. */
+export const EXTENSIONES_DE_CAPTURA = /\.(webp|png|jpe?g)$/;
+
+export function sustentacion({ raizRepositorio, carpetaFiguras, carpetaCapturas }: Opciones): Plugin {
   const figurasDisponibles = () =>
     new Set(
       readdirSync(carpetaFiguras)
         .filter((f) => f.endsWith(".tsx"))
         .map((f) => f.replace(/\.tsx$/, "")),
+    );
+  const capturasDisponibles = () =>
+    new Set(
+      (existsSync(carpetaCapturas) ? readdirSync(carpetaCapturas) : [])
+        .filter((f) => EXTENSIONES_DE_CAPTURA.test(f))
+        .map((f) => f.replace(EXTENSIONES_DE_CAPTURA, "")),
     );
 
   return {
@@ -45,6 +56,7 @@ export function sustentacion({ raizRepositorio, carpetaFiguras }: Opciones): Plu
         const { deck, avisos } = compilarSustentacion(codigo, {
           archivo,
           figuras: figurasDisponibles(),
+          capturas: capturasDisponibles(),
         });
         for (const aviso of avisos) this.warn(aviso);
         const { total, contenido, bloques } = deck.resumen;

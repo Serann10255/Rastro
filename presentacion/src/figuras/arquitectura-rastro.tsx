@@ -45,8 +45,8 @@ export default function ArquitecturaRastro({ titulo }: PropiedadesFigura) {
         AWS · us-east-1
       </text>
 
-      <path d="M330 90 V183" className="fig-linea" markerEnd={`url(#${flecha})`} />
-      <path d="M490 90 V183" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M330 90 V183" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M490 90 V183" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={60}
@@ -55,7 +55,7 @@ export default function ArquitecturaRastro({ titulo }: PropiedadesFigura) {
         alto={100}
         lineas={[{ texto: "Interfaz web", estilo: "fuerte" }, { texto: "sitio estático en S3", estilo: "suave" }]}
       />
-      <path d="M410 285 V318" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M410 285 V318" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={60}
@@ -64,7 +64,7 @@ export default function ArquitecturaRastro({ titulo }: PropiedadesFigura) {
         alto={100}
         lineas={[{ texto: "Puerta de enlace HTTP", estilo: "fuerte" }, { texto: "API Gateway", estilo: "suave" }]}
       />
-      <path d="M410 420 V453" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M410 420 V453" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={60}
@@ -79,8 +79,8 @@ export default function ArquitecturaRastro({ titulo }: PropiedadesFigura) {
       />
 
       {/* Lo que la capa común alcanza. */}
-      <path d="M145 565 V598" className="fig-linea" markerEnd={`url(#${flecha})`} />
-      <path d="M410 565 V598" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M145 565 V598" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M410 565 V598" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
       <path d="M675 565 V598" className="fig-linea fig-linea--discontinua" markerEnd={`url(#${flecha})`} />
 
       <Caja

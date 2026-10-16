@@ -1,24 +1,34 @@
 /* Modo presentación: una diapositiva a pantalla, escalada para caber.
  *
  * Teclas: flechas, Av Pág/Re Pág y barra espaciadora para avanzar y retroceder,
- * Inicio y Fin para los extremos, `n` para las notas y `f` para la pantalla
- * completa. Un clic en el borde izquierdo o derecho hace lo mismo que las
- * flechas. La dirección siempre dice dónde se está (`/rastro#7`), de modo que
- * recargar o compartir el enlace retoma en la misma diapositiva.
+ * Inicio y Fin para los extremos, `n` para las notas, `f` para la pantalla
+ * completa y `z` para ampliar la captura de pantalla de la diapositiva. Un clic
+ * en el borde izquierdo o derecho hace lo mismo que las flechas; un clic sobre
+ * una captura la amplía. La dirección siempre dice dónde se está (`/rastro#7`),
+ * de modo que recargar o compartir el enlace retoma en la misma diapositiva.
  *
- * Sin transiciones entre diapositivas: se cambia de una a otra en seco.
+ * Al cambiar de diapositiva, la que sale y la que entra se superponen durante
+ * la transición: la saliente se desvanece hacia el lado contrario al avance y
+ * la entrante llega por el otro, y después su contenido aparece escalonado.
+ * Todo lo mueve la hoja de estilos; aquí solo se decide cuál sale y cuál entra.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AnimacionContext, type Animacion } from "./animacion";
+import { DibujoFigura, ImagenDeCaptura } from "./Bloques";
 import { Diapositiva, Notas, type Logotipo } from "./Diapositiva";
 import { tituloLegible } from "./formato";
 import { useEscala } from "./medidas";
 import { SelectorTema } from "./SelectorTema";
-import type { Deck, Diapositiva as TipoDiapositiva } from "./tipos";
+import type { Deck, Diapositiva as TipoDiapositiva, Visual } from "./tipos";
 
 /** Tiempo sin mover el ratón tras el que se ocultan los controles. */
 const INACTIVIDAD_MS = 2500;
+
+/** Cuánto se queda la diapositiva saliente superpuesta a la entrante. Debe
+ *  cubrir la animación `lienzo-salir` de la hoja de estilos. */
+const TRANSICION_MS = 420;
 
 function rotulo(d: TipoDiapositiva): string {
   if (d.tipo === "contenido") return `${d.numero} · ${d.titulo}`;
@@ -39,6 +49,12 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
   const [completa, setCompleta] = useState(false);
   const [activo, setActivo] = useState(true);
   const [desbordes, setDesbordes] = useState<Record<string, boolean>>({});
+  const [ampliada, setAmpliada] = useState<Visual | null>(null);
+
+  // La diapositiva que sale, mientras dura la transición, y hacia dónde.
+  const [saliente, setSaliente] = useState<number | null>(null);
+  const [direccion, setDireccion] = useState<1 | -1>(1);
+  const previoRef = useRef(indice);
 
   const escenarioRef = useRef<HTMLElement>(null);
   const escala = useEscala(escenarioRef);
@@ -48,6 +64,37 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen?.().catch(() => undefined);
   }, []);
+
+  // -- Transición: la anterior se queda superpuesta hasta que termina de salir --
+  useEffect(() => {
+    const previo = previoRef.current;
+    if (previo === indice) return;
+    previoRef.current = indice;
+    setDireccion(indice > previo ? 1 : -1);
+    setSaliente(previo);
+    setAmpliada(null);
+  }, [indice]);
+
+  useEffect(() => {
+    if (saliente === null) return;
+    const id = window.setTimeout(() => setSaliente(null), TRANSICION_MS);
+    return () => window.clearTimeout(id);
+  }, [saliente]);
+
+  // -- Ampliar una captura ---------------------------------------------------
+  const visualActual = useRef<Visual | null>(null);
+  const registrar = useCallback((visual: Visual | null) => {
+    visualActual.current = visual;
+  }, []);
+  const ampliar = useCallback((visual: Visual) => setAmpliada(visual), []);
+  const alternarAmpliacion = useCallback(
+    () => setAmpliada((actual) => (actual ? null : visualActual.current)),
+    [],
+  );
+  const animacion = useMemo<Animacion>(
+    () => ({ animado: true, activa: true, ampliar, registrar }),
+    [ampliar, registrar],
+  );
 
   // -- Teclado ---------------------------------------------------------------
   useEffect(() => {
@@ -86,6 +133,14 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
         case "F":
           alternarPantallaCompleta();
           break;
+        case "z":
+        case "Z":
+          alternarAmpliacion();
+          break;
+        case "Escape":
+          if (!ampliada) return;
+          setAmpliada(null);
+          break;
         default:
           return;
       }
@@ -93,7 +148,7 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
     };
     window.addEventListener("keydown", alPulsar);
     return () => window.removeEventListener("keydown", alPulsar);
-  }, [indice, ir, total, alternarPantallaCompleta]);
+  }, [indice, ir, total, alternarPantallaCompleta, alternarAmpliacion, ampliada]);
 
   // -- Dirección: la diapositiva actual va en la almohadilla -----------------
   useEffect(() => {
@@ -146,84 +201,130 @@ export function Visor({ deck, Logotipo }: { deck: Deck; Logotipo: Logotipo }) {
   const actual = deck.diapositivas[indice]!;
   const siguiente = deck.diapositivas[indice + 1];
   const rotuloActual = rotulo(actual);
+  const avanceDesde = saliente === null ? undefined : ((saliente + 1) / total) * 100;
 
   return (
-    <div className="visor" data-inactivo={!activo || undefined}>
-      <main className="visor__escenario" ref={escenarioRef} aria-label={String(deck.meta.proyecto ?? deck.titulo)}>
-        <Diapositiva
-          key={actual.clave}
-          deck={deck}
-          indice={indice}
-          Logotipo={Logotipo}
-          ambito="visor"
-          escala={escala}
-          alDesbordar={alDesbordar}
-        />
-
-        <button
-          type="button"
-          className="visor__borde visor__borde--anterior"
-          onClick={() => ir(indice - 1)}
-          disabled={indice === 0}
-          aria-label="Diapositiva anterior"
+    <AnimacionContext.Provider value={animacion}>
+      <div className="visor" data-inactivo={!activo || undefined}>
+        <main
+          className="visor__escenario"
+          ref={escenarioRef}
+          aria-label={String(deck.meta.proyecto ?? deck.titulo)}
         >
-          <span aria-hidden="true">‹</span>
-        </button>
-        <button
-          type="button"
-          className="visor__borde visor__borde--siguiente"
-          onClick={() => ir(indice + 1)}
-          disabled={indice === total - 1}
-          aria-label="Diapositiva siguiente"
-        >
-          <span aria-hidden="true">›</span>
-        </button>
+          {saliente !== null && (
+            <Diapositiva
+              key={`sale-${deck.diapositivas[saliente]!.clave}`}
+              deck={deck}
+              indice={saliente}
+              Logotipo={Logotipo}
+              ambito="visor-sale"
+              escala={escala}
+              estado="sale"
+              direccion={direccion}
+            />
+          )}
+          <Diapositiva
+            key={actual.clave}
+            deck={deck}
+            indice={indice}
+            Logotipo={Logotipo}
+            ambito="visor"
+            escala={escala}
+            alDesbordar={alDesbordar}
+            estado="entra"
+            direccion={direccion}
+            avanceDesde={avanceDesde}
+          />
 
-        <nav className="visor__controles" aria-label="Controles de la presentación">
           <button
             type="button"
-            className="boton boton--sutil"
-            onClick={() => setVerNotas((v) => !v)}
-            aria-pressed={verNotas}
+            className="visor__borde visor__borde--anterior"
+            onClick={() => ir(indice - 1)}
+            disabled={indice === 0}
+            aria-label="Diapositiva anterior"
           >
-            Guion <kbd>N</kbd>
+            <span aria-hidden="true">‹</span>
           </button>
-          <button type="button" className="boton boton--sutil" onClick={alternarPantallaCompleta} aria-pressed={completa}>
-            {completa ? "Salir de pantalla completa" : "Pantalla completa"} <kbd>F</kbd>
+          <button
+            type="button"
+            className="visor__borde visor__borde--siguiente"
+            onClick={() => ir(indice + 1)}
+            disabled={indice === total - 1}
+            aria-label="Diapositiva siguiente"
+          >
+            <span aria-hidden="true">›</span>
           </button>
-          <a className="boton boton--sutil" href="?guion">
-            Guion completo
-          </a>
-          <a className="boton boton--sutil" href="../">
-            Inicio
-          </a>
-          <SelectorTema />
-        </nav>
-      </main>
 
-      {verNotas && (
-        <aside className="visor__notas" aria-label="Guion de la diapositiva">
-          <div className="visor__notas-cabecera">
-            <p className="visor__notas-titulo">{rotuloActual}</p>
-            <p className="visor__notas-posicion">
-              {indice + 1} de {total}
-            </p>
-          </div>
-          {desbordes[actual.clave] && (
-            <p className="aviso aviso--alerta">Esta diapositiva no cabe en el lienzo: revise el guion.</p>
-          )}
-          <Notas diapositiva={actual} />
-          {siguiente && (
-            <p className="visor__siguiente">
-              Siguiente: {rotulo(siguiente)}
-            </p>
-          )}
-        </aside>
-      )}
+          <nav className="visor__controles" aria-label="Controles de la presentación">
+            <button
+              type="button"
+              className="boton boton--sutil"
+              onClick={() => setVerNotas((v) => !v)}
+              aria-pressed={verNotas}
+            >
+              Guion <kbd>N</kbd>
+            </button>
+            <button
+              type="button"
+              className="boton boton--sutil"
+              onClick={alternarPantallaCompleta}
+              aria-pressed={completa}
+            >
+              {completa ? "Salir de pantalla completa" : "Pantalla completa"} <kbd>F</kbd>
+            </button>
+            <a className="boton boton--sutil" href="?guion">
+              Guion completo
+            </a>
+            <a className="boton boton--sutil" href="../">
+              Inicio
+            </a>
+            <SelectorTema />
+          </nav>
 
-      <p className="solo-lectores" aria-live="polite">
-        {rotuloActual}
-      </p>
-    </div>
+          {ampliada && (
+            <div
+              className="visor__ampliacion"
+              role="dialog"
+              aria-modal="true"
+              aria-label={ampliada.titulo}
+              onClick={() => setAmpliada(null)}
+            >
+              <figure className="visor__ampliacion-figura">
+                {ampliada.tipo === "captura" ? (
+                  <ImagenDeCaptura visual={ampliada} grande />
+                ) : (
+                  <div className="visor__ampliacion-figura-svg">
+                    <DibujoFigura id={ampliada.id} titulo={ampliada.titulo} />
+                  </div>
+                )}
+                <figcaption>
+                  {ampliada.titulo} · <kbd>Esc</kbd> o un clic para volver
+                </figcaption>
+              </figure>
+            </div>
+          )}
+        </main>
+
+        {verNotas && (
+          <aside className="visor__notas" aria-label="Guion de la diapositiva">
+            <div className="visor__notas-cabecera">
+              <p className="visor__notas-titulo">{rotuloActual}</p>
+              <p className="visor__notas-posicion">
+                {indice + 1} de {total}
+              </p>
+            </div>
+            {desbordes[actual.clave] && (
+              <p className="aviso aviso--alerta">Esta diapositiva no cabe en el lienzo: revise el guion.</p>
+            )}
+            <Notas diapositiva={actual} />
+            {siguiente && <p className="visor__siguiente">Siguiente: {rotulo(siguiente)}</p>}
+          </aside>
+        )}
+
+        <p className="solo-lectores" aria-live="polite">
+          {rotuloActual}
+        </p>
+      </div>
+    </AnimacionContext.Provider>
   );
 }

@@ -52,6 +52,7 @@ correr a la vez.
 | Inicio · Fin | Primera · última |
 | `n` | Guion de la diapositiva: qué decir, cómo y qué responder (oculto por omisión) |
 | `f` | Pantalla completa |
+| `z` o clic sobre una captura | Amplía la captura de pantalla a toda la ventana; `Esc` o un clic la cierra |
 | Ctrl+P | Imprimir el guion |
 
 **Enlace directo:** `/rastro#7` abre la diapositiva 7; `/rastro#bloque-4`, la
@@ -125,8 +126,14 @@ Trazabilidad verificable de envíos
 | Tabla sin fila `\|---\|` o con encabezado vacío | Tabla sin encabezado: la primera columna nombra la fila |
 | `\|:---:\|` | Columna centrada. En ella, `✓`, `—` y «Solo …» se dibujan como marcas de una matriz |
 | Columna «Prob.», «Impacto», «Prioridad» o «Severidad» | Sus valores (Muy alto, Alto, Media…) llevan tono además de la palabra |
-| Bloque de código con `234 superadas · 4 omitidas` | Cifras de resultado, no código |
+| Bloque de código con `234 superadas · 4 omitidas` | Cifras de resultado, no código. En el visor, cada cifra cuenta desde cero |
 | `![Título](figura:identificador)` | Figura de `presentacion/src/figuras/<identificador>.tsx`. Si no existe, la construcción se detiene |
+| `![Título](captura:nombre)` | Captura de pantalla de `presentacion/capturas/<nombre>.webp` (o `.png`, `.jpg`), dentro de una ventana de navegador cuya barra muestra el título. Si no existe, la construcción se detiene |
+| Dos o más figuras o capturas seguidas | **Galería**: ocupan el sitio de una y en el visor pasan solas cada 5 s. En una diapositiva de contenido pasa una vez y se queda en la última; en la portada da vueltas. Fuera del visor se ve ese elemento de reposo, y en el teléfono, todos |
+
+Figuras, capturas y galerías van siempre a la columna derecha de la
+diapositiva, con el texto a la izquierda. En la portada, el visual sustituye al
+logotipo grande, que se recoge sobre el nombre.
 
 ## Figuras
 
@@ -137,7 +144,65 @@ Trazabilidad verificable de envíos
 
 Son SVG con color por clase CSS sobre las fichas de diseño: cambian con el tema
 y con la identidad de cada proyecto. El texto no baja de 25 unidades en un lienzo
-de 820, el ancho de una columna de la diapositiva.
+de 820, el ancho de una columna de la diapositiva. Las flechas llevan
+`pathLength={1}` para que el visor pueda trazarlas al entrar.
+
+## Capturas de pantalla
+
+Las pantallas de las dos aplicaciones, en `presentacion/capturas/`, citadas en
+el guion como `![Título](captura:nombre)`:
+
+| Archivo | Pantalla | Dónde se usa |
+|---|---|---|
+| `rastro-panel` | Panel de la organización, sesión de administrador | Rastro 1 · Cotejo 1 y 2 |
+| `rastro-envio` | Detalle de un envío con su histórico | Rastro 1 |
+| `rastro-rastreo` | Consulta pública del destinatario, sin cuenta | Rastro 1 |
+| `rastro-bitacora` | Bitácora de auditoría con la cadena verificada, sesión de auditor | Rastro 1 y 6 |
+| `rastro-roles` | Roles y permisos | Rastro 6 |
+| `rastro-envios`, `rastro-operaciones`, `rastro-acceso` | Lista de órdenes, operaciones, acceso | Disponibles, sin usar |
+| `cotejo-revision` | Revisión con el resumen de resultados y los primeros controles | Cotejo 1 |
+| `cotejo-catalogo` | Qué se revisa: el catálogo con su criterio | Cotejo 1 y 2 |
+| `cotejo-comparacion` | Repetir: dos revisiones comparadas | Cotejo 1 |
+| `cotejo-hallazgos` | «Lo que hay que arreglar» en la revisión | Cotejo 8 |
+| `cotejo-papel` | Un papel de trabajo abierto, con las dos huellas que coinciden | Cotejo 1 y 9 |
+
+Son WebP de 2880 × 1800 (una ventana de 1440 × 900 a doble densidad, calidad
+82, entre 40 y 220 KB cada una): nítidas a media diapositiva de 1920 px y
+ampliadas a toda la pantalla, sin pasar de 2 MB en total. Las genera
+`capturas/capturar.mjs` con Playwright sobre el Edge del equipo y con la pila
+local levantada:
+
+```bash
+docker compose up -d                       # desde la raíz: las dos aplicaciones
+cd presentacion
+npm install --no-save playwright-core@1.56.1 sharp@0.34.3
+node capturas/capturar.mjs
+```
+
+Qué hace el guion de captura, y por qué así:
+
+- **Intercepta `configuracion.json`.** Las dos interfaces se construyen con la
+  configuración del despliegue en AWS (`web/public/configuracion.json` apunta a
+  la cuenta real), así que el contenedor local llamaría a AWS. El guion responde
+  esa petición con la pila local sin tocar el archivo: las pantallas salen de
+  los datos sintéticos de `seed/`, que es lo único que se puede proyectar.
+- **Entra con los usuarios de la semilla**, leídos de `seed/organizaciones.json`:
+  el administrador para el panel, las órdenes y los roles; el auditor para la
+  bitácora y para Cotejo. Ninguna clave se escribe en el guion.
+- **En Cotejo lanza dos revisiones** y luego elige, entre las guardadas, la
+  primera que tenga un hallazgo («1 mal»), para que la pantalla de hallazgos y
+  el papel de trabajo muestren C-09b y H-01. En la pila local esa ejecución es
+  la del 1/10/2026 (`cotejo/papeles/20261001T235320510Z-4f7bea`), hecha desde
+  el equipo con `git` disponible; hay que copiarla al volumen una vez:
+  `docker compose cp cotejo/papeles/20261001T235320510Z-4f7bea cotejo-api:/papeles/`.
+  Las dos revisiones del día son las que compara la pantalla de repetición.
+- **No añade dependencias al módulo.** `playwright-core` usa el canal `msedge`
+  instalado, sin descargar navegadores, y `sharp` convierte a WebP; se
+  instalan sin guardar y `npm ci` los retira.
+
+Las cifras de esas pantallas son de la pila local: los controles que necesitan
+la cuenta de AWS quedan SIN REVISAR, y así lo dice la respuesta preparada de
+Cotejo 8. La ejecución de referencia sigue siendo la del 26/09/2026.
 
 ## Decisiones
 
@@ -177,8 +242,36 @@ alta ante lo que no entiende, con la línea del problema.
 que las notas que dicen «desarrollarlo en la 23» apuntaran a otra diapositiva en
 cuanto se añadiera una.
 
-**Sin transiciones ni bibliotecas de presentaciones.** Se cambia de diapositiva en
-seco; los controles se ocultan tras 2,5 s sin mover el ratón, sin animación.
+**Movimiento solo en el visor, y solo con hoja de estilos** (2026-10-16). Hasta
+esta fecha se cambiaba de diapositiva en seco. Ahora la saliente se desvanece
+hacia el lado contrario al avance y la entrante llega por el otro (460 ms); el
+contenido aparece escalonado en el orden en que se lee —bloque a bloque, y
+dentro de una tabla o lista, fila a fila—; las cifras de resultado cuentan desde
+cero; las flechas de las figuras se trazan; las capturas respiran con un
+acercamiento del 4,5 % en 16 s. Nada dura más de dos segundos ni bloquea: se
+puede avanzar en mitad de la entrada. El código solo decide cuál sale y cuál
+entra (`lienzo--sale`, `lienzo--entra`, `--direccion`) y numera los bloques
+(`--i`) y las filas (`--j`); los tiempos viven en `presentacion.css`. El guion,
+la lectura en el teléfono y el papel no animan nada, y `prefers-reduced-motion`
+lo apaga todo. Sigue sin haber biblioteca de presentaciones, y los controles se
+siguen ocultando tras 2,5 s sin mover el ratón.
+
+**Las capturas van en una ventana de navegador**, con su barra y el título de la
+pantalla: separa la imagen del fondo de la lámina en los dos temas y ahorra el
+pie de figura. En el visor, un clic o `z` la amplía a toda la ventana sobre un
+fondo oscurecido, por si el jurado pide verla de cerca; `Esc` vuelve. La
+ampliación es interfaz del visor y no parte del lienzo: mide en unidades de
+pantalla.
+
+**Una galería pasa sola.** Dos o más visuales seguidos en el Markdown comparten
+el sitio de uno y se turnan cada cinco segundos, con un fundido de 700 ms. En
+una diapositiva de contenido la galería pasa una vez y se queda en el último
+elemento, que es el que se imprime y el que debe acompañar el final del guion
+hablado; en la portada da vueltas, porque está en pantalla mientras el jurado se
+acomoda. Los puntos permiten saltar a un elemento, pero la idea es que el
+presentador no tenga que tocar nada: en cinco minutos no sobran clics.
+Descartado: avanzar la galería con la flecha, como los «fragmentos» de otras
+herramientas, porque multiplica los clics y rompe el reparto de tiempo.
 
 **El interruptor de tema es el de las aplicaciones**, con dos diferencias: claro
 por omisión, porque un proyector lava el oscuro, y su propia clave de
@@ -242,7 +335,11 @@ contradiciéndose, y la completa ya está en el historial y en PDF.
 
 ## Dependencias y relaciones
 
-- **Lee**: `documentacion/sustentacion/*.md` al construir.
+- **Lee**: `documentacion/sustentacion/*.md` y `presentacion/capturas/*.webp` al
+  construir.
+- **Para regenerar las capturas** necesita la pila local completa
+  (`docker compose up -d`) y el Edge del equipo; no es una dependencia de la
+  construcción ni del contenedor.
 - **Usa**: el sistema de diseño de [`design/`](../sistema-de-diseno/README.md)
   —fichas, base, componentes y logotipos— y los `identidad.css` de
   [`interfaz-web`](../interfaz-web/README.md) y [`cotejo-web`](../cotejo-web/README.md).

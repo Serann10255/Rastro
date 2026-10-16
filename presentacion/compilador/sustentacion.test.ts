@@ -22,9 +22,15 @@ const FIGURAS = new Set(
     .map((f) => f.replace(/\.tsx$/, "")),
 );
 
+const CAPTURAS = new Set(
+  readdirSync(new URL("../capturas/", import.meta.url))
+    .filter((f) => /\.(webp|png|jpe?g)$/.test(f))
+    .map((f) => f.replace(/\.(webp|png|jpe?g)$/, "")),
+);
+
 function compilar(cuerpo: string) {
   const fuente = `# Guion de prueba\n\n\`\`\`yaml\nproyecto: Prueba\nequipo: [Ana, Luis]\n\`\`\`\n\n---\n\n${cuerpo}`;
-  return compilarSustentacion(fuente, { archivo: "prueba.md", figuras: FIGURAS });
+  return compilarSustentacion(fuente, { archivo: "prueba.md", figuras: FIGURAS, capturas: CAPTURAS });
 }
 
 function contenido(cuerpo: string): DiapositivaContenido[] {
@@ -138,7 +144,7 @@ describe("diapositivas", () => {
       "# Guion de prueba\n\n```yaml\nproyecto: Prueba\nportadillas: no\n```\n\n---\n\n" +
       "# BLOQUE 1 · INICIO\n\n---\n\n## 1 · A\n\nx\n\n> Guion: Ana. a\n\n---\n\n" +
       "# BLOQUE 2 · CIERRE\n\n---\n\n## 2 · B\n\ny\n\n> Guion: Ana. b";
-    const { deck, avisos } = compilarSustentacion(fuente, { archivo: "prueba.md", figuras: FIGURAS });
+    const { deck, avisos } = compilarSustentacion(fuente, { archivo: "prueba.md", figuras: FIGURAS, capturas: CAPTURAS });
     assert.deepEqual(avisos, []);
     assert.equal(deck.resumen.bloques, 0);
     assert.deepEqual(
@@ -164,6 +170,57 @@ describe("errores y avisos", () => {
     assert.throws(() => compilar("## 1 · A\n\n![Figura](figura:no-existe)"), /no existe/);
   });
 
+  it("rechaza una captura que no existe y dice dónde buscarla", () => {
+    assert.throws(
+      () => compilar("## 1 · A\n\n![Pantalla](captura:no-existe)"),
+      /captura «no-existe» no existe en presentacion\/capturas\//,
+    );
+  });
+
+  it("rechaza una imagen que no sea figura ni captura", () => {
+    assert.throws(() => compilar("## 1 · A\n\n![Foto](fotos/portada.png)"), /solo se admiten figuras/);
+  });
+});
+
+describe("capturas y galerías", () => {
+  const captura = [...CAPTURAS][0]!;
+  const otra = [...CAPTURAS][1] ?? captura;
+
+  it("lee una captura de pantalla como visual", () => {
+    const [d] = contenido(`## 1 · A\n\nTexto.\n\n![Pantalla](captura:${captura})\n\n> Guion: Ana. a`);
+    assert.deepEqual(d!.bloques[1], { tipo: "captura", id: captura, titulo: "Pantalla" });
+  });
+
+  it("agrupa dos o más visuales seguidos en una galería, con o sin línea en blanco", () => {
+    const [d] = contenido(
+      `## 1 · A\n\n![Uno](captura:${captura})\n![Dos](captura:${otra})\n\n![Tres](figura:arquitectura-rastro)\n\n> Guion: Ana. a`,
+    );
+    assert.equal(d!.bloques.length, 1);
+    const galeria = d!.bloques[0] as Extract<Bloque, { tipo: "galeria" }>;
+    assert.equal(galeria.tipo, "galeria");
+    assert.deepEqual(
+      galeria.elementos.map((e) => `${e.tipo}:${e.id}`),
+      [`captura:${captura}`, `captura:${otra}`, "figura:arquitectura-rastro"],
+    );
+  });
+
+  it("deja un visual suelto como está y separa los que tienen texto en medio", () => {
+    const [d] = contenido(
+      `## 1 · A\n\n![Uno](captura:${captura})\n\nTexto.\n\n![Dos](captura:${otra})\n\n> Guion: Ana. a`,
+    );
+    assert.deepEqual(
+      d!.bloques.map((b) => b.tipo),
+      ["captura", "parrafo", "captura"],
+    );
+  });
+
+  it("comprueba las capturas también dentro de una galería", () => {
+    assert.throws(
+      () => compilar(`## 1 · A\n\n![Uno](captura:${captura})\n![Dos](captura:no-existe)`),
+      /captura «no-existe» no existe/,
+    );
+  });
+
   it("avisa de un salto en la numeración", () => {
     const { avisos } = compilar("## 1 · A\n\nx\n\n> Guion: Ana. a\n\n---\n\n## 3 · B\n\ny\n\n> Guion: Ana. b");
     assert.ok(avisos.some((a) => /le correspondía el 2/.test(a)));
@@ -174,7 +231,11 @@ describe("los guiones del repositorio", () => {
   for (const nombre of ["sustentacion-rastro.md", "sustentacion-cotejo.md"]) {
     it(`${nombre} compila sin avisos`, () => {
       const fuente = readFileSync(new URL(`../../documentacion/sustentacion/${nombre}`, import.meta.url), "utf8");
-      const { deck, avisos } = compilarSustentacion(fuente, { archivo: nombre, figuras: FIGURAS });
+      const { deck, avisos } = compilarSustentacion(fuente, {
+        archivo: nombre,
+        figuras: FIGURAS,
+        capturas: CAPTURAS,
+      });
 
       assert.deepEqual(avisos, []);
       const numeradas = deck.diapositivas.filter((d): d is DiapositivaContenido => d.tipo === "contenido");

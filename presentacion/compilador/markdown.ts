@@ -18,7 +18,7 @@
  *    cualquier otra es contenido y se dibuja como cita destacada.
  */
 
-import type { Alineacion, Bloque, Cifra, Inline, Linea, Nota } from "../src/deck/tipos.ts";
+import type { Alineacion, Bloque, Cifra, Inline, Linea, Nota, Visual } from "../src/deck/tipos.ts";
 
 export class ErrorDeLectura extends Error {}
 
@@ -331,17 +331,18 @@ export function leerBloques(lineas: string[], primeraLinea: number): ResultadoBl
       continue;
     }
 
-    // -- Figura ---------------------------------------------------------------
+    // -- Figura o captura de pantalla -----------------------------------------
     const imagen = IMAGEN.exec(linea);
     if (imagen) {
       const [, titulo, destino] = imagen;
-      if (!destino!.startsWith("figura:")) {
+      const visual = /^(figura|captura):(.+)$/.exec(destino!);
+      if (!visual) {
         throw new ErrorDeLectura(
-          `Línea ${numeroLinea}: solo se admiten figuras del propio módulo, con la forma ` +
-            `![Título](figura:identificador). Se encontró «${destino}».`,
+          `Línea ${numeroLinea}: solo se admiten figuras del propio módulo (![Título](figura:identificador)) ` +
+            `y capturas de pantalla de presentacion/capturas/ (![Título](captura:nombre)). Se encontró «${destino}».`,
         );
       }
-      bloques.push({ tipo: "figura", id: destino!.slice("figura:".length), titulo: titulo!.trim() });
+      bloques.push({ tipo: visual[1] as Visual["tipo"], id: visual[2]!, titulo: titulo!.trim() });
       i++;
       continue;
     }
@@ -354,7 +355,31 @@ export function leerBloques(lineas: string[], primeraLinea: number): ResultadoBl
     bloques.push({ tipo: "parrafo", lineas: parrafo.map(enLinea) });
   }
 
-  return { bloques, notas, avisos };
+  return { bloques: agruparGalerias(bloques), notas, avisos };
+}
+
+/**
+ * Dos o más visuales seguidos —figuras o capturas, con o sin línea en blanco
+ * entre ellos— forman una galería: ocupan el sitio de uno y se muestran por
+ * turnos. Un visual suelto se queda como está.
+ */
+function agruparGalerias(bloques: Bloque[]): Bloque[] {
+  const resultado: Bloque[] = [];
+  let visuales: Visual[] = [];
+  const volcar = () => {
+    if (visuales.length >= 2) resultado.push({ tipo: "galeria", elementos: visuales });
+    else resultado.push(...visuales);
+    visuales = [];
+  };
+  for (const bloque of bloques) {
+    if (bloque.tipo === "figura" || bloque.tipo === "captura") visuales.push(bloque);
+    else {
+      volcar();
+      resultado.push(bloque);
+    }
+  }
+  volcar();
+  return resultado;
 }
 
 /** Texto plano de una línea con formato: para títulos accesibles y búsquedas. */

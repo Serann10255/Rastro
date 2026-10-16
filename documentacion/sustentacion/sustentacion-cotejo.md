@@ -33,11 +33,18 @@ Sistema auditado: **Rastro**
 Sergio Montoya · Nicolás Torres · Oscar Rincón
 Auditoría de Sistemas (ISD39) · Grupo 30112
 
+![Revisión: los controles, uno por uno](captura:cotejo-revision)
+![Qué se revisa: el criterio, escrito antes de probar](captura:cotejo-catalogo)
+![Repetir: dos revisiones comparadas](captura:cotejo-comparacion)
+![Papel de trabajo con su huella SHA-256](captura:cotejo-papel)
+
 > Guion: Nicolás. Buenos días, profesor. Somos Sergio Montoya, Nicolás Torres y
 > Oscar Rincón, del grupo 30112. Presentamos Cotejo, un programa que audita de
 > forma automatizada los controles de Rastro, en los siete bloques pedidos.
 
-> Indicación: Cinco segundos. Mirar al jurado, no a la pantalla.
+> Indicación: Cinco segundos. Mirar al jurado, no a la pantalla. A la derecha
+> van pasando solas las cuatro pantallas de Cotejo: revisión, catálogo,
+> repetición y un papel de trabajo. No hay que esperarlas ni comentarlas.
 
 ---
 
@@ -59,6 +66,9 @@ Lo comprobamos antes de construir nada:
 
 Un auditor que solo lee configuraciones habría reportado un hallazgo falso.
 
+![Rastro, el sistema auditado](captura:rastro-panel)
+![El catálogo de Cotejo: qué se revisa y con qué criterio](captura:cotejo-catalogo)
+
 > Guion: Nicolás. Auditamos Rastro, desplegado en AWS, y lo decimos de entrada:
 > lo construimos nosotros. La idea de Cotejo es que un control declarado no es
 > un control verificado. Una función cuya política autoriza a cualquiera
@@ -66,13 +76,21 @@ Un auditor que solo lee configuraciones habría reportado un hallazgo falso.
 > un hallazgo falso. Por eso Cotejo no solo lee: usa el sistema.
 
 > Indicación: Decir primero que es nuestro sistema quita la objeción antes de
-> que el jurado la haga.
+> que el jurado la haga. A la derecha se ve el panel de Rastro y, a los cinco
+> segundos, el catálogo de Cotejo, que es donde el criterio está escrito antes
+> de probar.
 
 > Si preguntan: La organización es una mensajería urbana pequeña de Bogotá que
 > comparte infraestructura con otras empresas; cuenta `484948252891`. La prueba
 > previa es evidencia recuperable: el comando y la petición se repiten y dan el
 > mismo resultado (apartado 3.1 del documento). La falta de independencia se
-> trata con rotación interna y se declara como limitación.
+> trata con rotación interna y se declara como limitación. ¿Cotejo es una
+> página web? No: es un programa que corre en el equipo del auditor contra el
+> sistema desplegado; la vía principal es `python -m cotejo ejecutar`. Las
+> pantallas son su interfaz de consulta para el rol auditor (apartado 7.2),
+> que lee el mismo catálogo que la consola. No se publica a propósito: los
+> papeles de trabajo enumeran las debilidades del sistema auditado y
+> publicarlos ampliaría la superficie sin necesidad.
 
 ---
 
@@ -272,6 +290,8 @@ Secuencia **ITAF** (ISACA): planeación → programa → ejecución → comunica
 **H-PERM-01 · Mínimo privilegio** — alta. Las ocho funciones comparten un rol amplio.
 **H-PERM-02 · Privilegios del auditor** — media. El programa puede escribir sobre lo que audita.
 
+![Los hallazgos en la pantalla de revisión](captura:cotejo-hallazgos)
+
 > Guion: Sergio. H-01 sigue el formato de la rúbrica: un secreto de firma sigue
 > en el historial; incumple ISO 27001 y CWE-798; se versionó, y borrarlo no lo
 > saca del historial. Severidad media, porque ya está invalidado: hay que
@@ -282,7 +302,10 @@ Secuencia **ITAF** (ISACA): planeación → programa → ejecución → comunica
 > Reescribir el historial no sustituye a la rotación, que ya se ejecutó. Los
 > permanentes no se automatizan a propósito: una prueba que siempre da el mismo
 > resultado no aporta información; se declaran en cada informe. El laboratorio
-> no permite crear roles.
+> no permite crear roles. La pantalla es de una ejecución en la pila local, con
+> datos sintéticos: los controles que necesitan la cuenta de AWS quedan SIN
+> REVISAR, que es justamente la tercera conclusión; la ejecución de referencia
+> es la del 26/09/2026 contra el sistema desplegado.
 
 ---
 
@@ -294,13 +317,17 @@ Secuencia **ITAF** (ISACA): planeación → programa → ejecución → comunica
 
 **Cada papel de trabajo conserva:** procedimiento · salida literal · marca de tiempo · identidad · huella SHA-256.
 
+![Un papel de trabajo: qué se hizo, qué contestó y su huella](captura:cotejo-papel)
+
 > Guion: Sergio. Y hablamos de nuestros errores. Publicamos un secreto durante
 > 27 minutos y lo vimos nosotros, no Cotejo: el catálogo no cubría secretos, y
 > lo cerramos con C-09. Y el control de cifrado dijo MAL con el almacén vacío,
 > cuando era SIN REVISAR. Por eso cada papel conserva procedimiento, salida,
 > hora, identidad y huella: sin eso, un resultado es solo una afirmación.
 
-> Indicación: Decirla despacio: es la diapositiva más importante.
+> Indicación: Decirla despacio: es la diapositiva más importante. Al llegar a
+> «cada papel conserva», señalar la pantalla: arriba, las dos huellas que
+> coinciden; debajo, qué se hizo y qué contestó Rastro. `z` la amplía.
 
 > Si preguntan: ¿Qué aportó C-09? Separa lo que sigue expuesto, el historial, de
 > lo que ya no abre nada: C-09c firma un token con el secreto hallado y

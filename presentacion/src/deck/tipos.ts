@@ -5,8 +5,8 @@
  * diapositivas vive en el código: si vive aquí es una etiqueta de la interfaz,
  * no contenido de la sustentación.
  *
- * Solo tipos: lo importan tanto el compilador, que corre en Node, como la
- * interfaz, que corre en el navegador.
+ * Tipos y nada que dependa del navegador: lo importan tanto el compilador, que
+ * corre en Node, como la interfaz.
  */
 
 export type Inline =
@@ -27,6 +27,15 @@ export interface Cifra {
   etiqueta: string;
 }
 
+/**
+ * Lo que se ve y no se lee: una figura dibujada en SVG (`figura:id`, de
+ * `src/figuras/`) o una captura de pantalla de la aplicación (`captura:id`, de
+ * `presentacion/capturas/`). Van a la columna derecha de la diapositiva.
+ */
+export type Visual =
+  | { tipo: "figura"; id: string; titulo: string }
+  | { tipo: "captura"; id: string; titulo: string };
+
 export type Bloque =
   | { tipo: "parrafo"; lineas: Linea[] }
   | { tipo: "subtitulo"; linea: Linea }
@@ -42,7 +51,13 @@ export type Bloque =
   /** Un bloque de código cuyo contenido son cifras separadas por «·». */
   | { tipo: "resultado"; cifras: Cifra[] }
   | { tipo: "codigo"; lenguaje: string; texto: string }
-  | { tipo: "figura"; id: string; titulo: string };
+  | Visual
+  /** Dos o más visuales seguidos: se muestran uno a uno, pasando solos. */
+  | { tipo: "galeria"; elementos: Visual[] };
+
+export function esVisual(bloque: Bloque): bloque is Visual | Extract<Bloque, { tipo: "galeria" }> {
+  return bloque.tipo === "figura" || bloque.tipo === "captura" || bloque.tipo === "galeria";
+}
 
 /**
  * Lo que acompaña a una diapositiva sin verse en ella:

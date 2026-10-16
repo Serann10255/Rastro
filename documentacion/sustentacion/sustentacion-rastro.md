@@ -31,11 +31,18 @@ Trazabilidad verificable de envíos
 Sergio Montoya · Nicolás Torres · Oscar Rincón
 Cloud Computing (ISD38) · Grupo 30112
 
+![Panel de la organización](captura:rastro-panel)
+![Detalle de un envío y su histórico](captura:rastro-envio)
+![Consulta pública: el destinatario, sin cuenta](captura:rastro-rastreo)
+![Bitácora de auditoría, cadena íntegra](captura:rastro-bitacora)
+
 > Guion: Sergio. Buenos días, profesor. Somos Sergio Montoya, Nicolás Torres y
 > Oscar Rincón, del grupo 30112. Presentamos Rastro, un sistema de trazabilidad
 > de envíos desplegado en AWS, en los siete bloques que usted pidió.
 
-> Indicación: Cinco segundos. Mirar al jurado, no a la pantalla.
+> Indicación: Cinco segundos. Mirar al jurado, no a la pantalla. A la derecha
+> van pasando solas cuatro pantallas de la aplicación: el panel, un envío, la
+> consulta pública y la bitácora. No hay que esperarlas ni comentarlas.
 
 ---
 
@@ -195,11 +202,18 @@ Enfoque **iterativo e incremental**: una fase por objetivo.
 **Ningún rol ni cuenta combina escritura con lectura de la bitácora.** No es configurable.
 **Quien detiene un envío no es quien lo reanuda.** Nadie concede un permiso que no tiene.
 
+![Roles y permisos: los de fábrica y los que crea la empresa](captura:rastro-roles)
+![La bitácora, que solo el auditor puede leer](captura:rastro-bitacora)
+
 > Guion: Nicolás. Hay cinco roles de fábrica, y la tabla sale del código. La
 > regla central es la separación de funciones: el administrador puede todo
 > menos leer la bitácora, y el auditor la lee sin escribir nada; ninguna cuenta
 > suma las dos cosas. Quien detiene un envío no lo reanuda, y quien intenta
 > darse un permiso que no tiene queda registrado. Oscar sigue con la normativa.
+
+> Indicación: A la derecha se ve primero la pantalla de roles y, a los cinco
+> segundos, la bitácora con la sesión del auditor: coincide con «el auditor la
+> lee sin escribir nada». Si piden verla de cerca, `z` la amplía.
 
 > Si preguntan: De 19 operaciones: Administrador 17, Coordinador 12, Despachador
 > 9, Conductor 6 y Auditor 8; al administrador le faltan justo leer la bitácora

@@ -26,6 +26,7 @@ const TECLAS: [string, string][] = [
   ["Inicio · Fin", "Primera · última"],
   ["N", "Mostrar u ocultar el guion de la diapositiva: qué decir, cómo y qué responder"],
   ["F", "Entrar o salir de pantalla completa"],
+  ["Z o clic en una captura", "Ampliar la captura de pantalla a toda la ventana; Esc para volver"],
   ["Ctrl+P", "Imprimir el guion: una diapositiva por página, con su texto hablado debajo"],
 ];
 

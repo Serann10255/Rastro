@@ -186,8 +186,11 @@ Las dos formas usan el puerto 5177: hay que detener una para usar la otra.
 | Guion con notas y revisión de desbordes | http://localhost:5177/rastro/?guion |
 
 Teclas: flechas o barra espaciadora para avanzar, `n` para ver el guion de la
-diapositiva, `f` para pantalla completa. `/rastro#7` abre directamente la
-diapositiva 7. Ctrl+P imprime el guion, una diapositiva por página con el texto
+diapositiva, `f` para pantalla completa, `z` (o un clic) para ampliar la captura
+de pantalla de la diapositiva y `Esc` para volver. `/rastro#7` abre directamente
+la diapositiva 7. Las capturas de las aplicaciones están en
+`presentacion/capturas/`; para regenerarlas con la pila levantada, véase el
+[README del módulo](../modulos/presentacion/README.md#capturas-de-pantalla). Ctrl+P imprime el guion, una diapositiva por página con el texto
 que dice cada integrante debajo. Para un PDF
 con **solo las diapositivas**, a página completa de 16:9, se pulsa **PDF de
 diapositivas** en `/rastro/?guion` y se elige *Guardar como PDF*. El PDF y el

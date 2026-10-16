@@ -34,7 +34,7 @@ export default function EjecutorCotejo({ titulo }: PropiedadesFigura) {
           { texto: "antes de ejecutar", estilo: "suave" },
         ]}
       />
-      <path d="M165 150 V238" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M165 150 V238" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={0}
@@ -48,7 +48,7 @@ export default function EjecutorCotejo({ titulo }: PropiedadesFigura) {
           { texto: "once resultados", estilo: "suave" },
         ]}
       />
-      <path d="M165 420 V538" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M165 420 V538" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={0}
@@ -63,9 +63,9 @@ export default function EjecutorCotejo({ titulo }: PropiedadesFigura) {
       />
 
       {/* Las tres fuentes. La evidencia llega al ejecutor. */}
-      <path d="M420 105 L336 292" className="fig-linea" markerEnd={`url(#${flecha})`} />
-      <path d="M420 360 L336 330" className="fig-linea" markerEnd={`url(#${flecha})`} />
-      <path d="M420 615 L336 368" className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M420 105 L336 292" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M420 360 L336 330" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
+      <path d="M420 615 L336 368" pathLength={1} className="fig-linea" markerEnd={`url(#${flecha})`} />
 
       <Caja
         x={420}
