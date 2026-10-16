@@ -132,6 +132,20 @@ describe("diapositivas", () => {
     assert.equal(portadilla.clave, "bloque-1");
     assert.deepEqual(portadilla.tipo === "bloque" && portadilla.contenido.map((c) => c.numero), [1, 2]);
   });
+
+  it("con «portadillas: no», el bloque se marca en cada diapositiva sin ocupar una propia", () => {
+    const fuente =
+      "# Guion de prueba\n\n```yaml\nproyecto: Prueba\nportadillas: no\n```\n\n---\n\n" +
+      "# BLOQUE 1 · INICIO\n\n---\n\n## 1 · A\n\nx\n\n> Guion: Ana. a\n\n---\n\n" +
+      "# BLOQUE 2 · CIERRE\n\n---\n\n## 2 · B\n\ny\n\n> Guion: Ana. b";
+    const { deck, avisos } = compilarSustentacion(fuente, { archivo: "prueba.md", figuras: FIGURAS });
+    assert.deepEqual(avisos, []);
+    assert.equal(deck.resumen.bloques, 0);
+    assert.deepEqual(
+      deck.diapositivas.map((d) => d.tipo === "contenido" && d.bloque?.numero),
+      [1, 2],
+    );
+  });
 });
 
 describe("errores y avisos", () => {
@@ -163,8 +177,12 @@ describe("los guiones del repositorio", () => {
       const { deck, avisos } = compilarSustentacion(fuente, { archivo: nombre, figuras: FIGURAS });
 
       assert.deepEqual(avisos, []);
-      assert.equal(deck.resumen.bloques, 7, "los siete bloques que exige el docente");
       const numeradas = deck.diapositivas.filter((d): d is DiapositivaContenido => d.tipo === "contenido");
+      assert.deepEqual(
+        [...new Set(numeradas.map((d) => d.bloque?.numero).filter((n) => n != null))],
+        [1, 2, 3, 4, 5, 6, 7],
+        "los siete bloques que exige el docente, en orden y cada uno con al menos una diapositiva",
+      );
       assert.ok(numeradas.every((d) => d.presentador), "toda diapositiva tiene quien la presente");
       assert.equal(deck.resumen.intervenciones.length, 3, "participan los tres integrantes");
       assert.ok(

@@ -12,7 +12,7 @@
  *   > Si preguntan: …       ← respuesta preparada
  *   ---
  *   # BLOQUE 1 · TÍTULO     ← portadilla de bloque, sin número propio
- *   ---
+ *   ---                       (con `portadillas: no`, solo marca el bloque)
  *
  * El número que el autor escribe en el título es el de la diapositiva: el que
  * se ve en pantalla, el del enlace directo (`/rastro#7`) y el que citan las
@@ -115,6 +115,10 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
   const numerosVistos = new Map<number, number>();
   let bloqueActual: ReferenciaBloque | null = null;
   let presentadorActual: string | null = null;
+  // `portadillas: no` en los metadatos: cada `# BLOQUE` sigue marcando a qué
+  // bloque pertenecen las diapositivas siguientes, pero no ocupa una propia.
+  // Es la forma corta, para cuando el tiempo no da para pasar siete portadillas.
+  const conPortadillas = String(meta.portadillas ?? "sí").toLowerCase() !== "no";
 
   for (const bruta of resto) {
     const seccion = recortar(bruta);
@@ -136,6 +140,7 @@ export function compilarSustentacion(fuente: string, opciones: OpcionesCompilaci
       const numero = bloque ? Number(bloque[1]) : null;
       const tituloBloque = (bloque ? bloque[2]! : h1[1]!).trim();
       bloqueActual = { numero, titulo: tituloBloque };
+      if (!conPortadillas) continue;
       diapositivas.push({
         tipo: "bloque",
         clave: numero !== null ? `bloque-${numero}` : `bloque-${diapositivas.length + 1}`,

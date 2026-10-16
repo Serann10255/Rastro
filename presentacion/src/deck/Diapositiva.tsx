@@ -1,8 +1,9 @@
 /* Una diapositiva sobre su lienzo de 1920 × 1080.
  *
  * Tres formas: la portada, la portadilla de cada bloque y la diapositiva de
- * contenido. Todas llevan el mismo pie —logotipo del proyecto, bloque en curso y
- * número— y una barra de avance fina en el borde inferior.
+ * contenido, que lleva su bloque sobre el título. Todas llevan el mismo pie
+ * —logotipo del proyecto y número— y una barra de avance fina en el borde
+ * inferior.
  */
 
 import { useEffect, type ComponentType, type CSSProperties, type RefObject } from "react";
@@ -120,9 +121,21 @@ function Contenido({ diapositiva, cuerpoRef }: { diapositiva: DiapositivaConteni
   const figuras = diapositiva.bloques.filter((b) => b.tipo === "figura");
   const resto = diapositiva.bloques.filter((b) => b.tipo !== "figura");
 
+  const bloque = diapositiva.bloque;
+
   return (
     <div className="lamina">
-      <h2 className="lamina__titulo">{diapositiva.titulo}</h2>
+      {/* El bloque va sobre el título y no en el pie: sin portadillas, es lo
+       *  único que le dice al jurado cuál de los siete bloques se está viendo. */}
+      <header className="lamina__encabezado">
+        {bloque && (
+          <p className="lamina__bloque">
+            {bloque.numero !== null ? `Bloque ${bloque.numero} · ` : ""}
+            {tituloLegible(bloque.titulo)}
+          </p>
+        )}
+        <h2 className="lamina__titulo">{diapositiva.titulo}</h2>
+      </header>
       {figuras.length > 0 ? (
         // Con figura, el texto a la izquierda y la figura a la derecha: una
         // figura bajo el texto quedaría demasiado pequeña para leerse.
@@ -154,19 +167,12 @@ function Pie({
 }) {
   const ultima = [...deck.diapositivas].reverse().find((d) => d.tipo === "contenido");
   const total = ultima?.tipo === "contenido" ? ultima.numero : deck.resumen.contenido;
-  const bloque = diapositiva.tipo === "bloque" ? null : diapositiva.bloque;
   const proyecto = String(deck.meta.proyecto ?? deck.titulo);
 
   return (
     <footer className="lienzo__pie">
       <Logotipo tamano={44} id={idLogo} className="lienzo__logo" />
       <span className="lienzo__proyecto">{proyecto}</span>
-      {bloque && (
-        <span className="lienzo__bloque">
-          {bloque.numero !== null ? `Bloque ${bloque.numero} · ` : ""}
-          {tituloLegible(bloque.titulo)}
-        </span>
-      )}
       <span className="lienzo__numero">
         {diapositiva.tipo === "contenido" ? (
           <>

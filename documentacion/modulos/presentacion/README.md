@@ -38,8 +38,8 @@ npm run build      # sitio estático en presentacion/dist/
 | Ctrl+P | Imprimir el guion |
 
 **Enlace directo:** `/rastro#7` abre la diapositiva 7; `/rastro#bloque-4`, la
-portadilla del bloque 4. La dirección se actualiza al avanzar, así que recargar
-retoma donde se estaba.
+portadilla del bloque 4 (solo en un guion con portadillas). La dirección se
+actualiza al avanzar, así que recargar retoma donde se estaba.
 
 **Imprimir.** Dos formatos:
 
@@ -49,16 +49,22 @@ retoma donde se estaba.
 | Solo diapositivas | **PDF de diapositivas** en `?guion`, o Ctrl+P desde `/rastro/?diapositivas` | Cada diapositiva a página completa de 16:9 (13,33 × 7,5 in), sin notas. **Con el tema que se está viendo**: claro u oscuro |
 
 Para el PDF, en el diálogo se elige *Guardar como PDF*; el tamaño de página ya
-viene dado. Probado con Edge: 35 páginas por deck en los dos formatos (carta
-apaisada el guion, 960 × 540 pt las diapositivas).
+viene dado. Probado con Edge: una página por diapositiva en los dos formatos
+(carta apaisada el guion, 960 × 540 pt las diapositivas); con la versión corta
+del 2026-10-16, 9 páginas Rastro y 10 Cotejo. Están en
+[`entregables/sustentacion/`](../../entregables/sustentacion/), junto a los de
+la versión completa de 35 páginas.
 
 Sin diálogos, desde la terminal y con el servidor en marcha:
 
 ```bash
-"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf="Rastro-diapositivas.pdf" "http://localhost:5177/rastro/?diapositivas"
+"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --no-pdf-header-footer --virtual-time-budget=8000 --print-to-pdf="Rastro-diapositivas.pdf" "http://localhost:5177/rastro/?diapositivas&tema=claro"
 ```
 
-Para la versión oscura se añade `&tema=oscuro` a la dirección. `?tema=` abre la
+Para el guion impreso, la misma orden con `http://localhost:5177/rastro/?tema=claro`.
+Desde Git Bash, la ruta de salida va con barras `/`: con `\` delante de una
+variable, Bash no la expande y el PDF cae en la carpeta de arriba con un nombre
+literal. Para la versión oscura, `tema=oscuro` en lugar de `tema=claro`. `?tema=` abre la
 página con ese tema sin guardarlo como preferencia.
 
 ## Formato del guion
@@ -71,6 +77,7 @@ El compilador (`compilador/sustentacion.ts`) espera esta estructura:
 ```yaml
 proyecto: Rastro
 equipo: [Nombre Uno, Nombre Dos]
+portadillas: no        ← opcional: los bloques no ocupan diapositiva propia
 ```
 
 ---
@@ -92,7 +99,7 @@ Trazabilidad verificable de envíos
 |---|---|
 | `---` | Separa diapositivas |
 | `## N · Título` | Diapositiva de contenido. **El número es obligatorio**: es el que se ve, el del enlace y el que citan las notas. Repetido detiene la construcción; con saltos, avisa |
-| `# BLOQUE N · TÍTULO` | Portadilla. Enumera por sí sola las diapositivas que agrupa |
+| `# BLOQUE N · TÍTULO` | Portadilla. Enumera por sí sola las diapositivas que agrupa. Con `portadillas: no` no ocupa diapositiva: solo marca el bloque de las siguientes. En los dos casos, cada diapositiva de contenido muestra su bloque sobre el título |
 | Párrafo | **Conserva los saltos de línea**: «una frase por línea» se respeta |
 | `> Guion: Nombre. …` | **Lo que se dice**, en la voz de quien lo dice. El nombre alimenta el reparto de intervenciones y se arrastra a las siguientes hasta que otro guion nombre a otro. Sus palabras dan el tiempo estimado |
 | `> Indicación: …` (o `> Notas: …`) | Cómo decirlo. Se muestra debajo del guion, en menor jerarquía. No lleva nombre |
@@ -108,8 +115,8 @@ Trazabilidad verificable de envíos
 
 | Identificador | Diapositiva | Contenido |
 |---|---|---|
-| `arquitectura-rastro` | Rastro 3 | Componentes desplegados en AWS, de [vision-general](../../arquitectura/vision-general.md), con los ocho servicios como una sola caja |
-| `ejecutor-cotejo` | Cotejo 8 | El ejecutor y sus tres fuentes de evidencia (Entrega 2, tablas 9 y 11) |
+| `arquitectura-rastro` | Rastro 2 | Componentes desplegados en AWS, de [vision-general](../../arquitectura/vision-general.md), con los ocho servicios como una sola caja |
+| `ejecutor-cotejo` | Cotejo 4 | El ejecutor y sus tres fuentes de evidencia (Entrega 2, tablas 9 y 11) |
 
 Son SVG con color por clase CSS sobre las fichas de diseño: cambian con el tema
 y con la identidad de cada proyecto. El texto no baja de 25 unidades en un lienzo
@@ -177,10 +184,21 @@ cuando la raíz lleva `data-impresion="diapositivas"`. El lienzo se imprime a
 0,6666: un pelo por debajo de 2/3, porque a 2/3 exactos el redondeo empuja cada
 lámina a una segunda página en blanco.
 
+**Portadillas opcionales y el bloque sobre el título** (2026-10-16). Con cinco
+minutos por sustentación, siete portadillas eran siete clics sin contenido. Se
+pueden apagar con `portadillas: no`; los `# BLOQUE` siguen en el Markdown y
+siguen marcando el bloque de cada diapositiva, que ahora se rotula sobre el
+título («BLOQUE 4 · RIESGOS Y CONTROLES») en lugar de en el pie, donde a 22,75 px
+no se leía desde el fondo de la sala. La prueba de los guiones ya no cuenta
+portadillas: comprueba que los siete bloques aparecen, en orden, con al menos
+una diapositiva cada uno.
+
 **Descartado:** calcular el número por posición; una biblioteca de presentaciones
 (reveal.js y similares) por la regla de código propio; leer el Markdown en el
 navegador, que habría hecho del guion un recurso más que servir y habría
-retrasado los errores hasta abrir la página.
+retrasado los errores hasta abrir la página. Para la versión corta, un segundo
+par de guiones junto a los completos: dos fuentes de las mismas cifras acaban
+contradiciéndose, y la completa ya está en el historial y en PDF.
 
 ## Dependencias y relaciones
 

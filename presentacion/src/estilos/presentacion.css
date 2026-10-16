@@ -63,8 +63,8 @@
   padding: var(--d-superior) var(--d-lateral) var(--d-hueco-sm);
 }
 
-/* La franja de marca sobre el título: el mismo degradado del logotipo. */
-.lamina__titulo::before {
+/* La franja de marca sobre el encabezado: el mismo degradado del logotipo. */
+.lamina__encabezado::before {
   content: "";
   display: block;
   width: calc(var(--e-7) * 2.5);
@@ -72,6 +72,17 @@
   margin-bottom: var(--d-hueco-sm);
   border-radius: var(--r-completo);
   background: linear-gradient(90deg, var(--marca-1), var(--marca-2));
+}
+
+/* «Bloque 4 · Riesgos y controles»: rótulo, no cuerpo, pero se lee desde el
+ * fondo de la sala, así que no baja del suelo de contenido. */
+.lamina__bloque {
+  margin-bottom: calc(var(--d-hueco-sm) * 0.5);
+  font-size: var(--d-minimo);
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--acento);
 }
 
 .lamina__titulo {
@@ -208,14 +219,6 @@
 .lienzo__proyecto {
   font-weight: 750;
   color: var(--texto);
-}
-
-.lienzo__bloque {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .lienzo__numero {

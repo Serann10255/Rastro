@@ -56,6 +56,13 @@ export function textoPlano(nodos: Inline[]): string {
   return nodos.map((n) => (n.t === "texto" || n.t === "codigo" ? n.v : textoPlano(n.hijos))).join("");
 }
 
+/** «9 diapositivas», o «35 diapositivas: 28 de contenido y 7 portadillas de
+ *  bloque» cuando el deck las lleva. */
+export function recuento({ total, contenido, bloques }: { total: number; contenido: number; bloques: number }): string {
+  if (bloques === 0) return `${total} diapositivas`;
+  return `${total} diapositivas: ${contenido} de contenido y ${bloques} portadillas de bloque`;
+}
+
 /** Ritmo de una exposición tranquila en español. Es una estimación para
  *  repartir el tiempo, no un cronómetro: cada quien debe medirse en voz alta. */
 export const PALABRAS_POR_MINUTO = 130;

@@ -14,7 +14,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { Diapositiva, Notas, type Logotipo } from "./Diapositiva";
-import { duracion, PALABRAS_POR_MINUTO, tituloLegible } from "./formato";
+import { duracion, PALABRAS_POR_MINUTO, recuento, tituloLegible } from "./formato";
 import { imprimir } from "./impresion";
 import { useEscala } from "./medidas";
 import { SelectorTema } from "./SelectorTema";
@@ -59,8 +59,7 @@ export function Guion({ deck, Logotipo, modo }: Propiedades) {
             <div>
               <h1 className="guion__titulo">{String(deck.meta.proyecto ?? deck.titulo)} · guion</h1>
               <p className="guion__resumen">
-                {deck.resumen.total} diapositivas: {deck.resumen.contenido} de contenido y {deck.resumen.bloques}{" "}
-                portadillas de bloque. Guion hablado de {deck.resumen.palabras} palabras:{" "}
+                {recuento(deck.resumen)}. Guion hablado de {deck.resumen.palabras} palabras:{" "}
                 {duracion(deck.resumen.palabras)} a {PALABRAS_POR_MINUTO} palabras por minuto.{" "}
                 {modo === "revision" &&
                   (desbordadas.length === 0 ? (

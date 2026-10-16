@@ -90,8 +90,9 @@ por área.
   en la bitácora con la lista de operaciones concedidas.
 - **Lo reproducen** las diapositivas de sustentación
   ([`documentacion/sustentacion/`](../../sustentacion/README.md#matrices-de-permisos)):
-  la matriz completa de las 19 operaciones por rol. Si cambia `ROLES_INTEGRADOS`,
-  hay que actualizarlas.
+  la versión corta resume los cinco roles y cuántas de las 19 operaciones tiene
+  cada uno; la versión completa (PDF en `entregables/sustentacion/`) trae la
+  matriz celda por celda. Si cambia `ROLES_INTEGRADOS`, hay que actualizarlas.
 
 ## Comportamiento responsive
 

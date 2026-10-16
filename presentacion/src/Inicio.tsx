@@ -9,7 +9,7 @@
 import type { ComponentType } from "react";
 
 import type { PropiedadesLogotipo } from "@/deck/Diapositiva";
-import { duracion, PALABRAS_POR_MINUTO } from "@/deck/formato";
+import { duracion, PALABRAS_POR_MINUTO, recuento } from "@/deck/formato";
 import { SelectorTema } from "@/deck/SelectorTema";
 import type { Deck } from "@/deck/tipos";
 
@@ -79,8 +79,7 @@ export function Inicio({ decks }: { decks: EntradaDeck[] }) {
               </div>
               <p>{texto(deck.meta.subtitulo)}</p>
               <p className="texto-suave texto-sm">
-                {deck.resumen.total} diapositivas: {deck.resumen.contenido} de contenido y {deck.resumen.bloques}{" "}
-                portadillas de bloque. Guion hablado: {duracion(deck.resumen.palabras)}.
+                {recuento(deck.resumen)}. Guion hablado: {duracion(deck.resumen.palabras)}.
               </p>
               <div className="acciones">
                 <a className="boton" href={`${ruta}/`}>
