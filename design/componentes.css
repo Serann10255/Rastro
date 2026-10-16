@@ -1588,6 +1588,439 @@
   font-size: 10px;
 }
 
+/* ======================================================================= */
+/* Mapa                                                                    */
+/* ======================================================================= */
+
+/* Leaflet numera sus capas a partir de 400 y sus controles en 1000. Sin un
+ * contexto de apilamiento propio, el mapa quedaría por encima de la barra
+ * superior, de la barra de selección y de las ventanas modales. */
+.mapa {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  width: 100%;
+  height: clamp(16rem, 42vh, 30rem);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--superficie-hundida);
+}
+
+.mapa__lienzo {
+  width: 100%;
+  height: 100%;
+  font-family: var(--fuente);
+}
+
+.mapa--vacio {
+  display: grid;
+  place-items: center;
+  padding: var(--e-4);
+  text-align: center;
+}
+
+.mapa__recentrar {
+  position: absolute;
+  right: var(--e-3);
+  bottom: var(--e-6);
+  z-index: 1001;
+  box-shadow: var(--sombra-2);
+}
+
+/* Controles de Leaflet con los colores del sistema y áreas táctiles de 44 px:
+ * los de fábrica miden 30 y no se pueden pulsar con el pulgar en movimiento.
+ *
+ * Los selectores llevan `.leaflet-container` a propósito. La hoja de Leaflet
+ * llega con el mapa, después que esta, y con la misma especificidad ganaba:
+ * los botones se quedaban en 30 px y la atribución en blanco sobre el tema
+ * oscuro. Se midió en el navegador, no se supuso. */
+.mapa .leaflet-container .leaflet-bar {
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  box-shadow: var(--sombra-1);
+}
+
+.mapa .leaflet-container .leaflet-bar a {
+  width: var(--tactil);
+  height: var(--tactil);
+  line-height: var(--tactil);
+  background: var(--superficie);
+  color: var(--texto);
+  border-bottom-color: var(--borde);
+  font-size: var(--t-lg);
+}
+
+.mapa .leaflet-container .leaflet-bar a:hover {
+  background: var(--fondo-sutil);
+}
+
+.mapa .leaflet-container .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--superficie) 85%, transparent);
+  color: var(--texto-suave);
+  font-size: var(--t-xs);
+}
+
+.mapa .leaflet-container .leaflet-control-attribution a {
+  color: var(--acento);
+}
+
+/* Las teselas de OpenStreetMap solo existen en claro. En tema oscuro se
+ * invierten: un rectángulo blanco en medio de una pantalla oscura deslumbra
+ * de noche, que es justamente cuando más se reparte. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .mapa .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+  }
+}
+
+:root[data-tema="oscuro"] .mapa .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+}
+
+.mapa-marcador__contenedor {
+  background: none;
+  border: 0;
+}
+
+.mapa-marcador {
+  --marcador: var(--acento);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.mapa-marcador--exito {
+  --marcador: var(--exito);
+}
+
+.mapa-marcador--alerta {
+  --marcador: var(--alerta);
+}
+
+.mapa-marcador--tenue {
+  --marcador: var(--texto-tenue);
+}
+
+.mapa-marcador__punto {
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--r-completo);
+  background: var(--marcador);
+  border: 3px solid var(--superficie);
+  box-shadow: var(--sombra-2);
+}
+
+.mapa-marcador--seleccionado .mapa-marcador__punto {
+  width: 1.375rem;
+  height: 1.375rem;
+  outline: 3px solid color-mix(in srgb, var(--marcador) 45%, transparent);
+}
+
+.mapa-marcador--pulso::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-completo);
+  background: var(--marcador);
+  opacity: 0.35;
+  animation: latido 1.8s ease-out infinite;
+}
+
+@keyframes latido {
+  from {
+    transform: scale(0.5);
+    opacity: 0.45;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-marcador--pulso::before {
+    animation: none;
+  }
+}
+
+.mapa .mapa-etiqueta {
+  padding: 0.125rem var(--e-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-sm);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  box-shadow: var(--sombra-1);
+}
+
+.mapa .mapa-etiqueta::before {
+  display: none;
+}
+
+.mapa .mapa-precision {
+  stroke: var(--acento);
+  stroke-width: 1;
+  fill: var(--acento);
+  fill-opacity: 0.12;
+}
+
+.mapa .mapa-trazo {
+  stroke: var(--acento);
+  stroke-width: 4;
+  stroke-opacity: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.mapa .mapa-trazo--tenue {
+  stroke: var(--texto-tenue);
+}
+
+.rastreo-mapa .mapa {
+  height: clamp(14rem, 38vh, 24rem);
+}
+
+/* ======================================================================= */
+/* Rutas: modo ruta del conductor y seguimiento de la empresa              */
+/* ======================================================================= */
+
+/* En el teléfono, mapa arriba y paradas debajo: el conductor mira primero si
+ * su posición se está compartiendo y luego a quién le toca. A partir de
+ * 1024 px, dos columnas, con el mapa fijo mientras se recorre la lista. */
+.modo-ruta,
+.seguimiento {
+  display: grid;
+  gap: var(--e-4);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .modo-ruta {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+
+  .seguimiento {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+
+  .modo-ruta__mapa,
+  .seguimiento__mapa {
+    position: sticky;
+    top: var(--e-4);
+  }
+
+  .seguimiento__mapa .mapa,
+  .seguimiento__mapa > .esqueleto {
+    height: clamp(24rem, calc(100dvh - 14rem), 44rem);
+  }
+}
+
+.seguimiento__mapa > .esqueleto {
+  height: clamp(16rem, 42vh, 30rem);
+}
+
+.avance {
+  width: 100%;
+  height: 0.5rem;
+  margin-top: var(--e-3);
+  border-radius: var(--r-completo);
+  background: var(--fondo-sutil);
+  overflow: hidden;
+}
+
+.pila-sm > .avance {
+  margin-top: 0;
+}
+
+.avance__barra {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--exito);
+  transition: width var(--transicion);
+}
+
+/* Estado de la transmisión: lo primero que el conductor necesita saber es si
+ * su ubicación está llegando. */
+.senal {
+  --senal: var(--texto-tenue);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  padding: var(--e-3);
+  border: 1px solid color-mix(in srgb, var(--senal) 40%, var(--borde));
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--senal) 8%, var(--superficie));
+}
+
+.senal--exito,
+.senal-breve--exito {
+  --senal: var(--exito);
+}
+
+.senal--alerta,
+.senal-breve--alerta {
+  --senal: var(--alerta);
+}
+
+.senal--peligro {
+  --senal: var(--peligro);
+}
+
+.senal-breve--tenue {
+  --senal: var(--texto-tenue);
+}
+
+.senal__punto {
+  flex: 0 0 auto;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-top: 0.375rem;
+  border-radius: var(--r-completo);
+  background: var(--senal);
+}
+
+.senal--exito .senal__punto {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--senal) 25%, transparent);
+}
+
+.senal__texto {
+  display: block;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.senal__detalle {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.senal-breve {
+  --senal: var(--acento);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.senal-breve .senal__punto {
+  margin-top: 0;
+}
+
+/* Una parada del recorrido. */
+.parada {
+  display: grid;
+  gap: var(--e-2);
+  padding: var(--e-3);
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--estado-color, var(--acento));
+  border-radius: var(--r-md);
+  background: var(--superficie);
+}
+
+.parada__cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  min-width: 0;
+}
+
+.parada__orden {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-completo);
+  background: var(--fondo-sutil);
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.parada__destinatario {
+  margin: 0;
+  font-size: var(--t-base);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.parada__direccion {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+/* Los botones de la parada se reparten en rejilla y no en fila: en 360 px,
+ * cinco botones en fila se salían de la tarjeta. Entregar va al final y
+ * ocupa todo el ancho, porque es la acción que más se pulsa. */
+.parada__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e-2);
+}
+
+.parada__acciones > * {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+}
+
+.parada__acciones > .boton:not(.boton--secundario):not(.boton--sutil) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 640px) {
+  .parada__acciones {
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  }
+
+  .parada__acciones > .boton:not(.boton--secundario):not(.boton--sutil) {
+    grid-column: auto;
+  }
+}
+
+.plegable {
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  padding: 0 var(--e-3);
+  background: var(--superficie);
+}
+
+.plegable[open] {
+  padding-bottom: var(--e-3);
+}
+
+.plegable__resumen {
+  display: flex;
+  align-items: center;
+  min-height: var(--tactil);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.vista-previa {
+  display: block;
+  max-width: 100%;
+  max-height: 14rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--borde);
+  object-fit: contain;
+}
+
 /* Al imprimir solo sale la hoja de guías: la navegación, los botones y el
  * fondo de la aplicación no aportan nada en papel y gastan tinta. */
 @media print {

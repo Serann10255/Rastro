@@ -7,7 +7,7 @@
  * cadena de suministro.
  */
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 import type { Estado, Resultado } from "@/tipos";
@@ -45,6 +45,31 @@ export function fechaRelativa(iso: string | undefined): string {
     anterior = limite;
   }
   return formato.format(-Math.round(segundos / 2592000), "month");
+}
+
+/** «hace 12 s», «hace 3 min»: la antigüedad de una posición en vivo.
+ *
+ *  `fechaRelativa` redondea a la unidad mayor y dice «hace 1 minuto» durante
+ *  un minuto entero; para saber si un punto en el mapa está vivo hacen falta
+ *  los segundos. */
+export function antiguedad(segundos: number | null | undefined): string {
+  if (segundos === null || segundos === undefined || !Number.isFinite(segundos)) return "sin datos";
+  const s = Math.max(0, Math.round(segundos));
+  if (s < 5) return "ahora";
+  if (s < 60) return `hace ${s} s`;
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+  return `hace ${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`;
+}
+
+/** La hora actual, renovada cada `intervalo`. Para los textos que envejecen
+ *  solos —«enviada hace 8 s»— sin esperar a la siguiente consulta. */
+export function useAhora(intervalo = 5_000): number {
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const temporizador = window.setInterval(() => setAhora(Date.now()), intervalo);
+    return () => window.clearInterval(temporizador);
+  }, [intervalo]);
+  return ahora;
 }
 
 // --------------------------------------------------------------------------- //

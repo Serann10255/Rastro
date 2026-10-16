@@ -24,6 +24,9 @@ partición.
 | Ordenamiento (`sk`) — maestro | `META` | `META` |
 | Ordenamiento (`sk`) — evento | `EVT#<ts>#<evento_id>` | `EVT#2026-09-10T17:31:50.427Z#a1b2c3d4` |
 
+La misma tabla guarda las **rutas de entrega** (ver más abajo), con su propia
+partición.
+
 La organización forma parte de la clave de partición. No es una convención de
 nombres: es el mecanismo de aislamiento. Los datos de cada empresa quedan en
 particiones distintas y **no existe forma de construir una clave sin
@@ -38,6 +41,7 @@ ordenar en memoria.
 | Índice | Partición | Ordenamiento | Para qué |
 |---|---|---|---|
 | `gsi_org` | `ORG#<org_id>` | `ENV#<creado_en>#<envio_id>` | Listar los envíos de una organización, del más reciente al más antiguo |
+| `gsi_org` (rutas) | `ORG#<org_id>#RUTAS` | `RUTA#<iniciada_en>#<ruta_id>` | Listar las rutas de una organización. Partición aparte: el listado de envíos consulta `ORG#<org_id>` sin filtrar por tipo y no debe encontrar rutas |
 | `gsi_publico` | `ENV#<envio_id>` | igual que `sk` | Consulta pública por identificador (REQ-04) |
 
 **Por qué existe `gsi_publico`.** El destinatario solo tiene el identificador del
@@ -108,6 +112,48 @@ de representación.
 | `ubicacion` | mapa \| ausente | `lat`, `lon` |
 | `nota` | texto | Opcional |
 | `evidencia_id` | texto \| ausente | Enlaza el evento con su prueba de entrega |
+
+### Rutas de entrega
+
+Una ruta es el recorrido de un conductor con las guías que eligió entregar
+([módulo](../modulos/rutas-de-entrega/README.md),
+[ADR-013](../decisiones/adr-013-ubicacion-en-vivo-por-sondeo.md)).
+
+| Elemento | `pk` | `sk` | Índice |
+|---|---|---|---|
+| Ruta | `ORG#<org_id>#RUTA#<ruta_id>` | `META` | `gsi_org` en `ORG#<org_id>#RUTAS` |
+| Posición del recorrido | `ORG#<org_id>#RUTA#<ruta_id>` | `POS#<capturada_en>#<sufijo>` | ninguno |
+| Testigo de ruta activa | `ORG#<org_id>#CONDUCTOR#<sub>` | `RUTA_ACTIVA` | ninguno |
+
+**Atributos de la ruta:** `ruta_id`, `org_id`, `estado` (`ACTIVA` |
+`FINALIZADA`), `conductor_sub`, `conductor_nombre`, `iniciada_en`,
+`actualizada_en`, `finalizada_en`, `cierre` (`completada` | `manual`),
+`nota_cierre`, `paradas`, `ultima_posicion`, `posiciones` (recuento).
+
+**`paradas`** es una lista de copias, una por guía, con `envio_id`, `orden`,
+`estado`, `codigo_estado`, destinatario, teléfono, dirección, referencia,
+ciudad, orden de compra, bultos y descripción. Es copia y no referencia por la
+misma razón que el nombre de la tienda en el envío: la ruta es el documento de
+un recorrido. El estado de cada parada lo actualiza el servicio de rastreo al
+registrar un punto de control del envío; el que vale es el del envío.
+
+**Las actualizaciones son por atributo** (`UpdateItem`), nunca reescribiendo el
+elemento: posiciones, entregas y cierre llegan a la vez, y con reescrituras la
+última borraba a las otras. Las que solo valen con la ruta abierta llevan la
+condición `estado = ACTIVA`.
+
+**Posición:** `lat`, `lon`, `precision_m`, `rumbo`, `velocidad`,
+`capturada_en` (hora del teléfono, si era creíble), `recibida_en` (hora del
+servidor), `hora_de` (`dispositivo` | `servidor`) y **`expira_en`**, en segundos
+de época: DynamoDB la borra a los 30 días (TTL activado en `10-datos.sh`). Sin
+atributos de índice: es la parte voluminosa y solo se lee por su partición.
+
+**Testigo de ruta activa:** `ruta_id` y `reservada_en`. Se escribe con
+`attribute_not_exists(pk)`: dos inicios simultáneos no pueden ganar los dos. Se
+borra al cerrar la ruta con la condición `ruta_id = <la suya>`.
+
+**El envío** gana el atributo `ruta_id`, la última ruta en que salió. Se
+conserva al cerrarla.
 
 ### Por qué el identificador es un UUID y no un consecutivo
 
@@ -280,6 +326,7 @@ empresa en algo que el sistema deshace a sus espaldas.
 | `clave` | Identificador estable en minúsculas. **No se cambia**: es lo que guardan las cuentas |
 | `nombre`, `descripcion` | Lo que se lee al asignar el rol a alguien |
 | `operaciones` | Lista de operaciones del catálogo del código. Nada más se acepta |
+| `catalogo_conocido` | Las operaciones que existían al guardar el rol. Distingue una operación que la empresa quitó de una que todavía no conocía ([roles](../modulos/roles-y-permisos/README.md)) |
 | `integrado` | Si es uno de los cinco de fábrica. No se elimina, aunque sí se ajusta |
 | `editable` | Falso solo en `administrador` |
 

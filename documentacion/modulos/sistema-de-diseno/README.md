@@ -11,7 +11,7 @@ la iconografía y los logotipos de las dos interfaces del repositorio.
 design/
 ├── tokens.css        Fichas: espacio, tipografía, radios, color, tema claro y oscuro
 ├── base.css          Reinicio, utilidades y estructura de la aplicación
-├── componentes.css   Armazón, tarjetas, tablas, formularios, avisos, módulos…
+├── componentes.css   Armazón, tarjetas, tablas, formularios, avisos, módulos, mapa y rutas…
 └── marca/
     ├── rastro.tsx    Logotipo de Rastro
     ├── cotejo.tsx    Logotipo de Cotejo
@@ -20,6 +20,15 @@ design/
 
 Cada aplicación añade **solo su identidad** en `src/estilos/identidad.css`: el
 degradado de marca y, en el caso de Cotejo, el acento. Nada más.
+
+Desde el 2026-10-16, `componentes.css` incluye las piezas de las
+[rutas de entrega](../rutas-de-entrega/README.md): `.mapa` (con el contexto de
+apilamiento que impide que las capas de Leaflet tapen la barra y las ventanas
+modales, sus controles a 44 px y las teselas invertidas en tema oscuro),
+`.mapa-marcador` con sus tonos y su latido, `.senal`, `.avance`, `.parada`,
+`.plegable`, `.modo-ruta` y `.seguimiento`. Los iconos `ruta` y `ubicacion` se
+sumaron al juego. Las razones de la biblioteca de mapas están en
+[ADR-014](../../decisiones/adr-014-mapa-con-leaflet-y-openstreetmap.md).
 
 ## Por qué existe
 

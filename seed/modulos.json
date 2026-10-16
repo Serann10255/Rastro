@@ -15,6 +15,28 @@
       "contador": "envios_abiertos"
     },
     {
+      "clave": "entregas",
+      "destacado": true,
+      "nombre": "Entregas",
+      "descripcion": "Modo ruta: elija las guías del recorrido y comparta su ubicación mientras entrega",
+      "icono": "ruta",
+      "ruta": "/entregas",
+      "grupos": ["conductor"],
+      "orden": 12,
+      "disponible": true
+    },
+    {
+      "clave": "seguimiento",
+      "destacado": true,
+      "nombre": "Seguimiento",
+      "descripcion": "Conductores en ruta y su ubicación en vivo",
+      "icono": "ubicacion",
+      "ruta": "/seguimiento",
+      "grupos": ["administrador", "coordinador", "despachador"],
+      "orden": 15,
+      "disponible": true
+    },
+    {
       "clave": "registrar",
       "nombre": "Registrar",
       "descripcion": "Alta de un envío o de un lote completo desde archivo",
@@ -128,7 +150,7 @@
       "grupos": ["administrador", "despachador"],
       "orden": 200,
       "disponible": false,
-      "motivo": "La optimización de rutas está excluida del alcance del proyecto: exige datos de tráfico y dispositivos que el presupuesto del laboratorio no cubre."
+      "motivo": "La planificación y optimización de rutas sigue excluida del alcance: exige geocodificar direcciones y datos de tráfico que el presupuesto del laboratorio no cubre. Lo que sí existe es el recorrido en vivo del conductor, en Entregas y Seguimiento."
     },
     {
       "clave": "recolecciones",
@@ -148,7 +170,7 @@
       "grupos": ["administrador", "despachador"],
       "orden": 220,
       "disponible": false,
-      "motivo": "Pendiente. Depende de rutas: un manifiesto es la carga de una ruta, y las rutas no están en el alcance."
+      "motivo": "Pendiente. Las rutas de entrega ya existen, pero el manifiesto como documento de despacho firmado no: hoy la ruta registra qué guías salieron y no produce un documento."
     },
     {
       "clave": "facturacion",

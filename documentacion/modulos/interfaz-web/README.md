@@ -16,11 +16,19 @@ que la mantiene disponible entre sesiones del laboratorio.
 | `/envios/nuevo` | admin, despachador | Registro individual o **masivo desde CSV** |
 | `/envios/:id` | los cuatro roles | Detalle, punto de control, evidencia |
 | `/envios/guias` | admin, despachador, conductor | Guías imprimibles con código de barras. Se llega con envíos seleccionados desde el listado |
+| `/entregas` | permiso `ruta:operar` (conductor) | Elegir las guías, salir a ruta y entregar en **modo ruta** compartiendo la ubicación |
+| `/seguimiento` | permiso `ruta:seguir` (admin, coordinador, despachador) | Mapa en vivo de los conductores en ruta y sus recorridos |
 | `/operaciones` | los cuatro roles | Índice de módulos **de la organización**, incluidos los no disponibles y por qué |
 | `/maestros` | los cuatro roles (editar: admin) | Tiendas, clientes y transportistas |
 | `/administracion` | admin (consulta: auditor) | Usuarios, roles y datos de la empresa |
 | `/bitacora` | auditor | Bitácora y verificación de integridad |
-| `/rastreo` | **sin cuenta** | Consulta pública del avance |
+| `/rastreo` | **sin cuenta** | Consulta pública del avance y, en reparto, la posición del vehículo |
+
+Las pantallas de rutas deciden **por permiso** (`ExigePermiso`) y no por nombre
+de rol, y esperan a que los permisos lleguen del servidor (`permisosCargados`)
+antes de decidir: sin esa espera, a quien sí tiene el permiso se le decía por un
+instante que la sección no era para su rol. Detalle en
+[rutas de entrega](../rutas-de-entrega/README.md).
 
 ## Estructura
 
@@ -29,11 +37,13 @@ src/
 ├── api/
 │   ├── cliente.ts      Cliente HTTP, configuración en ejecución, errores tipados
 │   ├── sesion.tsx      Contexto de sesión y aviso de caducidad
-│   └── consultas.ts    Hooks de React Query: lecturas, escrituras, invalidación
+│   ├── consultas.ts    Hooks de React Query: lecturas, escrituras, invalidación
+│   └── transmision.ts  GPS del modo ruta: envío periódico, cola sin señal, pantalla encendida
 ├── componentes/
 │   ├── ui.tsx          Botones, campos, tarjetas, avisos, modal, esqueletos
 │   ├── Estructura.tsx  Barra, navegación por rol, selector de tema, pie
 │   ├── codigo-barras.tsx   Codificador Code 128B a SVG
+│   ├── Mapa.tsx        Envoltura de Leaflet; se carga solo donde hay un mapa
 │   └── notificaciones.tsx  Avisos emergentes y traducción de errores
 ├── paginas/            Una por ruta
 ├── estilos/            identidad.css (solo el color de marca)
@@ -183,7 +193,7 @@ Los define el sistema de diseño compartido; la tabla completa está en
 
 | Regla del proyecto | Cómo se cumple |
 |---|---|
-| Usable a 360 px | Verificado en navegador en las once pantallas |
+| Usable a 360 px | Verificado en navegador en las once pantallas, y en Entregas, modo ruta, Seguimiento y la consulta pública con mapa (2026-10-16) |
 | Sin scroll horizontal en el documento | `overflow-x: hidden` en `body` y `min-width: 0` en los contenedores de rejilla |
 | Tablas anchas scrollean en su contenedor | `.tabla-contenedor` con `overflow-x: auto` y `max-width: 100%` |
 | Imágenes con `max-width: 100%` | Regla global |
@@ -217,6 +227,7 @@ Los define el sistema de diseño compartido; la tabla completa está en
 | `react`, `react-dom` | Interfaz |
 | `react-router-dom` | Enrutamiento y rutas protegidas |
 | `@tanstack/react-query` | Estado del servidor, reintento e invalidación |
+| `leaflet` (1.9.4, versión exacta) | Mapa de las rutas. Única biblioteca de interfaz de terceros; razones en [ADR-014](../../decisiones/adr-014-mapa-con-leaflet-y-openstreetmap.md) |
 | `vite`, `typescript` | Compilación y tipos |
 
 - **Consume**: la puerta de enlace y, a través de ella, los ocho servicios.
@@ -234,7 +245,7 @@ npm run build
 ```
 
 En desarrollo, Vite reenvía `/auth`, `/usuarios`, `/empresa`, `/envios`,
-`/publico`, `/bitacora`, `/tablero`, `/catalogos`, `/tiendas`, `/clientes` y
+`/rutas`, `/publico`, `/bitacora`, `/tablero`, `/catalogos`, `/tiendas`, `/clientes` y
 `/transportistas` a la puerta de enlace, de modo que no hay diferencia de origen
 entre desarrollo y el sitio publicado. **La lista debe coincidir con la que
 reparte la puerta de enlace**: si falta un prefijo, esa ruta devuelve el

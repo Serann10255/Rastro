@@ -160,6 +160,35 @@ práctica era poder de administrador porque no existía nada intermedio.
 5. Con la evidencia confirmada, el botón **ENTREGADO** se habilita. Sin ella, el
    servidor rechaza la entrega.
 
+**Con el modo ruta** (sección **Entregas**), lo mismo se hace sin abrir cada
+envío:
+
+1. Marcar las guías que lleva en el vehículo. Las asignadas y no recogidas se
+   marcan antes con **Recogido**.
+2. **Salir a ruta**. El navegador pide la ubicación: hay que permitirla. Cada
+   guía pasa a `EN_REPARTO` y su ubicación empieza a compartirse.
+3. En cada parada: **Llamar**, **Cómo llegar**, **Entregar** (foto y listo) o
+   **Novedad** (qué pasó).
+4. **Terminar ruta** al acabar. Deja de compartirse la ubicación.
+
+La ubicación solo funciona con `https` o en `localhost`: en el teléfono, use la
+dirección HTTPS del despliegue en AWS. Con la pantalla apagada el teléfono deja
+de enviarla. Detalle en [rutas de entrega](../modulos/rutas-de-entrega/README.md).
+
+### Recorrido de seguimiento (administrador, coordinador o despachador)
+
+1. **Seguimiento** — el mapa con cada conductor en ruta: verde si reportó en el
+   último minuto, ámbar si hace menos de cinco, gris si más. Se actualiza solo.
+2. Elegir una ruta dibuja su recorrido y lista sus paradas con su estado; cada
+   una abre su envío.
+3. **Finalizadas** — las rutas cerradas, con su recorrido de los últimos treinta
+   días.
+
+Para verlo moverse con una sola máquina: una pestaña con el conductor en modo
+ruta y otra, en otra ventana, con el administrador en **Seguimiento**. El
+destinatario lo ve en la consulta pública del envío (`/rastreo?envio=<id>`)
+mientras va en reparto.
+
 ### Recorrido como administrador
 
 1. **Administración → Usuarios** — crear cuentas, cambiar roles, desactivar

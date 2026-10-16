@@ -345,6 +345,26 @@ concluye que el control está bien.
 
 ---
 
+### Rutas de entrega (2026-10-16)
+
+Para llevar el modo ruta a una cuenta ya desplegada, sin repetir todo:
+
+| Etapa | Por qué |
+|---|---|
+| `10-datos.sh` | Activa la retención por TTL (`expira_en`) del recorrido. Si el laboratorio la niega, avisa y sigue: sin TTL el recorrido se conserva sin borrado automático |
+| `20-identidad.sh` | Siembra los módulos nuevos `entregas` y `seguimiento`. Los roles **no** hace falta resembrarlos: las operaciones nuevas se resuelven al leer |
+| `30-funciones.sh` | Nuevo código de `tracking`, `public`, `auth` y la capa común |
+| `40-api.sh` | Las seis rutas de `/rutas` y `GET /publico/envios/{envio_id}/ubicacion` |
+| `60-sitios.sh` y `65-sitio-https.sh` | La interfaz con Entregas, Seguimiento y el mapa |
+
+El GPS del navegador solo funciona sobre HTTPS, de modo que el conductor debe
+entrar por la dirección de `65-sitio-https.sh`, no por la HTTP de S3.
+
+Los módulos que una empresa ya tenía conservan su estado y su motivo al
+resembrar. El motivo de **Rutas** (planificación, que sigue apagado) y el de
+**Manifiestos** se reescribieron en la semilla; en una cuenta ya sembrada
+conservan el texto anterior hasta que un administrador lo cambie.
+
 ## Después de desplegar
 
 1. Abrir la interfaz en la dirección HTTPS que imprime `65-sitio-https.sh` y

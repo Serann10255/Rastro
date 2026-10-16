@@ -681,6 +681,13 @@ async def actualizar_rol(
     ctx.exigir(Operacion.ROL_ADMINISTRAR, recurso=f"rol/{clave}")
 
     actual = maestros().obtener_rol(ctx.org_id, clave)
+    # Lo que el rol concede de verdad, no lo que dice su registro: si el
+    # catalogo crecio despues de guardarlo, el registro no lleva las
+    # operaciones nuevas, y cambiar solo el nombre las quitaria sin que nadie
+    # lo pidiera.
+    efectivas = maestros().definiciones_de_rol(ctx.org_id).get(clave.lower())
+    if efectivas is not None:
+        actual = {**actual, "operaciones": sorted(str(o) for o in efectivas.operaciones)}
     cambios = {c: v for c, v in entrada.model_dump(mode="json").items() if v is not None}
     return {"rol": _guardar_rol(ctx, {**actual, **cambios, "clave": clave})}
 

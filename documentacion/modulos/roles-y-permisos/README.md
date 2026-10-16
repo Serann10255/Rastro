@@ -21,7 +21,7 @@ tocar el código.
 | **Administrador** | Responsable de la operación y de las cuentas. Tiene todas las operaciones | Leer la bitácora |
 | **Coordinador** | Despacha, autoriza envíos detenidos y mantiene catálogos | Administrar cuentas ni roles |
 | **Despachador** | Registra envíos, los asigna y sigue su avance | Autorizar detenidos, editar catálogos, tocar cuentas |
-| **Conductor** | Ve sus envíos, marca el avance, adjunta la prueba de entrega | Despachar, autorizar, ver evidencias ajenas |
+| **Conductor** | Ve sus envíos, sale a ruta con ellos compartiendo su ubicación, marca el avance, adjunta la prueba de entrega | Despachar, autorizar, ver evidencias ajenas, seguir a otros conductores |
 | **Auditor** | Revisa: bitácora, integridad de la cadena, cuentas y roles | Escribir cualquier cosa |
 
 El **coordinador** existe porque no había nada entre el despachador y el
@@ -30,13 +30,18 @@ roles: es decir, poder de administrador. Ahora es un rol propio.
 
 ### Operaciones por rol de fábrica
 
-| Rol | Operaciones de las 19 | Las que le faltan para tenerlas todas |
+| Rol | Operaciones de las 21 | Las que le faltan para tenerlas todas |
 |---|---|---|
-| Administrador | 17 | Leer y verificar la bitácora |
-| Coordinador | 12 | Cargar evidencia, cuentas (crear y editar), roles (ver y administrar), bitácora |
-| Despachador | 9 | Además de las del coordinador: reanudar, editar catálogos, listar cuentas |
-| Conductor | 6 | Crear, asignar y reanudar envíos; consultar evidencias; ver el equipo; cuentas, roles, editar catálogos y bitácora. Lo que sí tiene —listar, marcar avance, cargar evidencia— se limita a **sus** envíos |
-| Auditor | 8 | Toda operación de escritura, más el listado de envíos y el de mensajeros |
+| Administrador | 19 | Leer y verificar la bitácora |
+| Coordinador | 13 | Cargar evidencia, salir a ruta, cuentas (crear y editar), roles (ver y administrar), bitácora |
+| Despachador | 10 | Además de las del coordinador: reanudar, editar catálogos, listar cuentas |
+| Conductor | 7 | Crear, asignar y reanudar envíos; consultar evidencias; ver el equipo; seguir rutas; cuentas, roles, editar catálogos y bitácora. Lo que sí tiene —listar, marcar avance, cargar evidencia, salir a ruta— se limita a **sus** envíos |
+| Auditor | 8 | Toda operación de escritura, más el listado de envíos, el de mensajeros y las dos de rutas |
+
+Las dos operaciones de rutas (`ruta:operar`, `ruta:seguir`) se añadieron el
+2026-10-16 y van en un área propia, «Rutas y ubicación»: mueven la ubicación de
+una persona y tienen que poder concederse y negarse por separado
+([ADR-013](../../decisiones/adr-013-ubicacion-en-vivo-por-sondeo.md)).
 
 ## Decisiones
 
@@ -52,6 +57,19 @@ organización sin nadie que pueda entrar a deshacerla.
 **El administrador no lee la bitácora.** Única excepción a «puede hacer todo».
 El administrador opera; el auditor revisa lo operado, incluido lo que hizo el
 administrador.
+
+**Una operación nueva llega a los roles ya guardados, sin pisar lo decidido.**
+Un rol escrito en la tabla manda sobre el de fábrica. Cuando el catálogo crece,
+el registro no lleva la operación nueva, y el conductor de una empresa ya
+aprovisionada no podría salir a ruta hasta que alguien editara su rol. Por eso
+cada rol guardado anota `catalogo_conocido`, las operaciones que existían al
+guardarlo, y un rol **de fábrica** recibe las que su registro no conocía
+(`authz.operaciones_nuevas_para`). Si la empresa vio la operación y la quitó,
+sigue quitada; un rol inventado por la empresa no hereda nada. Los registros
+anteriores a la anotación se comparan con `CATALOGO_FUNDACIONAL`, las 19
+operaciones originales, que no se amplía nunca. Al renombrar un rol sin tocar
+sus permisos, se guardan los efectivos y no los del registro: si no, renombrar
+quitaba las operaciones nuevas sin que nadie lo pidiera.
 
 **Nadie concede un permiso que no tiene.** Hoy solo el administrador administra
 roles y las tiene todas, de modo que no cambia nada. El día que se delegue

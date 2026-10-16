@@ -15,6 +15,8 @@ ANCHO_SECUENCIA = 12
 
 SK_MAESTRO = "META"
 PREFIJO_EVENTO = "EVT#"
+PREFIJO_POSICION = "POS#"
+SK_RUTA_ACTIVA = "RUTA_ACTIVA"
 
 
 def _exigir_org(org_id: str) -> str:
@@ -62,6 +64,49 @@ def gsi_publico_pk(envio_id: str) -> str:
     expone datos de operacion.
     """
     return f"ENV#{_exigir_envio(envio_id)}"
+
+
+def _exigir_tramo(valor: str, nombre: str) -> str:
+    valor = (valor or "").strip()
+    if not valor:
+        raise ValidacionError(f"Falta el identificador de {nombre}.")
+    if "#" in valor:
+        raise ValidacionError(f"El identificador de {nombre} no admite el caracter '#'.")
+    return valor
+
+
+# -- Rutas de entrega -------------------------------------------------------- #
+#
+# Viven en la tabla de envios porque son operacion, no catalogo: crecen con el
+# trabajo diario igual que los eventos. Usan su propia particion del indice por
+# organizacion (``ORG#<org>#RUTAS``) para no aparecer nunca en el listado de
+# envios, que consulta ``ORG#<org>`` sin filtrar por tipo.
+
+
+def pk_ruta(org_id: str, ruta_id: str) -> str:
+    return f"ORG#{_exigir_org(org_id)}#RUTA#{_exigir_tramo(ruta_id, 'ruta')}"
+
+
+def sk_posicion(capturada_en: str, sufijo: str) -> str:
+    return f"{PREFIJO_POSICION}{capturada_en}#{sufijo}"
+
+
+def gsi_rutas_pk(org_id: str) -> str:
+    return f"ORG#{_exigir_org(org_id)}#RUTAS"
+
+
+def gsi_rutas_sk(iniciada_en: str, ruta_id: str) -> str:
+    return f"RUTA#{iniciada_en}#{_exigir_tramo(ruta_id, 'ruta')}"
+
+
+def pk_conductor(org_id: str, conductor_sub: str) -> str:
+    """Particion del conductor. Guarda el testigo de su ruta activa.
+
+    El testigo es lo que garantiza que un conductor tenga una sola ruta abierta:
+    se escribe con una condicion de no existencia, de modo que dos inicios
+    simultaneos -un doble toque en el boton- no pueden ganar los dos.
+    """
+    return f"ORG#{_exigir_org(org_id)}#CONDUCTOR#{_exigir_tramo(conductor_sub, 'conductor')}"
 
 
 def pk_bitacora(org_id: str) -> str:

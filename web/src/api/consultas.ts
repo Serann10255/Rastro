@@ -7,6 +7,7 @@
  * es donde aparecen las incoherencias.
  */
 
+import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ErrorApi, api } from "@/api/cliente";
@@ -16,7 +17,10 @@ import type {
   Cliente,
   Estado,
   Grupo,
+  LecturaGps,
+  PosicionRuta,
   Resultado,
+  Ruta,
   Tienda,
   TipoContenido,
   Transportista,
@@ -42,6 +46,10 @@ export const claves = {
   mensajeros: ["equipo", "mensajeros"] as const,
   roles: ["roles"] as const,
   catalogoOperaciones: ["catalogo", "operaciones"] as const,
+  rutaActiva: ["rutas", "activa"] as const,
+  rutas: (estado: string) => ["rutas", "lista", estado] as const,
+  recorrido: (id: string) => ["rutas", "recorrido", id] as const,
+  ubicacionPublica: (id: string) => ["publico", id, "ubicacion"] as const,
 };
 
 /* Reintentar un 403 o un 404 no cambia el resultado y confunde al usuario con
@@ -183,6 +191,127 @@ export function useConsultaPublica(envioId: string | null) {
 }
 
 // --------------------------------------------------------------------------- //
+// Rutas de entrega
+// --------------------------------------------------------------------------- //
+
+/* Cada cuánto se refresca cada vista. El mapa de la empresa es el que más
+ * pregunta porque es el que alguien mira esperando ver moverse un punto; el
+ * destinatario, menos, porque su envío es uno y la posición pública solo
+ * cambia cuando el conductor reporta, cada quince segundos. */
+const REFRESCO_SEGUIMIENTO_MS = 10_000;
+const REFRESCO_RUTA_PROPIA_MS = 30_000;
+const REFRESCO_PUBLICO_MS = 20_000;
+
+/** Guarda el testigo de la última consulta registrada en la bitácora.
+ *
+ *  Vive lo que vive la pantalla: abrirla de nuevo es otra consulta, y se
+ *  registra. Lo que evita es que cada refresco automático deje un eslabón. */
+function useTestigo() {
+  return useRef<string | undefined>(undefined);
+}
+
+/** La ruta abierta del conductor, si la tiene. Es lo que permite retomar el
+ *  modo ruta tras cerrar el navegador. */
+export function useRutaActiva(habilitado = true) {
+  const testigo = useTestigo();
+  return useQuery({
+    queryKey: claves.rutaActiva,
+    queryFn: async () => {
+      const datos = await api.rutaActiva(testigo.current);
+      testigo.current = datos.testigo ?? undefined;
+      return datos;
+    },
+    enabled: habilitado,
+    refetchInterval: REFRESCO_RUTA_PROPIA_MS,
+    staleTime: 0,
+    ...reintento,
+  });
+}
+
+export function useRutas(estado: "activas" | "finalizadas") {
+  const testigo = useTestigo();
+  return useQuery({
+    queryKey: claves.rutas(estado),
+    queryFn: async () => {
+      const datos = await api.rutas(estado, testigo.current);
+      testigo.current = datos.testigo;
+      return datos;
+    },
+    // Solo las activas se mueven. Las finalizadas no cambian: refrescarlas
+    // cada diez segundos sería pagar invocaciones por nada.
+    refetchInterval: estado === "activas" ? REFRESCO_SEGUIMIENTO_MS : false,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+    ...reintento,
+  });
+}
+
+/** Una ruta con su recorrido, que se va completando.
+ *
+ *  La primera consulta trae el recorrido entero; las siguientes, solo lo
+ *  posterior a la última posición conocida, y se suma a lo que ya había. Pedir
+ *  el recorrido completo cada diez segundos sería descargar seis horas de
+ *  posiciones para dibujar las dos últimas. */
+export function useRecorrido(rutaId: string | null, vivo: boolean) {
+  const cliente = useQueryClient();
+  const testigo = useTestigo();
+  return useQuery({
+    queryKey: claves.recorrido(rutaId ?? ""),
+    queryFn: async () => {
+      const previo = cliente.getQueryData<{ ruta: Ruta; posiciones: PosicionRuta[] }>(
+        claves.recorrido(rutaId!),
+      );
+      const desde = previo?.posiciones.at(-1)?.capturada_en;
+      const datos = await api.ruta(rutaId!, { desde, testigo: testigo.current });
+      testigo.current = datos.testigo;
+      return {
+        ruta: datos.ruta,
+        posiciones: desde ? [...(previo?.posiciones ?? []), ...datos.posiciones] : datos.posiciones,
+      };
+    },
+    enabled: Boolean(rutaId),
+    refetchInterval: vivo ? REFRESCO_SEGUIMIENTO_MS : false,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+    ...reintento,
+  });
+}
+
+export function useUbicacionPublica(envioId: string | null, habilitado: boolean) {
+  return useQuery({
+    queryKey: claves.ubicacionPublica(envioId ?? ""),
+    queryFn: () => api.ubicacionPublica(envioId!),
+    enabled: Boolean(envioId) && habilitado,
+    refetchInterval: REFRESCO_PUBLICO_MS,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+    ...reintento,
+  });
+}
+
+export function useIniciarRuta() {
+  const invalidar = useInvalidarTrasEscritura();
+  return useMutation<
+    Awaited<ReturnType<typeof api.iniciarRuta>>,
+    ErrorApi,
+    { envios: string[]; ubicacion?: LecturaGps }
+  >({
+    mutationFn: ({ envios, ubicacion }) => api.iniciarRuta(envios, ubicacion),
+    onSuccess: invalidar,
+  });
+}
+
+export function useFinalizarRuta() {
+  const invalidar = useInvalidarTrasEscritura();
+  return useMutation<Awaited<ReturnType<typeof api.finalizarRuta>>, ErrorApi, { rutaId: string; nota?: string }>(
+    {
+      mutationFn: ({ rutaId, nota }) => api.finalizarRuta(rutaId, nota),
+      onSuccess: invalidar,
+    },
+  );
+}
+
+// --------------------------------------------------------------------------- //
 // Datos maestros
 // --------------------------------------------------------------------------- //
 
@@ -239,6 +368,9 @@ function useInvalidarTrasEscritura(envioId?: string) {
       envioId ? cliente.invalidateQueries({ queryKey: claves.envio(envioId) }) : Promise.resolve(),
       envioId ? cliente.invalidateQueries({ queryKey: claves.transiciones(envioId) }) : Promise.resolve(),
       envioId ? cliente.invalidateQueries({ queryKey: claves.evidencias(envioId) }) : Promise.resolve(),
+      // Una entrega cambia la parada de su ruta: el modo ruta y el mapa de
+      // seguimiento tienen que verla sin esperar a su siguiente refresco.
+      cliente.invalidateQueries({ queryKey: ["rutas"] }),
     ]);
   };
 }

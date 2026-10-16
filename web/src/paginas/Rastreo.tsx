@@ -9,10 +9,11 @@
  * cuenta, y mostrarle una navegación de operación solo lo confundiría.
  */
 
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { useConsultaPublica } from "@/api/consultas";
+import { claves, useConsultaPublica, useUbicacionPublica } from "@/api/consultas";
 import { ErrorApi } from "@/api/cliente";
 import { SelectorTema } from "@/componentes/Estructura";
 import {
@@ -21,12 +22,17 @@ import {
   EtiquetaEstado,
   Esqueleto,
   Tarjeta,
+  antiguedad,
   fechaLegible,
   fechaRelativa,
   textoEstado,
 } from "@/componentes/ui";
 import { FLUJO_PRINCIPAL } from "@/tipos";
 import type { Estado, EventoPublico } from "@/tipos";
+
+/* El mapa se carga solo si hay algo que mostrar en él: quien consulta un envío
+ * entregado no tiene por qué descargar la biblioteca de mapas. */
+const Mapa = lazy(() => import("@/componentes/Mapa"));
 
 export function Rastreo() {
   const [parametros, setParametros] = useSearchParams();
@@ -117,6 +123,8 @@ export function Rastreo() {
               <ProgresoEnvio estadoActual={data.envio.estado} />
             </Tarjeta>
 
+            {data.envio.estado === "EN_REPARTO" && <UbicacionEnVivo envioId={data.envio.envio_id} />}
+
             <Tarjeta titulo="Avance">
               <ol className="linea">
                 {data.eventos.map((evento, indice) => (
@@ -134,6 +142,70 @@ export function Rastreo() {
         )}
       </main>
     </div>
+  );
+}
+
+/* Dónde va el vehículo que lleva el envío, mientras va en reparto.
+ *
+ * Solo la posición y su antigüedad: quién conduce y qué otras entregas lleva
+ * no son del destinatario. Si el conductor no ha salido a ruta, o la última
+ * posición es vieja, no se muestra nada que parezca en vivo: un punto quieto de
+ * hace una hora le diría que el paquete está parado allí. */
+function UbicacionEnVivo({ envioId }: { envioId: string }) {
+  const cliente = useQueryClient();
+  const { data } = useUbicacionPublica(envioId, true);
+
+  // La ubicación se pregunta más a menudo que el histórico. Si dice que el
+  // envío ya no va en reparto, es que se entregó o se detuvo mientras la
+  // pantalla estaba abierta: se relee el histórico para mostrarlo.
+  useEffect(() => {
+    if (data?.motivo === "no_en_reparto") void cliente.invalidateQueries({ queryKey: claves.publico(envioId) });
+  }, [data, cliente, envioId]);
+
+  const marcadores = useMemo(
+    () =>
+      data?.disponible && data.posicion
+        ? [
+            {
+              id: "vehiculo",
+              lat: data.posicion.lat,
+              lon: data.posicion.lon,
+              titulo: "Posición del vehículo que lleva su envío",
+              precision: data.posicion.precision_m,
+              pulso: true,
+            },
+          ]
+        : [],
+    [data],
+  );
+
+  if (!data) return null;
+
+  if (!data.disponible) {
+    return (
+      <p className="texto-sm texto-suave">
+        {data.motivo === "sin_senal"
+          ? "El vehículo no ha reportado su posición en los últimos minutos. Volverá a aparecer aquí en cuanto lo haga."
+          : "La ubicación en vivo aparece cuando el mensajero sale a ruta con su envío."}
+      </p>
+    );
+  }
+
+  return (
+    <Tarjeta
+      titulo="Su envío va en camino"
+      ayuda={`Posición del vehículo ${antiguedad(data.edad_segundos)}. Se actualiza sola.`}
+    >
+      <div className="rastreo-mapa">
+        <Suspense fallback={<Esqueleto alto="100%" />}>
+          <Mapa marcadores={marcadores} seguir="vehiculo" etiqueta="Mapa con la posición del vehículo que lleva su envío" />
+        </Suspense>
+      </div>
+      <p className="texto-xs texto-tenue" style={{ marginTop: "var(--e-2)" }}>
+        Se muestra solo mientras su envío está en reparto. No incluye quién lo lleva ni sus otras
+        entregas.
+      </p>
+    </Tarjeta>
   );
 }
 

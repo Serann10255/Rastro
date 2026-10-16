@@ -78,7 +78,7 @@ infraestructura y no deben verse entre sí.
 python -m pytest -q
 ```
 
-234 pruebas: unitarias de los controles críticos y de extremo a extremo sobre la
+319 pruebas: unitarias de los controles críticos y de extremo a extremo sobre la
 pila de microservicios. No requieren Docker ni credenciales de AWS.
 
 ## Ejecutar la auditoría
@@ -120,7 +120,7 @@ documentacion/        Toda la documentación del repositorio
 |---|---|---|
 | `auth` | 8001 | Identidad: cuentas, contraseñas derivadas, sesiones revocables |
 | `shipments` | 8002 | Registro individual y masivo, asignación, exportación y guías |
-| `tracking` | 8003 | Puntos de control y máquina de estados |
+| `tracking` | 8003 | Puntos de control, máquina de estados y rutas de entrega con ubicación en vivo |
 | `evidence` | 8004 | Enlaces prefirmados y evidencias cifradas |
 | `public` | 8005 | Consulta pública sin autenticación |
 | `audit` | 8006 | Bitácora encadenada y verificador de integridad |

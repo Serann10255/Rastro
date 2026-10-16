@@ -108,6 +108,51 @@ class RegistrarEventoSolicitud(BaseModel):
     evidencia_id: str | None = None
 
 
+# --------------------------------------------------------------------------- #
+# Rutas de entrega
+# --------------------------------------------------------------------------- #
+
+#: Tope de paradas por ruta. Un mensajero de ultima milla lleva decenas de
+#: paquetes, no centenares; el tope evita que una peticion por error convierta
+#: el inicio de la ruta en cien escrituras encadenadas.
+MAX_PARADAS_POR_RUTA = 100
+
+#: Posiciones por peticion. El dispositivo las acumula mientras no tiene senal y
+#: las envia juntas al recuperarla; a una cada quince segundos, sesenta son
+#: quince minutos sin cobertura.
+MAX_POSICIONES_POR_ENVIO = 60
+
+
+class PosicionDispositivo(BaseModel):
+    """Una lectura del GPS del telefono del conductor.
+
+    ``capturada_en`` es la hora del dispositivo y se acepta solo para ordenar
+    las lecturas que llegan atrasadas; el servidor la acota a un intervalo
+    verosimil (ver ``rutas.normalizar_posicion``) y anota siempre su propia hora
+    de recepcion.
+    """
+
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    precision_m: float | None = Field(default=None, ge=0, le=100_000)
+    rumbo: float | None = Field(default=None, ge=0, le=360)
+    velocidad: float | None = Field(default=None, ge=0, le=100)
+    capturada_en: str | None = Field(default=None, max_length=40)
+
+
+class IniciarRutaSolicitud(BaseModel):
+    envios: list[str] = Field(min_length=1, max_length=MAX_PARADAS_POR_RUTA)
+    ubicacion: PosicionDispositivo | None = None
+
+
+class ReportarPosicionesSolicitud(BaseModel):
+    posiciones: list[PosicionDispositivo] = Field(min_length=1, max_length=MAX_POSICIONES_POR_ENVIO)
+
+
+class FinalizarRutaSolicitud(BaseModel):
+    nota: str = Field(default="", max_length=300)
+
+
 class SolicitarEvidenciaSolicitud(BaseModel):
     """REQ-05. Solicitud del enlace prefirmado de carga."""
 
@@ -176,6 +221,9 @@ class Envio(BaseModel):
     bultos: int = 1
     fecha_estimada: str = ""
     observaciones: str = ""
+    #: La ultima ruta de entrega que llevo este envio. Se conserva al cerrarla:
+    #: es lo que permite reconstruir en que recorrido salio.
+    ruta_id: str | None = None
 
     def vista_publica(self) -> dict:
         return {

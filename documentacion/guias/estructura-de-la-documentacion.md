@@ -29,6 +29,7 @@ formato ISO.
 | Identidad, sesiones y cuentas | [`servicio-auth`](../modulos/servicio-auth/README.md) |
 | Envíos | [`servicio-envios`](../modulos/servicio-envios/README.md) |
 | Puntos de control | [`servicio-rastreo`](../modulos/servicio-rastreo/README.md) |
+| Rutas de entrega y ubicación en vivo | [`rutas-de-entrega`](../modulos/rutas-de-entrega/README.md) |
 | Evidencias | [`servicio-evidencias`](../modulos/servicio-evidencias/README.md) |
 | Consulta pública | [`servicio-consulta-publica`](../modulos/servicio-consulta-publica/README.md) |
 | Bitácora | [`servicio-bitacora`](../modulos/servicio-bitacora/README.md) |

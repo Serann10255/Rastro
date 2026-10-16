@@ -39,6 +39,23 @@ else
   ok "tabla creada: ${TABLA_ENVIOS} (indices gsi_org y gsi_publico)"
 fi
 
+# Retencion del recorrido de las rutas. Cada posicion lleva `expira_en` y el
+# servicio la borra al vencer: la ubicacion de una persona se guarda mientras
+# sirve para atender un reclamo, no para siempre (ADR-013). Solo afecta a los
+# elementos que llevan el atributo; envios, eventos y rutas no lo tienen.
+# Un rechazo aqui no detiene el despliegue: sin TTL el sistema funciona igual y
+# lo que se pierde es el borrado automatico, que se informa.
+if aws dynamodb describe-time-to-live --region "${REGION}" --table-name "${TABLA_ENVIOS}" \
+     --query 'TimeToLiveDescription.TimeToLiveStatus' --output text 2>/dev/null \
+     | grep -qE 'ENABLED|ENABLING'; then
+  ok "retencion del recorrido ya activa en ${TABLA_ENVIOS}"
+elif aws dynamodb update-time-to-live --region "${REGION}" --table-name "${TABLA_ENVIOS}" \
+     --time-to-live-specification "Enabled=true,AttributeName=expira_en" >/dev/null 2>&1; then
+  ok "retencion del recorrido activada (atributo expira_en)"
+else
+  aviso "no se pudo activar la retencion por TTL; el recorrido se conserva sin borrado automatico"
+fi
+
 if existe_tabla "${TABLA_BITACORA}"; then
   ok "tabla ya existente: ${TABLA_BITACORA}"
 else

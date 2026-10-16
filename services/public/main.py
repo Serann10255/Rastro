@@ -19,6 +19,7 @@ from rastro_core.errors import NoEncontradoError
 from rastro_core.http import crear_app, obtener_repositorio
 from rastro_core.ids import marca_tiempo
 from rastro_core.models import Destinatario, Direccion, Envio, Evento
+from rastro_core.rutas import ubicacion_publica
 
 app = crear_app(
     "rastro-publico",
@@ -55,3 +56,37 @@ async def consultar_envio_publico(envio_id: str = Path(pattern=PATRON_UUID)) -> 
         "eventos": [Evento(**e).vista_publica() for e in eventos],
         "consultado_en": marca_tiempo(),
     }
+
+
+@app.get(
+    "/publico/envios/{envio_id}/ubicacion",
+    tags=["publico"],
+    summary="Donde va el envio mientras esta en reparto",
+)
+async def consultar_ubicacion_publica(envio_id: str = Path(pattern=PATRON_UUID)) -> dict:
+    """La ultima posicion del vehiculo que lleva el envio, si la hay.
+
+    Es una ruta aparte de la consulta del historico, y no un campo mas, por dos
+    razones. La pantalla del destinatario la pregunta cada pocos segundos y el
+    historico no cambia a ese ritmo. Y la consulta del historico tiene un
+    contrato que otros ya leen -el programa de auditoria entre ellos-: anadirle
+    la ubicacion de una persona cambiaria lo que esa vista promete no mostrar.
+
+    Lo que se devuelve lo decide ``rutas.ubicacion_publica``: posicion
+    redondeada y antiguedad, solo mientras el envio esta en reparto dentro de
+    una ruta abierta y la posicion es reciente. Ni quien conduce ni sus otras
+    paradas.
+    """
+    repositorio = obtener_repositorio()
+    maestro = repositorio.maestro_publico(envio_id)
+    if maestro is None:
+        raise NoEncontradoError("No existe un envio con ese identificador.")
+
+    ruta = None
+    if maestro.get("ruta_id"):
+        try:
+            ruta = repositorio.obtener_ruta(maestro["org_id"], maestro["ruta_id"])
+        except NoEncontradoError:
+            ruta = None
+
+    return {**ubicacion_publica(maestro, ruta), "consultado_en": marca_tiempo()}

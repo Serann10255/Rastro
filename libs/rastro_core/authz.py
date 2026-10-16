@@ -71,6 +71,13 @@ class Operacion(StrEnum):
     ROL_CONSULTAR = "rol:consultar"
     ROL_ADMINISTRAR = "rol:administrar"
 
+    # Rutas de entrega. Son operaciones aparte -y no un efecto de registrar
+    # eventos- porque lo que mueven es la ubicacion de una persona, que es un
+    # dato personal: compartirla y verla tienen que poder concederse y negarse
+    # por separado de todo lo demas.
+    RUTA_OPERAR = "ruta:operar"
+    RUTA_SEGUIR = "ruta:seguir"
+
 
 #: Como se agrupan las operaciones al presentarlas. Es informacion de interfaz y
 #: vive aqui para que una operacion nueva no pueda quedarse sin sitio: la
@@ -109,6 +116,10 @@ AREAS: dict[str, tuple[str, tuple[Operacion, ...]]] = {
         "Datos maestros",
         (Operacion.MAESTRO_CONSULTAR, Operacion.MAESTRO_EDITAR, Operacion.TABLERO_CONSULTAR),
     ),
+    "rutas": (
+        "Rutas y ubicacion",
+        (Operacion.RUTA_OPERAR, Operacion.RUTA_SEGUIR),
+    ),
     "auditoria": (
         "Auditoria",
         (Operacion.BITACORA_CONSULTAR, Operacion.BITACORA_VERIFICAR),
@@ -138,7 +149,38 @@ DESCRIPCIONES: dict[Operacion, str] = {
     Operacion.EQUIPO_CONSULTAR: "Ver los mensajeros disponibles para asignar",
     Operacion.ROL_CONSULTAR: "Ver los roles de la organizacion y sus permisos",
     Operacion.ROL_ADMINISTRAR: "Crear roles y cambiar que puede hacer cada uno",
+    Operacion.RUTA_OPERAR: "Salir a ruta con sus guias y compartir su ubicacion mientras entrega",
+    Operacion.RUTA_SEGUIR: "Ver en el mapa la ubicacion en vivo de los conductores en ruta",
 }
+
+#: El catalogo tal como existia antes de que cada rol guardado anotara cuales
+#: conocia. Sirve para una sola cosa: saber, ante un rol escrito en la tabla sin
+#: esa anotacion, que operaciones son posteriores y por lo tanto no pudo decidir
+#: la organizacion (ver ``operaciones_nuevas_para``). No se amplia nunca: las
+#: operaciones que se anadan despues quedan registradas en cada rol al guardarlo.
+CATALOGO_FUNDACIONAL: frozenset[str] = frozenset(
+    {
+        "envio:crear",
+        "envio:asignar",
+        "envio:listar",
+        "envio:consultar",
+        "evento:registrar",
+        "evento:reanudar",
+        "evidencia:cargar",
+        "evidencia:descargar",
+        "bitacora:consultar",
+        "bitacora:verificar",
+        "usuario:listar",
+        "usuario:crear",
+        "usuario:editar",
+        "maestro:consultar",
+        "maestro:editar",
+        "tablero:consultar",
+        "equipo:consultar",
+        "rol:consultar",
+        "rol:administrar",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -192,6 +234,7 @@ ROLES_INTEGRADOS: dict[str, DefinicionRol] = {
                 Operacion.TABLERO_CONSULTAR,
                 Operacion.EQUIPO_CONSULTAR,
                 Operacion.USUARIO_LISTAR,
+                Operacion.RUTA_SEGUIR,
             }
         ),
     ),
@@ -211,14 +254,16 @@ ROLES_INTEGRADOS: dict[str, DefinicionRol] = {
                 Operacion.MAESTRO_CONSULTAR,
                 Operacion.TABLERO_CONSULTAR,
                 Operacion.EQUIPO_CONSULTAR,
+                Operacion.RUTA_SEGUIR,
             }
         ),
     ),
     Grupo.CONDUCTOR: DefinicionRol(
         clave=Grupo.CONDUCTOR,
         nombre="Conductor",
-        descripcion="Reparte: ve sus envios, marca el avance y adjunta la prueba de "
-        "entrega. Reporta la incidencia; autorizarla corresponde a otro rol.",
+        descripcion="Reparte: ve sus envios, sale a ruta con ellos, marca el avance y "
+        "adjunta la prueba de entrega. Reporta la incidencia; autorizarla corresponde "
+        "a otro rol.",
         operaciones=frozenset(
             {
                 Operacion.ENVIO_LISTAR,
@@ -227,6 +272,7 @@ ROLES_INTEGRADOS: dict[str, DefinicionRol] = {
                 Operacion.EVIDENCIA_CARGAR,
                 Operacion.MAESTRO_CONSULTAR,
                 Operacion.TABLERO_CONSULTAR,
+                Operacion.RUTA_OPERAR,
             }
         ),
     ),
@@ -265,7 +311,12 @@ GRUPOS_SOLO_LECTURA: frozenset[str] = frozenset({Grupo.AUDITOR})
 #: Operaciones que solo alcanzan los envios propios cuando quien las pide no ve
 #: la operacion completa.
 OPERACIONES_RESTRINGIDAS_A_ENVIOS_PROPIOS: frozenset[Operacion] = frozenset(
-    {Operacion.EVENTO_REGISTRAR, Operacion.EVIDENCIA_CARGAR, Operacion.ENVIO_LISTAR}
+    {
+        Operacion.EVENTO_REGISTRAR,
+        Operacion.EVIDENCIA_CARGAR,
+        Operacion.ENVIO_LISTAR,
+        Operacion.RUTA_OPERAR,
+    }
 )
 
 #: Operaciones de escritura. Se usan para avisar cuando un rol las combina con
@@ -281,8 +332,34 @@ OPERACIONES_DE_ESCRITURA: frozenset[Operacion] = frozenset(
         Operacion.USUARIO_EDITAR,
         Operacion.MAESTRO_EDITAR,
         Operacion.ROL_ADMINISTRAR,
+        Operacion.RUTA_OPERAR,
     }
 )
+
+
+def operaciones_nuevas_para(clave_rol: str, catalogo_conocido) -> frozenset[Operacion]:
+    """Lo que un rol de fabrica gana por operaciones que su registro no conocia.
+
+    Un rol guardado en la tabla manda sobre el de fabrica, y eso esta bien para
+    lo que la organizacion decidio. Pero una operacion que no existia cuando se
+    guardo el rol no la decidio nadie: si se ignorara, el conductor de una
+    empresa ya aprovisionada no podria salir a ruta hasta que alguien editara su
+    rol, y nadie sabria por que.
+
+    La regla es estrecha a proposito. Solo aplica a los roles de fabrica -un rol
+    inventado por la empresa no tiene un «de fabrica» que heredar- y solo a las
+    operaciones ausentes del catalogo que el registro conocia. Si la empresa vio
+    la operacion y la quito, sigue quitada.
+    """
+    definicion = ROLES_INTEGRADOS.get(str(clave_rol))
+    if definicion is None:
+        return frozenset()
+    conocido = (
+        {str(o) for o in catalogo_conocido}
+        if catalogo_conocido
+        else set(CATALOGO_FUNDACIONAL)
+    )
+    return frozenset(o for o in definicion.operaciones if str(o) not in conocido)
 
 
 def normalizar_grupos(grupos) -> frozenset[str]:

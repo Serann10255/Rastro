@@ -90,6 +90,29 @@ literal dejaría fuera:
 | `test_un_token_firmado_con_otro_secreto_se_rechaza` | La validación en el servicio no depende de la puerta de enlace |
 | `test_las_credenciales_invalidas_no_distinguen_usuario_de_clave` | Distinguirlas permitiría enumerar cuentas |
 | `test_el_punto_publico_no_admite_identificadores_que_no_sean_aleatorios` | El sondeo no debe costar ni una lectura del almacenamiento |
+
+### Rutas de entrega (2026-10-16)
+
+`tests/e2e/test_rutas.py` y `tests/unit/test_reglas_de_rutas.py`. Lo que fijan,
+más allá de que el modo ruta funcione:
+
+| Prueba | Por qué existe |
+|---|---|
+| `test_iniciar_lleva_cada_envio_a_reparto_por_el_flujo_principal` | Salir a ruta no abre atajos en la máquina de estados: cada paso es un evento, en orden |
+| `test_un_envio_que_no_tiene_en_su_poder_no_sale_y_no_sale_ninguno` | La selección es todo o nada, y el rechazo queda en la bitácora |
+| `test_un_envio_de_otro_conductor_responde_como_si_no_existiera` | El mismo 404 que el aislamiento entre organizaciones |
+| `test_quien_ve_toda_la_operacion_tampoco_sale_con_paquetes_de_otro` | Tener todos los permisos no autoriza a llevar paquetes ajenos |
+| `test_un_conductor_no_puede_tener_dos_rutas_abiertas` · `test_un_testigo_huerfano_no_bloquea_al_conductor` | Una ruta por conductor, sin dejarlo bloqueado si un inicio falló a medias |
+| `test_solo_quien_conduce_reporta_posiciones` | Ni el administrador puede poner el paquete en otro sitio |
+| `test_una_ruta_de_otra_organizacion_no_existe` | REQ-06 sobre las rutas: lectura, posiciones y listado |
+| `test_el_destinatario_ve_la_posicion_mientras_su_envio_va_en_reparto` | La vista pública no lleva conductor, ruta, paradas ni organización |
+| `test_tras_la_entrega_o_el_cierre_la_posicion_deja_de_verse` · `test_una_posicion_vieja_no_se_muestra_al_destinatario` | La ubicación de una persona solo se muestra mientras informa sobre el paquete |
+| `test_mirar_el_mapa_deja_constancia_una_vez_y_no_en_cada_refresco` | Constancia de quién miró, sin llenar la bitácora |
+| `test_un_testigo_ajeno_o_falso_no_evita_la_constancia` · `test_el_testigo_no_sirve_como_token_de_acceso` | El testigo no es una forma de consultar sin dejar rastro ni de entrar |
+| `test_un_conductor_de_una_empresa_ya_aprovisionada_puede_salir_a_ruta` | Las operaciones nuevas llegan a los roles ya guardados |
+| `test_renombrar_el_rol_no_le_quita_las_operaciones_nuevas` · `test_si_la_empresa_quita_la_ruta_al_conductor_sigue_quitada` | Sin pisar lo que la empresa decidió |
+| `test_dos_eventos_seguidos_nunca_comparten_marca_de_tiempo` | El defecto de orden que se encontró por su intermitencia |
+| `test_una_hora_inverosimil_se_sustituye_por_la_de_recepcion` | La hora del teléfono es manipulable y no se cree sin más |
 | `test_la_contrasena_nunca_se_almacena_en_claro` | Lee el registro guardado y comprueba que la clave no aparece por ninguna parte |
 | `test_dos_usuarios_con_la_misma_clave_tienen_hashes_distintos` | Sin sal por contraseña, una tabla precalculada rompe todas a la vez |
 | `test_un_hash_corrupto_no_lanza_sino_que_falla` | Un registro dañado debe negar el acceso, no tumbar el servicio con un 500 |

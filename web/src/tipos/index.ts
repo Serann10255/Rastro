@@ -311,6 +311,90 @@ export interface HistoricoPublico {
   consultado_en: string;
 }
 
+/** Lo que el destinatario ve de la ruta que lleva su envío: la posición y su
+ *  antigüedad, nada más. Quién conduce y sus otras paradas no forman parte. */
+export interface UbicacionPublica {
+  disponible: boolean;
+  motivo?: "no_en_reparto" | "sin_ruta_activa" | "sin_senal";
+  posicion?: { lat: number; lon: number; precision_m?: number };
+  actualizada_en?: string;
+  edad_segundos?: number;
+  consultado_en: string;
+}
+
+// --------------------------------------------------------------------------- //
+// Rutas de entrega
+// --------------------------------------------------------------------------- //
+
+export type EstadoRuta = "ACTIVA" | "FINALIZADA";
+
+/** Qué tan reciente es la última posición, dicho por el servidor: el reloj del
+ *  navegador de quien mira puede estar desfasado. */
+export type EstadoSenal = "en_linea" | "atrasada" | "sin_senal" | "sin_datos" | "cerrada";
+
+export interface PosicionRuta {
+  lat: number;
+  lon: number;
+  precision_m?: number;
+  rumbo?: number;
+  velocidad?: number;
+  capturada_en: string;
+  recibida_en: string;
+  /** Si la hora es la del teléfono o la del servidor, cuando la del teléfono
+   *  no era creíble. */
+  hora_de: "dispositivo" | "servidor";
+}
+
+export interface ParadaRuta {
+  envio_id: string;
+  orden: number;
+  estado: Estado;
+  codigo_estado: number;
+  destinatario: string;
+  telefono: string;
+  direccion: string;
+  referencia: string;
+  ciudad: string;
+  orden_compra: string;
+  bultos: number;
+  descripcion: string;
+  actualizada_en: string;
+}
+
+export interface Ruta {
+  ruta_id: string;
+  org_id: string;
+  estado: EstadoRuta;
+  conductor_sub: string;
+  conductor_nombre: string;
+  iniciada_en: string;
+  actualizada_en: string;
+  finalizada_en?: string | null;
+  cierre?: "completada" | "manual" | null;
+  nota_cierre?: string;
+  paradas: ParadaRuta[];
+  ultima_posicion: PosicionRuta | null;
+  posiciones: number;
+  resumen: {
+    total: number;
+    entregadas: number;
+    incidencias: number;
+    cerradas: number;
+    pendientes: number;
+  };
+  senal: { estado: EstadoSenal; edad_segundos: number | null };
+}
+
+/** Lectura del GPS tal como la envía el teléfono. */
+export interface LecturaGps {
+  lat: number;
+  lon: number;
+  precision_m?: number;
+  rumbo?: number;
+  velocidad?: number;
+  capturada_en?: string;
+}
+
 // --------------------------------------------------------------------------- //
 // Catálogo de estados
 // --------------------------------------------------------------------------- //

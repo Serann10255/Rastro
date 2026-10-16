@@ -26,6 +26,10 @@ interface ValorSesion {
    *  ser configurables: un rol que la empresa cree mañana no aparece en ninguna
    *  lista escrita en una pantalla, pero sus permisos sí llegan aquí. */
   puede: (...operaciones: string[]) => boolean;
+  /** Si los permisos ya llegaron del servidor. Mientras no, `puede` responde
+   *  que no a todo, y una pantalla que decidiera con eso le diría a quien sí
+   *  tiene el permiso que la sección no es para su rol. */
+  permisosCargados: boolean;
   motivoDeSalida: string | null;
 }
 
@@ -35,6 +39,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Sesion | null>(() => almacenSesion.leer());
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [permisos, setPermisos] = useState<string[]>([]);
+  const [permisosCargados, setPermisosCargados] = useState(false);
   const [motivoDeSalida, setMotivoDeSalida] = useState<string | null>(null);
 
   // El cliente avisa cuando renueva la sesión sola o cuando el servidor la
@@ -46,6 +51,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       if (!nueva) {
         setEmpresa(null);
         setPermisos([]);
+        setPermisosCargados(false);
         setMotivoDeSalida("La sesión expiró. Vuelva a entrar.");
       }
     });
@@ -63,10 +69,14 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         if (!vigente) return;
         setEmpresa(datos.empresa);
         setPermisos(datos.permisos ?? []);
+        setPermisosCargados(true);
       })
       .catch(() => {
         /* Si falla, la interfaz funciona igual: solo falta el nombre de la
-         * empresa en la barra, y insistir no lo arreglaría. */
+         * empresa en la barra, y insistir no lo arreglaría. Se dan por
+         * cargados para que las pantallas no esperen para siempre: sin
+         * permisos, ofrecen menos, y el servidor decide de todos modos. */
+        if (vigente) setPermisosCargados(true);
       });
     return () => {
       vigente = false;
@@ -92,6 +102,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     setSesion(null);
     setEmpresa(null);
     setPermisos([]);
+    setPermisosCargados(false);
     setMotivoDeSalida(motivo ?? null);
   }, []);
 
@@ -108,8 +119,9 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         Boolean(sesion && grupos.some((grupo) => sesion.usuario.grupos.includes(grupo))),
       puede: (...operaciones: string[]) =>
         operaciones.some((operacion) => permisos.includes(operacion)),
+      permisosCargados,
     }),
-    [sesion, empresa, permisos, entrar, salir, motivoDeSalida],
+    [sesion, empresa, permisos, permisosCargados, entrar, salir, motivoDeSalida],
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;

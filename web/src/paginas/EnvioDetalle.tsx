@@ -573,7 +573,8 @@ function PanelPuntoDeControl({
           <span className="casilla__texto">
             Adjuntar mi ubicación
             <span className="campo__ayuda" style={{ display: "block" }}>
-              Se captura solo en este momento. El sistema no hace seguimiento continuo.
+              Se captura solo en este momento. El seguimiento continuo existe únicamente
+              en el modo ruta, y lo inicia el conductor desde Entregas.
             </span>
           </span>
         </label>

@@ -18,6 +18,11 @@ def nuevo_id_envio() -> str:
     return str(uuid.uuid4())
 
 
+def nuevo_id_ruta() -> str:
+    """Identificador de ruta. Aleatorio por la misma razon que el del envio."""
+    return str(uuid.uuid4())
+
+
 def nuevo_id_evento() -> str:
     """Sufijo corto para desempatar eventos con la misma marca de tiempo."""
     return uuid.uuid4().hex[:8]

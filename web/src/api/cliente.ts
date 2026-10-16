@@ -32,13 +32,16 @@ import type {
   Grupo,
   AreaDeOperaciones,
   HistoricoPublico,
+  LecturaGps,
   Mensajero,
   Modulo,
+  PosicionRuta,
   PropiedadesEvidencia,
   RegistroBitacora,
   Resultado,
   Rol,
   ResultadoLote,
+  Ruta,
   Sesion,
   Tablero,
   Tienda,
@@ -46,6 +49,7 @@ import type {
   Transiciones,
   Transportista,
   Ubicacion,
+  UbicacionPublica,
   Usuario,
   UsuarioAdmin,
   Verificacion,
@@ -62,6 +66,10 @@ export interface Configuracion {
   account_id?: string;
   supuesto_su01?: string;
   generado_en?: string;
+  /** Proveedor de las teselas del mapa. Opcional: sin él se usa OpenStreetMap.
+   *  Va aquí y no en el código por la misma razón que la API: cambiar de
+   *  proveedor no debería exigir recompilar el sitio. */
+  teselas?: { url: string; atribucion: string };
 }
 
 const CONFIGURACION_POR_OMISION: Configuracion = {
@@ -535,9 +543,53 @@ export const api = {
 
   verificarBitacora: () => peticion<Verificacion>("/bitacora/verificacion"),
 
+  // -- Rutas de entrega ---------------------------------------------------
+  /* Las consultas de rutas devuelven un `testigo`: la prueba firmada de que la
+   * consulta ya quedó en la bitácora. Devolverlo en la siguiente evita que
+   * cada refresco del mapa deje un eslabón; no devolverlo solo hace que la
+   * consulta se registre otra vez. */
+  iniciarRuta: (envios: string[], ubicacion?: LecturaGps) =>
+    peticion<{ ruta: Ruta; transiciones: number }>("/rutas", {
+      metodo: "POST",
+      cuerpo: { envios, ubicacion },
+    }),
+
+  /** La ruta abierta de quien consulta. Sin ruta, trae qué estados pueden
+   *  salir a una: la regla vive en el servidor, no se copia aquí. */
+  rutaActiva: (testigo?: string) =>
+    peticion<{
+      ruta: Ruta | null;
+      testigo: string | null;
+      estados_aptos?: Estado[];
+      consultado_en: string;
+    }>("/rutas/activa", { parametros: { testigo } }),
+
+  rutas: (estado: "activas" | "finalizadas" | "todas", testigo?: string) =>
+    peticion<{ rutas: Ruta[]; total: number; testigo: string; consultado_en: string }>("/rutas", {
+      parametros: { estado, testigo },
+    }),
+
+  ruta: (rutaId: string, opciones: { desde?: string; testigo?: string } = {}) =>
+    peticion<{ ruta: Ruta; posiciones: PosicionRuta[]; testigo: string; consultado_en: string }>(
+      `/rutas/${rutaId}`,
+      { parametros: opciones },
+    ),
+
+  reportarPosiciones: (rutaId: string, posiciones: LecturaGps[]) =>
+    peticion<{ recibidas: number; ultima_posicion: PosicionRuta; senal: Ruta["senal"] }>(
+      `/rutas/${rutaId}/posiciones`,
+      { metodo: "POST", cuerpo: { posiciones } },
+    ),
+
+  finalizarRuta: (rutaId: string, nota = "") =>
+    peticion<{ ruta: Ruta }>(`/rutas/${rutaId}/finalizacion`, { metodo: "POST", cuerpo: { nota } }),
+
   // -- Consulta pública: sin token, por diseño ---------------------------
   consultaPublica: (envioId: string) =>
     peticion<HistoricoPublico>(`/publico/envios/${envioId}`, { autenticada: false }),
+
+  ubicacionPublica: (envioId: string) =>
+    peticion<UbicacionPublica>(`/publico/envios/${envioId}/ubicacion`, { autenticada: false }),
 };
 
 export interface DatosEnvio {

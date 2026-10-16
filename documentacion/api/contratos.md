@@ -487,6 +487,133 @@ Reglas que aplica el servicio:
 - `ENTREGADO` exige una `evidencia_id` **cargada y confirmada** para ese envío.
 - Reanudar desde `INCIDENCIA` exige grupo `despachador`: el conductor reporta el
   incidente, otro rol autoriza continuar.
+- Si el envío va en una ruta abierta, el nuevo estado se copia a su parada
+  (ver «Rutas de entrega»). Un fallo al copiarlo no tumba el registro: el estado
+  que vale es el del envío.
+
+---
+
+## Rutas de entrega — servicio `tracking`
+
+El conductor elige las guías que lleva, sale a ruta y su teléfono reporta la
+posición mientras la ruta está abierta. Dos permisos aparte, porque lo que se
+mueve es la ubicación de una persona: **`ruta:operar`** (salir a ruta, reportar,
+terminar; de fábrica, el conductor) y **`ruta:seguir`** (ver las rutas de la
+empresa en el mapa; de fábrica, administrador, coordinador y despachador). El
+auditor no tiene ninguno de los dos. Detalle y razones:
+[módulo de rutas de entrega](../modulos/rutas-de-entrega/README.md) y
+[ADR-013](../decisiones/adr-013-ubicacion-en-vivo-por-sondeo.md).
+
+**Testigo de consulta.** Las lecturas de rutas devuelven un `testigo`: la prueba
+firmada de que esa consulta ya quedó en la bitácora. Si la siguiente lo devuelve
+(`?testigo=...`) y sigue vigente —cinco minutos, misma persona, mismo recurso—,
+no deja otro eslabón. Sin testigo, o con uno vencido, ajeno o inventado, la
+consulta se registra. Un testigo no sirve como token de acceso: lleva otra
+audiencia.
+
+### `POST /rutas`
+
+Permiso: `ruta:operar`. Abre la ruta con las guías elegidas.
+
+```json
+{
+  "envios": ["6493c8e7-...", "12ab8158-..."],
+  "ubicacion": { "lat": 4.6531, "lon": -74.0837, "precision_m": 8, "capturada_en": "2026-10-16T15:13:29.120Z" }
+}
+```
+
+Reglas:
+
+- **Todo o nada.** Se valida cada guía antes de escribir: si una no puede salir,
+  no sale ninguna.
+- Solo guías **asignadas a quien conduce**. Para un conductor, una ajena responde
+  404 como si no existiera; para quien ve toda la operación, 400.
+- Solo guías **en su poder**: `RECOLECTADO`, `EN_TRANSITO` o `EN_REPARTO`. Otra
+  responde 400 con `detalle.no_aptos`.
+- Cada guía llega a `EN_REPARTO` **por el flujo principal, paso a paso**: una
+  recolectada registra dos eventos (`EN_TRANSITO` y `EN_REPARTO`), validados por
+  la máquina de estados, con la nota «Salida a ruta de entrega», la ubicación del
+  inicio y marcas de tiempo estrictamente crecientes.
+- **Una ruta abierta por conductor.** Otra responde 409 con `detalle.ruta_id`.
+- La bitácora registra el inicio como **un** eslabón con la lista de guías.
+
+Respuesta 201: `{ "ruta": Ruta, "transiciones": 3 }`.
+
+### `GET /rutas/activa`
+
+Permiso: `ruta:operar`. La ruta abierta de quien consulta, o `null`. Sin ruta,
+trae `estados_aptos`: la pantalla de selección los necesita y no los copia.
+
+```json
+{ "ruta": null, "testigo": null, "estados_aptos": ["EN_REPARTO", "EN_TRANSITO", "RECOLECTADO"], "consultado_en": "..." }
+```
+
+### `GET /rutas?estado=activas|finalizadas|todas&testigo=`
+
+Permiso: `ruta:seguir`. Las rutas de la organización, la más reciente primero
+(hasta cien), cada una con su última posición, su resumen y su señal.
+
+### `GET /rutas/{ruta_id}?desde=&testigo=`
+
+Quien tiene `ruta:seguir` lee cualquier ruta de su organización; quien solo tiene
+`ruta:operar`, la suya. Devuelve la ruta y las posiciones del recorrido (hasta
+1 500, las más recientes). Con `desde`, solo las posteriores a esa marca: el mapa
+pide lo nuevo cada diez segundos, no el recorrido entero.
+
+### `POST /rutas/{ruta_id}/posiciones`
+
+Permiso: `ruta:operar`, y **solo quien conduce esa ruta** (otro, aunque vea toda
+la operación, recibe 404). Entre 1 y 60 lecturas: el teléfono las acumula sin
+señal y las envía juntas.
+
+```json
+{ "posiciones": [ { "lat": 4.654, "lon": -74.083, "precision_m": 12, "rumbo": 15, "velocidad": 6.5, "capturada_en": "..." } ] }
+```
+
+- `capturada_en` (hora del teléfono) se acepta si es verosímil: no más de dos
+  minutos adelantada al servidor ni anterior al inicio de la ruta. Si no, se usa
+  la de recepción y la posición lo dice con `hora_de: "servidor"`.
+- Ruta finalizada: 409. La interfaz deja de transmitir.
+- **No deja un eslabón por petición** en la bitácora (serían cuatro por minuto y
+  por conductor). Constan el inicio, el cierre con el recuento de posiciones y
+  cada intento rechazado.
+
+Respuesta: `{ "recibidas": 2, "ultima_posicion": Posicion, "senal": Senal }`.
+
+### `POST /rutas/{ruta_id}/finalizacion`
+
+Permiso: `ruta:operar`, solo quien conduce. `{ "nota": "" }`. Cierra la ruta y
+deja de compartir la ubicación. Las paradas abiertas **conservan su estado**: el
+cierre no decide qué pasó con esos paquetes. `cierre` queda `completada` si no
+quedaba ninguna abierta y `manual` si sí. Una segunda finalización responde 409.
+
+### Forma de una ruta
+
+```json
+{
+  "ruta_id": "054e839d-...",
+  "estado": "ACTIVA",
+  "conductor_sub": "u-aa34b9cd1af5",
+  "conductor_nombre": "Carlos Nieto Pardo",
+  "iniciada_en": "2026-10-16T15:13:30.112Z",
+  "finalizada_en": null,
+  "cierre": null,
+  "paradas": [
+    { "envio_id": "6493c8e7-...", "orden": 1, "estado": "EN_REPARTO", "codigo_estado": 50,
+      "destinatario": "Laura Mejia Rios", "telefono": "...", "direccion": "Carrera 7 #32-16",
+      "referencia": "", "ciudad": "Bogota", "orden_compra": "", "bultos": 1, "descripcion": "" }
+  ],
+  "ultima_posicion": { "lat": 4.6301, "lon": -74.0637, "precision_m": 9, "capturada_en": "...",
+                       "recibida_en": "...", "hora_de": "dispositivo" },
+  "posiciones": 32,
+  "resumen": { "total": 3, "entregadas": 1, "incidencias": 1, "cerradas": 1, "pendientes": 2 },
+  "senal": { "estado": "en_linea", "edad_segundos": 4 }
+}
+```
+
+`senal.estado` lo calcula el servidor: `en_linea` (≤ 60 s), `atrasada` (≤ 5 min),
+`sin_senal`, `sin_datos` (aún sin posición) o `cerrada`. La incidencia **no**
+cierra una parada: cuenta como pendiente.
 
 ---
 
@@ -553,6 +680,26 @@ nombre se enmascara por minimización de datos.
 Un identificador que no sea un UUID canónico responde 422 sin llegar a consultar
 el almacenamiento.
 
+### `GET /publico/envios/{envio_id}/ubicacion`
+
+**Sin autenticación.** Dónde va el vehículo que lleva el envío, solo mientras el
+envío está `EN_REPARTO` dentro de una ruta abierta y la última posición tiene
+menos de diez minutos.
+
+```json
+{ "disponible": true, "posicion": { "lat": 4.6531, "lon": -74.0837, "precision_m": 15 },
+  "actualizada_en": "...", "edad_segundos": 12, "consultado_en": "..." }
+```
+
+En cualquier otro caso, `{ "disponible": false, "motivo": "no_en_reparto" | "sin_ruta_activa" | "sin_senal" }`.
+
+- La posición va **redondeada a cuatro decimales** (unos once metros) y la
+  precisión nunca por debajo de 15 m: no se promete más de lo que se entrega.
+- No lleva quién conduce, la ruta, las otras paradas ni la organización.
+- Es una ruta aparte de la del histórico, y no un campo más, para no cambiar lo
+  que esa vista promete no mostrar (y que Cotejo lee).
+- Mismo control de formato: un identificador no canónico responde 422.
+
 ---
 
 ## Bitácora — servicio `audit` — REQ-07, REQ-08
@@ -610,6 +757,7 @@ es el mismo, de modo que la interfaz web funciona contra cualquiera de los dos.
 | `/tablero` | `dashboard` |
 | `/catalogos/*`, `/tiendas*`, `/clientes*`, `/transportistas*` | `masters` |
 | `/envios/{id}/eventos`, `/envios/{id}/transiciones` | `tracking` |
+| `/rutas*` | `tracking` |
 | `/envios/{id}/evidencias*` | `evidence` |
 | `/envios*` (resto, incluidos `/envios/lote`, `/envios/exportar` y `/envios/etiquetas`) | `shipments` |
 

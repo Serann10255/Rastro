@@ -31,6 +31,10 @@ const TRAZADOS: Record<string, string> = {
   tienda: "M4 10v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9M3 10l1.4-5.2A1 1 0 0 1 5.4 4h13.2a1 1 0 0 1 1 .8L21 10a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0ZM10 20v-5h4v5",
   recoleccion: "M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2",
   mapa: "M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Zm0 0v13m6-10.5v13",
+  // Un recorrido que termina en una parada: salir a ruta.
+  ruta: "M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7M18 7.5c1.4-1.2 2-2.2 2-3a2 2 0 0 0-4 0c0 .8.6 1.8 2 3Z",
+  // Un punto sobre el mapa: dónde está alguien ahora.
+  ubicacion: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
 
   // Personas
   usuarios: "M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20M9.5 10.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 20v-1.5a4 4 0 0 0-3-3.87M16.5 3.9a4 4 0 0 1 0 7.2",

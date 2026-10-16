@@ -449,6 +449,10 @@ class RepositorioMaestros:
             "nombre": _exigir(rol["nombre"], "nombre", maximo=60),
             "descripcion": (rol.get("descripcion") or "").strip()[:400],
             "operaciones": operaciones,
+            # Que operaciones existian cuando la organizacion decidio este rol.
+            # Es lo que permite distinguir, el dia que el catalogo crezca, una
+            # operacion que la empresa quito de una que todavia no conocia.
+            "catalogo_conocido": sorted(str(o) for o in Operacion),
             "integrado": integrado,
             "editable": True,
             "actualizado_en": marca_tiempo(),
@@ -474,7 +478,7 @@ class RepositorioMaestros:
         ha aprovisionado- se devuelven los de fabrica, de modo que el sistema
         nunca se queda sin criterio y falla cerrado en lugar de abierto.
         """
-        from .authz import DefinicionRol, Operacion, ROLES_INTEGRADOS
+        from .authz import DefinicionRol, Operacion, ROLES_INTEGRADOS, operaciones_nuevas_para
 
         registros = self._listar(org_id, PREFIJO_ROL)
         if not registros:
@@ -492,6 +496,9 @@ class RepositorioMaestros:
                     # usuario por un permiso que nadie usa.
                     continue
             clave = str(registro["clave"])
+            # Las operaciones que el rol de fabrica trae y que este registro no
+            # pudo decidir porque no existian cuando se guardo.
+            operaciones |= operaciones_nuevas_para(clave, registro.get("catalogo_conocido"))
             definiciones[clave] = DefinicionRol(
                 clave=clave,
                 nombre=str(registro.get("nombre") or clave),

@@ -143,6 +143,16 @@ declare -a RUTAS=(
   "GET /envios/{envio_id}/transiciones|tracking|auth"
   "POST /envios/{envio_id}/eventos|tracking|auth"
 
+  # Rutas de entrega. Las sirve la misma funcion de rastreo. La ruta fija
+  # /rutas/activa gana sobre la parametrica /rutas/{ruta_id}: API Gateway
+  # prefiere siempre la coincidencia literal.
+  "POST /rutas|tracking|auth"
+  "GET /rutas|tracking|auth"
+  "GET /rutas/activa|tracking|auth"
+  "GET /rutas/{ruta_id}|tracking|auth"
+  "POST /rutas/{ruta_id}/posiciones|tracking|auth"
+  "POST /rutas/{ruta_id}/finalizacion|tracking|auth"
+
   # Evidencias.
   "POST /envios/{envio_id}/evidencias|evidence|auth"
   "GET /envios/{envio_id}/evidencias|evidence|auth"
@@ -174,6 +184,7 @@ declare -a RUTAS=(
 
   # Consulta publica: sin validador, por diseno.
   "GET /publico/envios/{envio_id}|public|abierta"
+  "GET /publico/envios/{envio_id}/ubicacion|public|abierta"
 )
 
 crear_integracion() {

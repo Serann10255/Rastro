@@ -6,11 +6,12 @@ import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 
 import { useSesion } from "@/api/sesion";
 import { Estructura } from "@/componentes/Estructura";
-import { Aviso, Boton, Tarjeta, Vacio } from "@/componentes/ui";
+import { Aviso, Boton, ListaEsqueleto, Tarjeta, Vacio } from "@/componentes/ui";
 import { Acceso } from "@/paginas/Acceso";
 import { Administracion } from "@/paginas/Administracion";
 import { Bitacora } from "@/paginas/Bitacora";
 import { EnvioDetalle } from "@/paginas/EnvioDetalle";
+import { Entregas } from "@/paginas/Entregas";
 import { EnvioNuevo } from "@/paginas/EnvioNuevo";
 import { Envios } from "@/paginas/Envios";
 import { Guias } from "@/paginas/Guias";
@@ -19,6 +20,7 @@ import { CatalogoEstados, Operaciones } from "@/paginas/Operaciones";
 import { Panel } from "@/paginas/Panel";
 import { Rastreo } from "@/paginas/Rastreo";
 import { Roles } from "@/paginas/Roles";
+import { Seguimiento } from "@/paginas/Seguimiento";
 import type { Grupo } from "@/tipos";
 
 export function App() {
@@ -60,6 +62,26 @@ export function App() {
               }
             />
             <Route path="/envios/:envioId" element={<EnvioDetalle />} />
+
+            {/* Rutas de entrega. Deciden por permiso y no por rol: compartir
+                y ver la ubicación de una persona se conceden aparte, y un rol
+                que la empresa cree mañana puede tener uno sin el otro. */}
+            <Route
+              path="/entregas"
+              element={
+                <ExigePermiso operacion="ruta:operar" descripcion="salir a ruta con sus guías">
+                  <Entregas />
+                </ExigePermiso>
+              }
+            />
+            <Route
+              path="/seguimiento"
+              element={
+                <ExigePermiso operacion="ruta:seguir" descripcion="ver la ubicación de los conductores en ruta">
+                  <Seguimiento />
+                </ExigePermiso>
+              }
+            />
 
             {/* Operaciones y catálogos. */}
             <Route
@@ -145,6 +167,32 @@ function ExigeGrupo({ grupos, children }: { grupos: Grupo[]; children: ReactNode
       <Vacio
         titulo="Esta sección no corresponde a su rol"
         descripcion={`Está reservada a: ${grupos.join(", ")}. Si intentara la operación de todos modos, el servidor la rechazaría y el intento quedaría en la bitácora.`}
+      />
+    </Tarjeta>
+  );
+}
+
+/* Lo mismo que `ExigeGrupo`, pero preguntando por el permiso. Espera a que los
+ * permisos lleguen del servidor: antes de eso `puede` responde que no a todo, y
+ * decidir con eso le diría a quien sí puede que la sección no es para él. */
+function ExigePermiso({
+  operacion,
+  descripcion,
+  children,
+}: {
+  operacion: string;
+  descripcion: string;
+  children: ReactNode;
+}) {
+  const { puede, permisosCargados } = useSesion();
+  if (!permisosCargados) return <ListaEsqueleto filas={3} />;
+  if (puede(operacion)) return <>{children}</>;
+
+  return (
+    <Tarjeta>
+      <Vacio
+        titulo="Esta sección no corresponde a su rol"
+        descripcion={`Para ${descripcion} hace falta el permiso «${operacion}». Si intentara la operación de todos modos, el servidor la rechazaría y el intento quedaría en la bitácora.`}
       />
     </Tarjeta>
   );

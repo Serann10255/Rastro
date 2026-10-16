@@ -215,3 +215,73 @@ def exigir_token_de_acceso(claims: dict) -> dict:
     if claims.get(CLAIM_TIPO) == TIPO_REFRESCO:
         raise NoAutenticadoError("Un token de refresco no sirve para operar.")
     return claims
+
+
+# --------------------------------------------------------------------------- #
+# Testigo de consulta
+# --------------------------------------------------------------------------- #
+
+#: Audiencia propia: un testigo no sirve como token de acceso, porque la
+#: validacion de la sesion exige la audiencia de la interfaz y esta es otra.
+AUDIENCIA_CONSULTA = "rastro-consulta"
+TIPO_CONSULTA = "consulta"
+
+#: Cada cuanto una pantalla que sigue abierta vuelve a dejar constancia.
+VIGENCIA_TESTIGO_SEGUNDOS = 300
+
+
+def emitir_testigo_de_consulta(
+    *, sub: str, org_id: str, recurso: str, config: Config | None = None
+) -> str:
+    """Prueba firmada de que esta consulta ya quedo en la bitacora.
+
+    Existe para las pantallas que se refrescan solas -el mapa de seguimiento
+    pregunta cada diez segundos-: registrar cada vuelta llenaria la bitacora de
+    eslabones identicos y enterraria lo demas. El servidor registra la primera
+    consulta y entrega este testigo; mientras la pantalla lo devuelva vigente,
+    las vueltas siguientes no se registran. Va firmado para que un cliente no
+    pueda fabricarlo y consultar sin dejar rastro: lo unico que puede hacer es
+    no devolverlo, y entonces la consulta se registra.
+    """
+    config = config or cargar_config()
+    if not config.jwt_secreto_local:
+        raise NoAutenticadoError("El emisor requiere un secreto configurado.")
+    ahora = int(time.time())
+    carga = {
+        "sub": sub,
+        CLAIM_ORG: org_id,
+        "rec": recurso,
+        "iss": config.jwt_emisor,
+        "aud": AUDIENCIA_CONSULTA,
+        "iat": ahora,
+        "exp": ahora + VIGENCIA_TESTIGO_SEGUNDOS,
+        CLAIM_TIPO: TIPO_CONSULTA,
+    }
+    return jwt.encode(carga, config.jwt_secreto_local, algorithm="HS256")
+
+
+def testigo_de_consulta_vigente(
+    testigo: str | None, *, sub: str, org_id: str, recurso: str, config: Config | None = None
+) -> bool:
+    """Si el testigo es autentico, no ha vencido y es de esta persona y recurso."""
+    if not testigo:
+        return False
+    config = config or cargar_config()
+    if not config.jwt_secreto_local:
+        return False
+    try:
+        claims = jwt.decode(
+            testigo,
+            config.jwt_secreto_local,
+            algorithms=["HS256"],
+            audience=AUDIENCIA_CONSULTA,
+            issuer=config.jwt_emisor,
+        )
+    except jwt.PyJWTError:
+        return False
+    return (
+        claims.get(CLAIM_TIPO) == TIPO_CONSULTA
+        and claims.get("sub") == sub
+        and claims.get(CLAIM_ORG) == org_id
+        and claims.get("rec") == recurso
+    )
