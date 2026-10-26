@@ -29,6 +29,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import tomllib
 from pathlib import Path
 
@@ -43,18 +44,33 @@ APLICACIONES = {
 IGNORAR = shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache")
 
 
+def borrar(carpeta: Path, intentos: int = 5) -> None:
+    """Borra la copia de una construcción anterior.
+
+    En Windows, el antivirus o el indexador abren por un instante los archivos
+    recién escritos, y `rmtree` falla con «el directorio no está vacío» aunque
+    nadie más use la carpeta. Unos segundos después se borra sin problema.
+    """
+    for intento in range(intentos):
+        try:
+            shutil.rmtree(carpeta)
+            return
+        except OSError as error:
+            if intento + 1 < intentos:
+                time.sleep(3)
+                continue
+            sys.exit(
+                f"No se pudo borrar {carpeta}: {error}\n"
+                "Otro proceso la tiene abierta; suele ser un demonio de Gradle de una "
+                "construcción interrumpida: cierre los java.exe de ~/java y repita."
+            )
+
+
 def preparar(app: str) -> Path:
     datos = APLICACIONES[app]
     destino = RAIZ / "build" / app
     if destino.exists():
-        try:
-            shutil.rmtree(destino)
-        except OSError as error:
-            sys.exit(
-                f"No se pudo borrar {destino}: {error}\n"
-                "Suele ser un demonio de Gradle de una construcción interrumpida: "
-                "cierre los java.exe de ~/java y repita."
-            )
+        borrar(destino)
     (destino / "src").mkdir(parents=True)
 
     shutil.copytree(SRC / "comun", destino / "src" / "comun", ignore=IGNORAR)

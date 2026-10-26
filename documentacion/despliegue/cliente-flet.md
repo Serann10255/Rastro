@@ -147,10 +147,56 @@ origen desconocido».
 cliente-flet/.venv/Scripts/python cliente-flet/herramientas/construir.py rastro windows --no-rich-output
 ```
 
-Requiere Visual Studio con la carga de trabajo «Desarrollo para el escritorio
-con C++», que `flet build windows` comprueba antes de empezar.
+```bash
+cliente-flet/.venv/Scripts/python cliente-flet/herramientas/construir.py cotejo windows --no-rich-output
+```
 
-## 7. Pruebas
+Requiere Visual Studio (o sus Build Tools) con la carga de trabajo «Desarrollo
+para el escritorio con C++», que `flet build windows` comprueba antes de
+empezar, y el Modo de desarrollador (sección 5).
+
+El resultado es una **carpeta**, no un instalador: `cliente-flet/salida/<app>-windows/`,
+de unos 95 MB, con `<app>.exe`, Python y las bibliotecas de Flutter. El `.exe`
+no funciona separado de ella. Para llevarlo a otro equipo se comprime la carpeta
+entera en un `.zip`; allí no hace falta tener Python.
+
+- El ejecutable no está firmado: la primera vez Windows muestra «Windows
+  protegió su PC»; se abre con *Más información → Ejecutar de todas formas*.
+- Sigue el tema claro u oscuro de Windows, y apunta a la API del
+  `configuracion-<app>.json` empaquetado (se cambia desde **Conexión**).
+- El modo ruta no sirve en escritorio: el equipo no entrega GPS.
+
+## 7. iPhone (iOS)
+
+iOS no instala APK. Hay tres caminos, de más práctico a más costoso:
+
+1. **La web en Safari.** Rastro y Cotejo están publicados por HTTPS (las
+   direcciones están en `config/.sitio.env` y `config/.cotejo.env`, variables
+   `URL_SITIO*`). *Compartir → Agregar a pantalla de inicio* deja un ícono. El
+   modo ruta funciona con la pantalla encendida (la web la mantiene despierta);
+   iOS no deja enviar la ubicación con la pantalla apagada o Safari en segundo
+   plano.
+2. **La aplicación Flet de la App Store**, solo para mostrarlo. En el PC:
+
+   ```bash
+   cd cliente-flet/src && ../.venv/Scripts/flet run --ios rastro.py
+   ```
+
+   La terminal muestra `App is running on: http://<IP-del-PC>:8551` y un QR.
+   Se escanea con la cámara del iPhone (abre la aplicación Flet), o se escribe
+   esa dirección en la aplicación. **No se escribe la de AWS**: Python se
+   ejecuta en el PC, el iPhone solo muestra la interfaz, y es el PC el que
+   habla con AWS. Hace falta que los dos estén en la misma red (las redes de
+   universidades suelen aislar los equipos; el punto de acceso del teléfono
+   sirve), que el firewall de Windows deje entrar a Python en redes privadas, y
+   que la terminal siga abierta. Esa aplicación genérica puede no traer las
+   extensiones de mapa y GPS.
+3. **Aplicación nativa** con `flet build ipa`: exige un Mac con Xcode (no se
+   compila desde Windows) y una cuenta de Apple Developer para firmarla y
+   repartirla por TestFlight. Con un Apple ID gratuito se instala desde Xcode en
+   un iPhone propio, y deja de abrir a los siete días.
+
+## 8. Pruebas
 
 ```bash
 cliente-flet/.venv/Scripts/python -m pytest cliente-flet/tests
@@ -168,4 +214,4 @@ cliente-flet/.venv/Scripts/python -m pytest cliente-flet/tests
 | «Building with plugins requires symlink support» | Windows no deja crear enlaces simbólicos sin el Modo de desarrollador | Activarlo (sección 5) o compilar desde una terminal de administrador |
 | `flet build` se detiene en las licencias del SDK | No están aceptadas en este equipo | `sdkmanager --licenses` (sección 5) |
 | `UnknownHostException: github.com` en `downloadDistArchive` | Se cortó la red mientras Gradle descargaba el intérprete de Python | Comprobar la conexión y volver a construir |
-| «No se pudo borrar cliente-flet/build/<app>» al empezar | Un demonio de Gradle de una construcción de Android interrumpida sigue usando la carpeta (`construir.py` los detiene al terminar una que no se interrumpe) | Cerrar los `java.exe` de `~/java` en el Administrador de tareas y repetir |
+| «No se pudo borrar cliente-flet/build/<app>» al empezar | Otro proceso tiene abierta la carpeta. `construir.py` ya reintenta cuando es el antivirus o el indexador (dura segundos) y detiene Gradle al terminar cada construcción de Android; queda el caso de un demonio de Gradle de una construcción interrumpida | Cerrar los `java.exe` de `~/java` en el Administrador de tareas y repetir |

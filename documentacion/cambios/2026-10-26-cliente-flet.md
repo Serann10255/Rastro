@@ -66,7 +66,14 @@ construirlo: [despliegue del cliente Flet](../despliegue/cliente-flet.md).
   verificación de la cadena; modo ruta y diálogo de entrega; consulta pública
   con enlace directo. Cotejo: revisión, papel de trabajo, verificación del
   almacén, comparación, catálogo y diccionario.
-- Escritorio: la ventana de Windows arranca y muestra el acceso.
+- Escritorio con Python: la ventana de Windows arranca y muestra el acceso.
+- **Ejecutables de Windows** (`cliente-flet/salida/rastro-windows/rastro.exe`
+  y `cotejo-windows/cotejo.exe`, carpetas de 95 y 94 MB, sin firmar): los dos
+  abren el acceso contra AWS con el tema oscuro del sistema; el de Cotejo lee de
+  su API que tiene 11 controles por comprobar. Tres arranques seguidos de cada
+  aplicación quedaron abiertos. En la sesión de prueba algunas ventanas se
+  cerraron a los pocos segundos con código 0 y sin evento de error en Windows,
+  que es lo que deja un cierre normal y no un fallo; no se reprodujo después.
 - **APK de Rastro** (`cliente-flet/salida/rastro-apk/rastro.apk`, 143 MB, firma
   de depuración) en el emulador de Android Studio (Android 16, 1080 × 2400):
   instala, abre en el acceso con la conexión a la API de AWS, y la consulta
@@ -97,9 +104,20 @@ construirlo: [despliegue del cliente Flet](../despliegue/cliente-flet.md).
   Gradle de ese intento seguía usando la carpeta. Los demonios de Gradle y de
   Kotlin quedan vivos horas después de cada construcción de Android y en
   Windows no dejan borrar `build/<app>`, así que `construir.py` ahora los
-  detiene al terminar y, si aun así no puede borrar la carpeta, lo explica en
-  vez de mostrar la traza. Los dos casos quedaron en la tabla de problemas de
-  la [guía](../despliegue/cliente-flet.md).
+  detiene al terminar. La primera construcción para Windows de Cotejo falló
+  igual sin ningún demonio vivo: el antivirus o el indexador tenían abierto un
+  archivo recién escrito, y la carpeta se borró sin problema unos minutos
+  después. `construir.py` reintenta el borrado unas veces y, si no lo logra,
+  lo explica en vez de mostrar la traza. Los casos quedaron en la tabla de
+  problemas de la [guía](../despliegue/cliente-flet.md).
+
+## iPhone
+
+iOS no instala APK. La [guía](../despliegue/cliente-flet.md) (sección 7)
+compara los tres caminos: la web en Safari por HTTPS (el recomendado, ya
+publicado), la aplicación Flet de la App Store con `flet run --ios` (Python en
+el PC, solo para mostrarlo) y la compilación nativa con `flet build ipa`, que
+exige un Mac con Xcode y una cuenta de Apple Developer.
 
 ## Qué queda pendiente
 
