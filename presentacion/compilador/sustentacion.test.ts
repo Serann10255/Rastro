@@ -5,7 +5,7 @@
  * Usan el ejecutor de pruebas de Node, sin dependencias: se comprueba lo que el
  * deck promete —que el guion y las indicaciones no se cuelen como contenido, que la numeración
  * sea la del enlace directo, que una figura inexistente detenga la
- * construcción— y que los dos guiones reales compilan sin avisos.
+ * construcción— y que los tres guiones reales compilan sin avisos.
  */
 
 import assert from "node:assert/strict";
@@ -252,4 +252,21 @@ describe("los guiones del repositorio", () => {
       );
     });
   }
+
+  // La presentación a la universidad no sigue los siete bloques del docente:
+  // es para público general y no lleva bloques. El resto se exige igual.
+  it("presentacion-universidad.md compila sin avisos", () => {
+    const nombre = "presentacion-universidad.md";
+    const fuente = readFileSync(new URL(`../../documentacion/sustentacion/${nombre}`, import.meta.url), "utf8");
+    const { deck, avisos } = compilarSustentacion(fuente, { archivo: nombre, figuras: FIGURAS, capturas: CAPTURAS });
+
+    assert.deepEqual(avisos, []);
+    const numeradas = deck.diapositivas.filter((d): d is DiapositivaContenido => d.tipo === "contenido");
+    assert.ok(numeradas.every((d) => d.presentador), "toda diapositiva tiene quien la presente");
+    assert.equal(deck.resumen.intervenciones.length, 3, "participan los tres integrantes");
+    assert.ok(
+      numeradas.every((d) => d.notas.some((n) => n.tipo === "guion")),
+      "toda diapositiva tiene guion hablado",
+    );
+  });
 });

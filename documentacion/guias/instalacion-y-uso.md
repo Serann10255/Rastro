@@ -300,6 +300,15 @@ firmar contra la dirección que usará el cliente. En AWS ambas coinciden.
 
 ---
 
+## Rastro y Cotejo en Flet
+
+Además de las interfaces web, las dos aplicaciones existen en Flet, para
+abrirlas como ventana de escritorio, en el navegador o como APK de Android. Usan
+las mismas APIs y las mismas cuentas. Cómo prepararlas, apuntarlas a la pila
+local y construir el APK: [despliegue del cliente Flet](../despliegue/cliente-flet.md).
+
+---
+
 ## Ver también
 
 - [Visión general de la arquitectura](../arquitectura/vision-general.md)

@@ -4,6 +4,12 @@ Fecha: 2026-10-16 · Versión: 0.5
 
 ## Estado de verificación
 
+> **2026-10-26 — cuenta de la universidad, pendiente.** La universidad va a
+> asignar una cuenta para dejar la aplicación completa. Qué hacer cuando
+> llegue, qué restricciones de este documento dejarían de aplicar y la
+> decisión pendiente sobre RDS:
+> [plan de la cuenta de la universidad](plan-cuenta-universidad.md).
+
 > **2026-10-16 — modo ruta y Cotejo en AWS.** Se desplegó la secuencia completa
 > con las rutas de entrega y, con `RASTRO_PUBLICAR_COTEJO=si`, Cotejo entero:
 > su API como función Lambda (`55-cotejo-api.sh`) y su interfaz por HTTPS
@@ -298,7 +304,7 @@ de evidencias fallaría en el navegador del mensajero. La regla vive en
 | RE-03: solo `us-east-1`, 50 dólares | Ningún diseño multirregión; se excluye todo recurso que facture entre sesiones |
 | RE-04: el entorno se pierde al terminar el curso | Toda la configuración es reproducible por comandos versionados |
 | RE-05: CloudFront está impedido (ni siquiera se pueden listar distribuciones) | El sitio se sirve por HTTPS a través de API Gateway ([ADR-012](../decisiones/adr-012-sitio-https-por-api-gateway.md)) |
-| RE-06: con la sesión cerrada, una política de la organización de AWS Academy puede impedir que `LabRole` descifre o lea | Las funciones no arrancan y la API responde 5xx; el sitio carga igual. **Abrir la sesión antes de usar el sistema.** Observado el 2026-10-02 y de nuevo el 2026-10-05 (500 en toda ruta que pase por una función); no ocurrió en el cierre del 2026-09-27 y 28 ([bitácora](../cambios/2026-10-02-sitio-https.md#1-la-caida)) |
+| RE-06: con la sesión cerrada, una política de la organización de AWS Academy puede impedir que `LabRole` descifre o lea | Las funciones no arrancan y la API responde 5xx; el sitio carga igual. **Abrir la sesión antes de usar el sistema.** Observado el 2026-10-02, de nuevo el 2026-10-05 y el 2026-10-26 (500 en toda ruta que pase por una función, los dos sitios en 200); no ocurrió en el cierre del 2026-09-27 y 28 ([bitácora](../cambios/2026-10-02-sitio-https.md#1-la-caida)) |
 
 ### Coste
 

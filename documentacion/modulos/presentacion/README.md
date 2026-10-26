@@ -1,17 +1,19 @@
-# Módulo `presentacion` — diapositivas de sustentación
+# Módulo `presentacion` — diapositivas de sustentación y de la universidad
 
 Ubicación: `presentacion/` · Puerto local: 5177 · Stack: React 18 + TypeScript + Vite
 
 ## Qué hace
 
-Sirve las dos sustentaciones como un sitio estático de tres páginas:
+Sirve las dos sustentaciones y la presentación de Rastro a la universidad como
+un sitio estático de cuatro páginas:
 
 | Ruta | Qué hay |
 |---|---|
-| `/` | Índice: los dos decks, recuento de diapositivas, **quién presenta qué y cuánto habla** y las teclas |
+| `/` | Índice: los tres decks, recuento de diapositivas, **quién presenta qué y cuánto habla** y las teclas |
 | `/rastro` | Deck de Rastro (Cloud Computing, ISD38) |
 | `/cotejo` | Deck de Cotejo (Auditoría de Sistemas, ISD39) |
-| `/rastro/?guion`, `/cotejo/?guion` | Guion: todas las diapositivas seguidas con su texto hablado, y aviso de las que no caben |
+| `/universidad` | Rastro para toda la universidad: público general, sin tecnicismos, con demostración en vivo (2026-10-26) |
+| `/rastro/?guion`, `/cotejo/?guion`, `/universidad/?guion` | Guion: todas las diapositivas seguidas con su texto hablado, y aviso de las que no caben |
 
 **El contenido no está en el código.** Se lee al construir desde
 [`documentacion/sustentacion/`](../../sustentacion/): si cambia el Markdown y se
@@ -74,8 +76,8 @@ sistema manda el papel del controlador, carta vertical, y cada diapositiva sale
 en vertical y partida en dos hojas. Es el síntoma que se vio el 2026-10-16; la
 página del guion lo advierte debajo de los botones. Comprobado con el motor de
 Edge: respetando el CSS salen 960 × 540 pt las diapositivas, una por página,
-y el guion en carta vertical, una hoja por diapositiva; 9 páginas Rastro y 10
-Cotejo en los dos formatos. Están
+y el guion en carta vertical, una hoja por diapositiva; 9 páginas Rastro, 10
+Cotejo y 11 la de la universidad, en los dos formatos. Están
 en [`entregables/sustentacion/`](../../entregables/sustentacion/), junto a los
 de la versión completa de 35 páginas.
 
@@ -85,9 +87,14 @@ contenedor o `npm run dev`),
 ```bash
 cd presentacion
 npm install --no-save playwright-core@1.56.1
-npm run pdf                    # los cuatro PDF, tema claro
-npm run pdf -- --tema=oscuro   # los cuatro, tema oscuro, con «oscuro» en el nombre
+npm run pdf                         # los seis PDF (dos por deck), tema claro
+npm run pdf -- --tema=oscuro        # los seis, tema oscuro, con «oscuro» en el nombre
+npm run pdf -- --solo=universidad   # solo los de ese deck (o rastro,cotejo)
 ```
+
+`--solo` existe para no regenerar los PDF de los demás decks cuando solo cambió
+uno: cada exportación reescribe el archivo aunque el contenido sea el mismo, y
+el historial se llenaría de binarios idénticos.
 
 `exportar-pdf.mjs` imprime con el Edge instalado y `preferCSSPageSize`, escribe
 en `documentacion/entregables/sustentacion/` y dice cuántas páginas salieron.
@@ -152,6 +159,16 @@ logotipo grande, que se recoge sobre el nombre.
 |---|---|---|
 | `arquitectura-rastro` | Rastro 2 | Componentes desplegados en AWS, de [vision-general](../../arquitectura/vision-general.md), con los ocho servicios como una sola caja |
 | `ejecutor-cotejo` | Cotejo 4 | El ejecutor y sus tres fuentes de evidencia (Entrega 2, tablas 9 y 11) |
+| `informacion-repartida` | Universidad 2 | El paquete en el centro y los cuatro sitios donde vive lo que se sabe de él, unidos con línea discontinua |
+| `viaje-del-paquete` | Universidad 4 | Los seis estados del camino normal, con su código y una frase; «En reparto» resaltado y «Entregado» en verde |
+| `demo-en-vivo` | Universidad 6 | Mensajero → empresa → cliente → entregado: quién hace qué durante la demostración |
+| `pago-por-uso` | Universidad 7 | Un día de 24 horas: el servidor propio cobra todas, la nube solo las de uso. Ilustración, no medición |
+| `cadena-de-registros` | Universidad 8 | Cuatro registros de la bitácora encadenados; el tercero, cambiado, rompe el eslabón siguiente |
+
+Las cinco de la universidad explican ideas, no la arquitectura: ninguna nombra
+un servicio de AWS. Usan dos variantes nuevas de caja, `exito` y `peligro`, que
+siempre van con una palabra que dice lo mismo («Entregado», «cambiado»): el
+color nunca es el único portador del significado.
 
 Son SVG con color por clase CSS sobre las fichas de diseño: cambian con el tema
 y con la identidad de cada proyecto. El texto no baja de 25 unidades en un lienzo
@@ -165,17 +182,25 @@ el guion como `![Título](captura:nombre)`:
 
 | Archivo | Pantalla | Dónde se usa |
 |---|---|---|
-| `rastro-panel` | Panel de la organización, sesión de administrador | Rastro 1 · Cotejo 1 y 2 |
-| `rastro-envio` | Detalle de un envío con su histórico | Rastro 1 |
+| `rastro-panel` | Panel de la organización, sesión de administrador | Rastro 1 · Cotejo 1 y 2 · Universidad 1 y 3 |
+| `rastro-envio` | Detalle de un envío con su histórico | Rastro 1 · Universidad 3 |
 | `rastro-rastreo` | Consulta pública del destinatario, sin cuenta | Rastro 1 |
-| `rastro-bitacora` | Bitácora de auditoría con la cadena verificada, sesión de auditor | Rastro 1 y 6 |
+| `rastro-bitacora` | Bitácora de auditoría con la cadena verificada, sesión de auditor | Rastro 1 y 6 · Universidad 1 y 8 |
 | `rastro-roles` | Roles y permisos | Rastro 6 |
+| `rastro-seguimiento` | Seguimiento: el mapa de la empresa con una ruta en curso, su recorrido y sus paradas | Universidad 1 y 5 |
+| `rastro-modo-ruta` | Modo ruta del conductor: ubicación compartida, mapa y paradas con sus botones | Universidad 5 |
+| `rastro-rastreo-en-camino` | Consulta pública de un envío en reparto: «Su envío va en camino» con el mapa | Universidad 1, 5 y 11 |
 | `rastro-envios`, `rastro-operaciones`, `rastro-acceso` | Lista de órdenes, operaciones, acceso | Disponibles, sin usar |
 | `cotejo-revision` | Revisión con el resumen de resultados y los primeros controles | Cotejo 1 |
 | `cotejo-catalogo` | Qué se revisa: el catálogo con su criterio | Cotejo 1 y 2 |
 | `cotejo-comparacion` | Repetir: dos revisiones comparadas | Cotejo 1 |
-| `cotejo-hallazgos` | «Lo que hay que arreglar» en la revisión | Cotejo 8 |
+| `cotejo-hallazgos` | «Lo que hay que arreglar» en la revisión | Cotejo 8 · Universidad 9 |
 | `cotejo-papel` | Un papel de trabajo abierto, con las dos huellas que coinciden | Cotejo 1 y 9 |
+
+`cotejo-revision` no se usa en la de la universidad a propósito: es de la pila
+local y dice «6 bien, 1 mal, 4 sin revisar», junto a una lámina que da las
+cifras de la revisión en AWS (10 conformes, 1 desviado). Ante público general,
+dos cifras distintas en la misma lámina parecen una contradicción.
 
 Son WebP de 2880 × 1800 (una ventana de 1440 × 900 a doble densidad, calidad
 82, entre 40 y 220 KB cada una): nítidas a media diapositiva de 1920 px y
@@ -187,8 +212,13 @@ local levantada:
 docker compose up -d                       # desde la raíz: las dos aplicaciones
 cd presentacion
 npm install --no-save playwright-core@1.56.1 sharp@0.34.3
-node capturas/capturar.mjs
+node capturas/capturar.mjs                 # todas
+node capturas/capturar.mjs --solo=ruta     # solo las del modo ruta (o rastro, cotejo)
 ```
+
+La imagen `web` tiene que incluir el modo ruta: si se construyó antes del
+2026-10-16, `docker compose up -d --build --no-deps web`. El 2026-10-23 la del
+equipo era anterior y `/entregas` no existía.
 
 Qué hace el guion de captura, y por qué así:
 
@@ -207,6 +237,18 @@ Qué hace el guion de captura, y por qué así:
   el equipo con `git` disponible; hay que copiarla al volumen una vez:
   `docker compose cp cotejo/papeles/20261001T235320510Z-4f7bea cotejo-api:/papeles/`.
   Las dos revisiones del día son las que compara la pantalla de repetición.
+- **El modo ruta se prepara por la API**, como lo haría el teléfono: el
+  conductor de la semilla con más guías en su poder sale a ruta con todas y
+  reporta treinta posiciones por Chapinero (de la calle 45 a la 65 por la
+  Caracas). Si ya tenía una ruta abierta de una captura anterior, la cierra
+  antes. **Espera unos treinta segundos** antes de reportar: el servidor recorta
+  al presente cualquier hora futura y ordena el recorrido por hora, así que con
+  horas inventadas hacia adelante todas quedaban iguales y el trazo salía en
+  zigzag (se vio el 2026-10-23). Después captura el mapa de Seguimiento como
+  administrador, el modo ruta como conductor con el GPS del navegador fijado en
+  el último punto, y la consulta pública de la primera parada. Las teselas son
+  de OpenStreetMap: hace falta conexión. Deja la ruta abierta en la pila local;
+  la siguiente captura la cierra.
 - **No añade dependencias al módulo.** `playwright-core` usa el canal `msedge`
   instalado, sin descargar navegadores, y `sharp` convierte a WebP; se
   instalan sin guardar y `npm ci` los retira.
@@ -368,6 +410,33 @@ retrasado los errores hasta abrir la página. Para la versión corta, un segundo
 par de guiones junto a los completos: dos fuentes de las mismas cifras acaban
 contradiciéndose, y la completa ya está en el historial y en PDF.
 
+**Un tercer deck para toda la universidad** (2026-10-26). El proyecto fue
+seleccionado para presentarse ante la comunidad de la CUN: estudiantes de
+cualquier carrera, docentes y directivos. Las sustentaciones no sirven ahí:
+siguen los siete bloques del docente y hablan de controles, normas y roles de
+IAM. Se escribió un guion aparte, `presentacion-universidad.md`, con el mismo
+motor, la misma identidad de Rastro y las mismas reglas (ninguna cifra
+decorativa, guion hablado en cada lámina, «Si preguntan» para lo técnico).
+
+- **Ideas antes que piezas.** Cada lámina cuenta una idea con algo que el
+  público ya conoce: esperar un paquete, el recibo de la luz, una cadena, un
+  cofre. Los nombres de los servicios de AWS solo aparecen en «Si preguntan».
+- **El modo ruta en el centro**, con una demostración en vivo (lámina 6) y las
+  tres pantallas en capturas justo antes, que son el respaldo si el GPS del
+  salón no responde.
+- **Sin bloques.** No lleva `# BLOQUE`: la prueba de los siete bloques aplica a
+  las sustentaciones y no a este guion, que tiene su propia prueba (compila sin
+  avisos, cada lámina con guion y quien la presente, los tres integrantes).
+- **Página propia, `/universidad`**, y no un modo de `/rastro`: comparte
+  identidad pero no contenido, y así cada uno se imprime y se enlaza por su
+  cuenta.
+
+Descartado: reutilizar el deck de Rastro quitando láminas, porque el problema
+no era la cantidad sino el registro (mínimo privilegio, ISO 27001, C-09 no le
+dicen nada a quien no estudia sistemas); y una plataforma externa de
+presentaciones, porque perdería las capturas, el guion y la exportación que ya
+tiene este módulo.
+
 ## Dependencias y relaciones
 
 - **Lee**: `documentacion/sustentacion/*.md` y `presentacion/capturas/*.webp` al
@@ -396,7 +465,7 @@ del proyecto: sm 640, md 768, lg 1024, xl 1280.
 
 | Regla del proyecto | Cómo se cumple |
 |---|---|
-| Usable a 360 px | Modo lectura; comprobado a 360 y 375 px |
+| Usable a 360 px | Modo lectura; comprobado a 360 y 375 px, y `/universidad` y el índice con tres decks a 360 px el 2026-10-26 (`scrollWidth` = 360) |
 | Sin scroll horizontal en el documento | Comprobado en lectura; en presentación la lámina se escala y nunca excede la ventana |
 | Tablas anchas con scroll propio | En lectura, `overflow-x: auto` con ancho mínimo de 34 rem; en el lienzo no hace falta |
 | Áreas táctiles de 44 px | Botones del sistema de diseño; los bordes pulsables miden el 12 % del ancho y nunca menos de 44 px |
@@ -408,3 +477,6 @@ del proyecto: sm 640, md 768, lg 1024, xl 1280.
 - **Pantalla completa** no se pudo verificar en el navegador integrado, que no
   concede la API. Usa `requestFullscreen` estándar; comprobar en Chrome o Edge
   antes de la sustentación.
+- **La demostración en vivo de `/universidad`** depende de la cuenta de AWS
+  (laboratorio abierto, o la cuenta de la universidad) y del GPS de un teléfono
+  dentro del auditorio. Ensayarla en el lugar, con la red de la sala.

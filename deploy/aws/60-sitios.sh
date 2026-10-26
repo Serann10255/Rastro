@@ -121,6 +121,15 @@ cat > "${RAIZ_PROYECTO}/cotejo/web/public/configuracion.json" <<JSON
 JSON
 ok "configuración de Cotejo escrita"
 
+# Las aplicaciones Flet (cliente-flet/, ADR-016) empaquetan la misma
+# configuración: un APK construido después de este despliegue apunta a esta
+# cuenta, y uno ya instalado se reapunta desde su pantalla «Conexión» sin
+# reconstruirlo.
+mkdir -p "${RAIZ_PROYECTO}/cliente-flet/src/assets"
+cp "${RAIZ_PROYECTO}/web/public/configuracion.json" "${RAIZ_PROYECTO}/cliente-flet/src/assets/configuracion-rastro.json"
+cp "${RAIZ_PROYECTO}/cotejo/web/public/configuracion.json" "${RAIZ_PROYECTO}/cliente-flet/src/assets/configuracion-cotejo.json"
+ok "configuración de las aplicaciones Flet copiada"
+
 if [[ -z "${COTEJO_URL_API:-}" ]]; then
   aviso "COTEJO_URL_API está vacía: la interfaz de auditoría no encontrará su programa."
   aviso "Por omisión Cotejo se ejecuta desde la máquina del auditor. Para desplegarlo en AWS,"

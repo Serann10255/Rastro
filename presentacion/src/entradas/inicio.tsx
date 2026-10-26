@@ -1,4 +1,4 @@
-/* Índice: enlaza los dos decks y resume quién presenta qué en cada uno. */
+/* Índice: enlaza los tres decks y resume quién presenta qué en cada uno. */
 
 import "@design/tokens.css";
 import "@design/base.css";
@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 
 import { LogotipoCotejo } from "@design/marca/cotejo";
 import { LogotipoRastro } from "@design/marca/rastro";
+import universidad from "@sustentacion/presentacion-universidad.md";
 import cotejo from "@sustentacion/sustentacion-cotejo.md";
 import rastro from "@sustentacion/sustentacion-rastro.md";
 
@@ -24,6 +25,7 @@ createRoot(raiz).render(
       decks={[
         { deck: rastro, ruta: "rastro", Logotipo: LogotipoRastro },
         { deck: cotejo, ruta: "cotejo", Logotipo: LogotipoCotejo },
+        { deck: universidad, ruta: "universidad", Logotipo: LogotipoRastro },
       ]}
     />
   </StrictMode>,

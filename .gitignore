@@ -10,9 +10,18 @@ config/deployment.json
 # (hallazgo H-01, 2026-09-26): esta exclusion no se retira aunque se ajusten
 # las demas.
 config/.jwt.env
+
+# Exportación de una cuenta para migrar a otra (deploy/aws/migrar.sh): envíos,
+# bitácora y evidencias de la operación. Viaja por fuera del repositorio.
+migracion/
+
 cotejo/papeles/*/
 !cotejo/papeles/.gitkeep
 node_modules/
 .DS_Store
 *.log
 
+
+# Cliente Flet: copias de construcción y paquetes generados (APK, ejecutables).
+cliente-flet/build/
+cliente-flet/salida/

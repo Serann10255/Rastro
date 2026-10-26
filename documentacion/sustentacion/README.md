@@ -10,10 +10,57 @@ así que para cambiar una diapositiva se edita aquí, no en el código.
 |---|---|---|---|---|
 | [`sustentacion-rastro.md`](sustentacion-rastro.md) | Cloud Computing (ISD38) | `/rastro` | 9 | ≈ 4 min 10 s |
 | [`sustentacion-cotejo.md`](sustentacion-cotejo.md) | Auditoría de Sistemas (ISD39) | `/cotejo` | 10 | ≈ 4 min 10 s |
+| [`presentacion-universidad.md`](presentacion-universidad.md) | Presentación a toda la universidad | `/universidad` | 11 | ≈ 5 min 40 s, más unos 2 min de demostración |
 
-Cada guion sigue los siete bloques que exige el docente: presentación del
-sistema, planificación, metodología, riesgos y controles, normativas, hallazgos
-y evidencias, y conclusiones.
+Cada guion de sustentación sigue los siete bloques que exige el docente:
+presentación del sistema, planificación, metodología, riesgos y controles,
+normativas, hallazgos y evidencias, y conclusiones. El de la universidad no:
+véase abajo.
+
+## Presentación a la universidad (2026-10-26)
+
+El proyecto fue seleccionado para presentarse ante toda la universidad. El
+público no es el jurado de la materia sino estudiantes de cualquier carrera,
+docentes y directivos, así que el guion es otro:
+
+| Lámina | Quién | Idea |
+|---|---|---|
+| 1 · Portada | Sergio | «¿Dónde está mi paquete?» |
+| 2 · Un problema que todos conocemos | Sergio | Lo que se sabe de un envío está repartido en cuatro sitios y nadie puede probar qué pasó |
+| 3 · Qué es Rastro | Sergio | Una historia completa por paquete; la empresa, el mensajero y el cliente |
+| 4 · El viaje de un paquete | Nicolás | Los seis pasos, sin saltos |
+| 5 · En vivo: el mensajero en el mapa | Nicolás | El modo ruta y la privacidad, en tres capturas |
+| 6 · Demostración | Nicolás | Sergio es el mensajero, Oscar el cliente, la pantalla la empresa |
+| 7 · ¿Por qué en la nube? | Oscar | Pago por uso, como la luz; 50 dólares el semestre |
+| 8 · Seguro por diseño | Oscar | Aislamiento, la cadena que no se borra, el cofre cifrado, nadie se revisa a sí mismo |
+| 9 · Un auditor que no somos nosotros | Oscar | Cotejo, 11 controles, y el error real de la clave contado sin pena |
+| 10 · Cómo lo hicimos | Sergio | 3 estudiantes, 12 semanas, 327 pruebas, 15 decisiones |
+| 11 · Lo que sigue | Sergio | Cuenta propia en AWS, aplicación con Flet, una mensajería real |
+
+Reparto según el índice del sitio: Sergio ≈ 2 min 15 s, Nicolás ≈ 1 min 40 s y
+Oscar ≈ 1 min 45 s. Sergio abre y cierra, y además lleva el celular en la
+demostración.
+
+**Antes de presentar:**
+
+- **La demostración necesita la cuenta de AWS encendida.** Con el laboratorio
+  actual, abrirlo diez minutos antes (con la sesión cerrada la API responde
+  500). Las indicaciones de la lámina 6 dicen qué dejar listo en cada
+  pantalla; con la cuenta nueva de la universidad, véase el
+  [plan de la cuenta](../despliegue/plan-cuenta-universidad.md).
+- **Ensayar en el auditorio.** El GPS dentro de un edificio puede tardar o
+  quedarse quieto. Si pasa, se vuelve a la lámina 5, que muestra lo mismo.
+- **Las cifras son de fuentes con fecha:** 327 pruebas superadas y 5 omitidas
+  en la ejecución del 23/10/2026; 11 controles, 10 conformes y 1 desviado en la
+  revisión de Cotejo en AWS del 16/10/2026; 15 decisiones registradas
+  (ADR-001 a ADR-015). Si cambian antes de la presentación, se cambian en la
+  lámina y en el guion hablado.
+- **La lámina 11 nombra la aplicación con Flet como «en construcción»**: la
+  está haciendo otra sesión de trabajo. Si está lista para la fecha, cambiar la
+  frase.
+
+PDF: `Rastro · presentación a la universidad.pdf` (11 láminas) y
+`… guion.pdf` en [`entregables/sustentacion/`](../entregables/sustentacion/).
 
 ## Versión corta, para cinco minutos
 

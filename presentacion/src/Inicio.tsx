@@ -1,6 +1,6 @@
-/* Índice de las sustentaciones.
+/* Índice de las presentaciones: las dos sustentaciones y la de la universidad.
  *
- * Todo lo que muestra sale de los dos guiones: metadatos, recuento de
+ * Todo lo que muestra sale de los guiones: metadatos, recuento de
  * diapositivas y reparto de intervenciones, que se deduce del guion
  * («Guion: Sergio. …»). Sirve para ensayar: se ve de un vistazo quién presenta
  * qué, cuánto habla cada uno y si el reparto está equilibrado.
@@ -42,7 +42,7 @@ export function Inicio({ decks }: { decks: EntradaDeck[] }) {
       <header className="inicio__cabecera">
         <div>
           <p className="inicio__antetitulo">Grupo {texto(primero.grupo)}</p>
-          <h1 className="inicio__titulo">Sustentaciones</h1>
+          <h1 className="inicio__titulo">Presentaciones</h1>
           <p className="inicio__descripcion">
             Docente: {texto(primero.docente)}. Equipo: {texto(primero.equipo)}.
           </p>
