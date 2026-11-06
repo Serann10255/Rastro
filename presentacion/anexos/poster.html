@@ -1,0 +1,655 @@
+<!doctype html>
+<!--
+  Póster digital de Rastro para el anexo de la entrega.
+
+  Pieza de impresión de tamaño fijo: A1 vertical (594 × 841 mm), maquetada a
+  96 ppp, es decir, 2245 × 3179 px de CSS. No es un módulo con interfaz y por
+  eso no sigue el enfoque mobile-first: un póster tiene un solo formato.
+
+  Lo exporta `exportar-poster.mjs` a PDF (vectorial) y PNG, y comprueba antes
+  que nada se desborde. Las capturas salen de `../capturas/`; el código QR del
+  repositorio lo inserta el exportador en `#qr`.
+
+  Regla del proyecto para sustentación: ninguna cifra es decorativa. Todas
+  salen de la Entrega 2, de las evidencias de `evidencias-despliegue/` o de la
+  ejecución de la suite de pruebas que se cita con su fecha.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=2245">
+<title>Rastro · póster</title>
+<style>
+  @page { size: 594mm 841mm; margin: 0; }
+
+  :root {
+    --marca-1: #1d4f91;
+    --marca-2: #17a2b8;
+    --tinta: #16202c;
+    --tinta-suave: #44536a;
+    --tinta-tenue: #6f7d93;
+    --fondo: #f4f6f9;
+    --superficie: #ffffff;
+    --borde: #dde2ea;
+    --acento-suave: #e7effa;
+    --exito: #1a6b46;
+    --exito-suave: #e2f2ea;
+    --alerta: #8a5a00;
+    --alerta-suave: #fbf1dc;
+    --peligro: #a3262a;
+    --oscuro: #0f2a50;
+    --turquesa: #7fd3e0;
+
+    --hueco: 26px;
+    --radio: 22px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+
+  body {
+    width: 2245px;
+    height: 3179px;
+    overflow: hidden;
+    background: var(--fondo);
+    color: var(--tinta);
+    font: 24px/1.36 "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    overflow-wrap: break-word;
+  }
+
+  img { max-width: 100%; display: block; }
+  p { margin: 0; }
+
+  .poster {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+  }
+
+  /* Cabecera ---------------------------------------------------------- */
+
+  .cabecera {
+    color: #fff;
+    background:
+      radial-gradient(circle at 88% 10%, rgba(23, 162, 184, 0.45), transparent 46%),
+      linear-gradient(120deg, var(--oscuro), var(--marca-1) 58%, #17708a);
+    padding: 36px 80px 34px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 54px;
+    align-items: center;
+  }
+  .titulo { display: grid; gap: 14px; }
+  .titulo__marca { display: flex; align-items: center; gap: 30px; }
+  .titulo__marca svg { width: 146px; height: 146px; flex: none; }
+  .titulo h1 { margin: 0; font-size: 156px; line-height: 0.9; letter-spacing: 0.015em; font-weight: 800; }
+  .titulo__lema { font-size: 44px; line-height: 1.15; color: #dcecf8; max-width: 1300px; font-weight: 600; }
+
+  .credito {
+    display: grid;
+    gap: 12px;
+    font-size: 26px;
+    color: #e2edf8;
+    border-left: 4px solid var(--turquesa);
+    padding-left: 34px;
+  }
+  .credito strong { color: #fff; }
+  .qr { display: grid; gap: 8px; justify-items: center; font-size: 19px; color: #d7e9f7; }
+  .qr #qr { background: #fff; padding: 12px; border-radius: 12px; }
+  .qr #qr svg { width: 150px; height: 150px; display: block; }
+  .qr code { font: 600 18px/1.2 "Cascadia Code", Consolas, monospace; color: #fff; }
+  .credito__equipo { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 29px; color: #fff; font-weight: 600; }
+
+  /* Cifras ------------------------------------------------------------ */
+
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--hueco);
+    padding: 26px 64px 0;
+  }
+  .cifra {
+    background: var(--superficie);
+    border: 2px solid var(--borde);
+    border-top: 10px solid var(--marca-1);
+    border-radius: var(--radio);
+    padding: 20px 30px 22px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 22px;
+    align-items: center;
+  }
+  .cifra b { font-size: 78px; line-height: 1; color: var(--marca-1); letter-spacing: -0.01em; white-space: nowrap; }
+  .cifra span { font-size: 24px; color: var(--tinta-suave); line-height: 1.28; }
+  .cifra:nth-child(2) { border-top-color: var(--exito); }
+  .cifra:nth-child(2) b { color: var(--exito); }
+  .cifra:nth-child(3) { border-top-color: var(--marca-2); }
+  .cifra:nth-child(3) b { color: #10798a; }
+  .cifra:nth-child(4) { border-top-color: var(--alerta); }
+  .cifra:nth-child(4) b { color: var(--alerta); }
+
+  /* Cuerpo ------------------------------------------------------------ */
+
+  .cuerpo {
+    padding: var(--hueco) 64px 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--hueco);
+    align-content: start;
+    min-height: 0;
+  }
+
+  .bloque {
+    background: var(--superficie);
+    border: 2px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 22px 30px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    min-width: 0;
+  }
+  .bloque--ancho { grid-column: span 2; }
+  .bloque--completo { grid-column: 1 / -1; }
+
+  .bloque h2 {
+    margin: 0 0 2px;
+    font-size: 40px;
+    line-height: 1.1;
+    color: var(--oscuro);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .bloque h2 .num {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 27px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--marca-1), var(--marca-2));
+  }
+  .bloque h3 { margin: 4px 0 0; font-size: 27px; color: var(--marca-1); }
+
+  .destacado {
+    font-size: 29px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--oscuro);
+    background: var(--acento-suave);
+    border-left: 8px solid var(--marca-1);
+    border-radius: 12px;
+    padding: 16px 22px;
+  }
+  .pregunta { font-style: italic; color: var(--tinta-suave); border-left: 6px solid var(--marca-2); padding-left: 20px; font-size: 24px; }
+  .nota { font-size: 22px; color: var(--tinta-tenue); line-height: 1.32; }
+
+  ul.lista { margin: 0; padding-left: 30px; display: grid; gap: 6px; }
+  ul.lista li::marker { color: var(--marca-2); }
+
+  /* Problema */
+  .fuentes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .fuente {
+    border: 2px dashed var(--borde);
+    border-radius: 14px;
+    padding: 12px 6px;
+    text-align: center;
+    font-size: 21px;
+    line-height: 1.2;
+    color: var(--tinta-suave);
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+  }
+  .fuente svg { width: 42px; height: 42px; }
+
+  /* Objetivo */
+  .objetivos__titulo { font-size: 22px; color: var(--tinta-suave); margin-bottom: -4px; }
+  .objetivos__titulo b { color: var(--exito); }
+  .objetivos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .objetivos li {
+    border: 2px solid #a8d7c1;
+    background: var(--exito-suave);
+    border-radius: 12px;
+    padding: 7px 12px 7px 40px;
+    font-size: 20.5px;
+    line-height: 1.22;
+    position: relative;
+  }
+  .objetivos li::before {
+    content: "✓";
+    position: absolute;
+    left: 13px;
+    top: 6px;
+    font-weight: 800;
+    color: var(--exito);
+  }
+
+  /* Solución */
+  .pilares { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+  .pilares li { display: grid; grid-template-columns: 46px 1fr; gap: 14px; align-items: start; font-size: 21px; line-height: 1.24; }
+  .pilares li strong { display: block; font-size: 23.5px; color: var(--oscuro); }
+  .pilares svg { width: 46px; height: 46px; }
+
+  /* Funcionalidades */
+  .galeria {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+  .captura { margin: 0; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .captura__marco {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid var(--borde);
+    box-shadow: 0 10px 24px rgba(15, 27, 45, 0.14);
+    background: #fff;
+    aspect-ratio: 4 / 3;
+  }
+  /* Recorte: las capturas de escritorio son de 1440 × 900 con el menú a la
+   * izquierda. Se amplían y se encuadran en la parte que cuenta, para que el
+   * texto de la interfaz siga siendo legible a este tamaño. */
+  .captura__marco img {
+    width: var(--zoom, 140%);
+    max-width: none;
+    height: auto;
+    transform: translate(var(--x, -24%), var(--y, 0));
+    transform-origin: 0 0;
+  }
+  .captura figcaption { font-size: 21.5px; line-height: 1.28; color: var(--tinta-suave); }
+  .captura figcaption strong { color: var(--oscuro); font-size: 24px; display: block; }
+  .tambien { font-size: 23px; color: var(--tinta-suave); }
+  .tambien strong { color: var(--oscuro); }
+
+  /* Arquitectura */
+  .arquitectura svg { width: 100%; height: auto; display: block; }
+  .servicios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .servicio { border: 2px solid var(--borde); border-radius: 12px; padding: 8px 12px; font-size: 20.5px; line-height: 1.22; color: var(--tinta-suave); }
+  .servicio code { display: block; font: 700 22px/1.2 "Cascadia Code", Consolas, monospace; color: var(--marca-1); }
+
+  /* Resultados */
+  .verificacion { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+  .verificacion li {
+    border-radius: 14px;
+    padding: 12px 18px;
+    background: var(--exito-suave);
+    border: 2px solid #a8d7c1;
+    display: grid;
+    gap: 2px;
+    font-size: 21px;
+    line-height: 1.26;
+  }
+  .verificacion li strong { font-size: 24px; color: var(--exito); }
+  .terminal {
+    font: 600 22px/1.4 "Cascadia Code", Consolas, monospace;
+    color: #d8f3e6;
+    background: #0f1b2d;
+    border-radius: 10px;
+    padding: 8px 14px;
+    justify-self: start;
+  }
+  .hallazgo {
+    border-radius: 14px;
+    padding: 12px 18px;
+    background: var(--alerta-suave);
+    border: 2px solid #e8cf9a;
+    font-size: 21px;
+    line-height: 1.26;
+  }
+  .hallazgo strong { color: var(--alerta); font-size: 24px; display: block; }
+
+  /* Normativa */
+  table { border-collapse: collapse; width: 100%; font-size: 21px; line-height: 1.24; }
+  th, td { text-align: left; padding: 6px 7px; border-bottom: 2px solid var(--borde); vertical-align: top; }
+  tbody th { color: var(--oscuro); white-space: nowrap; }
+  thead th { color: var(--tinta-tenue); font-size: 19px; text-transform: uppercase; letter-spacing: 0.05em; }
+  tr.no-cumple td, tr.no-cumple th { color: var(--peligro); }
+
+  /* Tecnologías */
+  .tecnologias { display: grid; gap: 9px; }
+  .grupo-tec { display: grid; gap: 5px; }
+  .grupo-tec h3 { margin: 0; font-size: 19px; color: var(--tinta-tenue); text-transform: uppercase; letter-spacing: 0.06em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-size: 20.5px;
+    padding: 2px 12px;
+    border-radius: 999px;
+    background: var(--acento-suave);
+    color: var(--marca-1);
+    font-weight: 600;
+    border: 2px solid #b9d0ec;
+  }
+  .chip--aws { background: #fff4e5; color: #8a4b00; border-color: #f0c98d; }
+
+  /* Conclusiones */
+
+  /* Pie */
+  .pie {
+    margin-top: var(--hueco);
+    padding: 16px 80px;
+    background: var(--oscuro);
+    color: #c9d8ea;
+    font-size: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+  }
+  .pie strong { color: #fff; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <header class="cabecera">
+    <div class="titulo">
+      <div class="titulo__marca">
+        <svg viewBox="0 0 48 48" role="img" aria-label="Logotipo de Rastro">
+          <path d="M14 5H9a4 4 0 0 0-4 4v5M34 5h5a4 4 0 0 1 4 4v5M14 43H9a4 4 0 0 1-4-4v-5M34 43h5a4 4 0 0 0 4-4v-5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M13 33 L24 24 L35 15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+          <circle cx="13" cy="33" r="3.4" fill="none" stroke="#fff" stroke-width="2.6"/>
+          <circle cx="24" cy="24" r="3.4" fill="#fff" opacity=".6"/>
+          <circle cx="35" cy="15" r="5.6" fill="#7fd3e0"/>
+          <path d="M32.6 15.1 L34.4 16.9 L37.6 13.3" fill="none" stroke="#0f2a50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>RASTRO</h1>
+      </div>
+      <p class="titulo__lema">Trazabilidad verificable de envíos sobre servicios gestionados en la nube</p>
+    </div>
+    <div class="credito">
+      <p><strong>Cloud Computing (ISD38)</strong> · Grupo 30112 · Periodo 2026B</p>
+      <p>Docente: Daniel Alejandro García Rodríguez</p>
+      <ul class="credito__equipo">
+        <li>Sergio Alejandro Montoya Granados</li>
+        <li>Nicolás Torres Perdomo</li>
+        <li>Óscar Julián Rincón Bejarano</li>
+      </ul>
+      <p>Corporación Unificada Nacional de Educación Superior — CUN<br>Ingeniería de Sistemas · Bogotá, D. C.</p>
+    </div>
+    <div class="qr">
+      <div id="qr" aria-label="Código QR del repositorio"></div>
+      <code>github.com/Serann10255/Rastro</code>
+    </div>
+  </header>
+
+  <section class="cifras" aria-label="Resultados en cifras">
+    <div class="cifra"><b>9 / 9</b><span>requisitos cumplidos, cada uno con su prueba automatizada</span></div>
+    <div class="cifra"><b>327</b><span>pruebas superadas, 5 omitidas y 0 fallos (6/11/2026)</span></div>
+    <div class="cifra"><b>8 · 3</b><span>funciones Lambda y tablas DynamoDB en AWS us-east-1</span></div>
+    <div class="cifra"><b>10 / 11</b><span>controles conformes en una auditoría independiente</span></div>
+  </section>
+
+  <main class="cuerpo">
+
+    <!-- 1 · Problema -->
+    <section class="bloque">
+      <h2><span class="num">1</span>Problema</h2>
+      <p>En una mensajería urbana pequeña, el estado de un envío vive repartido entre:</p>
+      <div class="fuentes" aria-hidden="true">
+        <div class="fuente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#55637a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+          la memoria del mensajero
+        </div>
+        <div class="fuente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#55637a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+          un chat
+        </div>
+        <div class="fuente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#55637a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+          una hoja de cálculo
+        </div>
+        <div class="fuente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#55637a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>
+          el teléfono del despachador
+        </div>
+      </div>
+      <p class="destacado">Nadie puede decir quién cambió el estado, cuándo y con qué respaldo.</p>
+      <p class="pregunta">¿Cómo registrar de forma verificable cada cambio de estado, con su responsable y su evidencia, sobre servicios gestionados en la nube y con los permisos y el presupuesto de un entorno educativo?</p>
+    </section>
+
+    <!-- 2 · Objetivo -->
+    <section class="bloque">
+      <h2><span class="num">2</span>Objetivo y método</h2>
+      <p><strong>Objetivo general.</strong> Desarrollar sobre servicios gestionados de AWS un sistema que registre de forma verificable el ciclo de vida de cada envío, con acceso por rol, aislamiento entre organizaciones y evidencia de entrega cifrada.</p>
+      <p class="objetivos__titulo">Objetivos específicos: <b>los cuatro cumplidos</b></p>
+      <ul class="objetivos">
+        <li>Caracterizar el proceso actual</li>
+        <li>Diseñar arquitectura y datos</li>
+        <li>Construir y desplegar en AWS</li>
+        <li>Verificar controles con pruebas</li>
+      </ul>
+      <h3>Método</h3>
+      <p>Iterativo e incremental, 12 semanas en 4 fases. Regla: <strong>ningún requisito se dio por cumplido sin su prueba automatizada</strong>. Y una auditoría independiente, porque quien despliega no concluye que su control funciona.</p>
+    </section>
+
+    <!-- 3 · Solución -->
+    <section class="bloque">
+      <h2><span class="num">3</span>Solución</h2>
+      <p>Cada cambio de estado queda <strong>atribuido, fechado y validado</strong>:</p>
+      <ul class="pilares">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="10" cy="24" r="6" fill="none" stroke="#1d4f91" stroke-width="3"/><circle cx="38" cy="24" r="6" fill="#1d4f91"/><path d="M16 24h14" stroke="#17a2b8" stroke-width="3" stroke-linecap="round"/><path d="M27 19l5 5-5 5" fill="none" stroke="#17a2b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><strong>Máquina de estados</strong>Nueve estados; una transición no permitida se rechaza y queda registrada.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="16" width="12" height="16" rx="3" fill="none" stroke="#1d4f91" stroke-width="3"/><rect x="18" y="16" width="12" height="16" rx="3" fill="none" stroke="#1d4f91" stroke-width="3"/><rect x="32" y="16" width="12" height="16" rx="3" fill="#1d4f91"/><path d="M16 24h2M30 24h2" stroke="#17a2b8" stroke-width="3"/></svg>
+          <span><strong>Bitácora encadenada por hash</strong>Actor, acción, recurso y momento; un verificador recalcula la cadena.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="21" width="30" height="21" rx="4" fill="none" stroke="#1d4f91" stroke-width="3"/><path d="M16 21v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#17a2b8" stroke-width="3"/><circle cx="24" cy="31" r="3" fill="#1d4f91"/></svg>
+          <span><strong>Evidencia cifrada</strong>Foto por enlace prefirmado, en S3 con llave KMS propia. Sin evidencia no hay ENTREGADO.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="9" width="16" height="30" rx="3" fill="none" stroke="#1d4f91" stroke-width="3"/><rect x="27" y="9" width="16" height="30" rx="3" fill="none" stroke="#17a2b8" stroke-width="3"/><path d="M24 6v36" stroke="#a3262a" stroke-width="3" stroke-dasharray="4 4"/></svg>
+          <span><strong>Aislamiento entre empresas</strong>Sin la organización la consulta ni se construye; entre empresas, 404 y no 403.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="17" cy="17" r="7" fill="none" stroke="#1d4f91" stroke-width="3"/><path d="M5 40c2-7 6-10 12-10s10 3 12 10" fill="none" stroke="#1d4f91" stroke-width="3"/><path d="M31 22l4 4 8-9" fill="none" stroke="#17a2b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><strong>Roles y separación de funciones</strong>Ningún rol combina escritura con lectura de la bitácora.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 43s-13-12-13-22a13 13 0 0 1 26 0c0 10-13 22-13 22z" fill="none" stroke="#1d4f91" stroke-width="3"/><circle cx="24" cy="21" r="5" fill="#17a2b8"/></svg>
+          <span><strong>Rutas con ubicación en vivo</strong>Solo mientras la ruta está abierta; el destinatario la ve sin cuenta.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 4 · Funcionalidades -->
+    <section class="bloque bloque--completo">
+      <h2><span class="num">4</span>Funcionalidades, en la aplicación real</h2>
+      <div class="galeria">
+        <figure class="captura">
+          <div class="captura__marco" style="--zoom: 140%; --x: -17%; --y: 0%"><img src="../capturas/rastro-panel.webp" alt="Panel de la organización con indicadores y estados"></div>
+          <figcaption><strong>Panel de la organización</strong>En curso, entregados, con incidencia y sin asignar, y los envíos sin movimiento.</figcaption>
+        </figure>
+        <figure class="captura">
+          <div class="captura__marco" style="--zoom: 126%; --x: -18%; --y: -2%"><img src="../capturas/rastro-seguimiento.webp" alt="Mapa de seguimiento con un conductor en ruta y su recorrido"></div>
+          <figcaption><strong>Seguimiento en vivo</strong>Cada conductor en ruta en el mapa, con su recorrido y sus paradas.</figcaption>
+        </figure>
+        <figure class="captura">
+          <div class="captura__marco" style="--zoom: 132%; --x: -18%; --y: 0%"><img src="../capturas/rastro-modo-ruta.webp" alt="Modo ruta del conductor con su ubicación y sus paradas"></div>
+          <figcaption><strong>Modo ruta del conductor</strong>Comparte su ubicación solo con la ruta abierta; entrega con foto.</figcaption>
+        </figure>
+        <figure class="captura">
+          <div class="captura__marco" style="--zoom: 190%; --x: -24%; --y: -23%"><img src="../capturas/rastro-rastreo-en-camino.webp" alt="Consulta pública con el vehículo en camino"></div>
+          <figcaption><strong>Consulta pública</strong>El destinatario, sin cuenta, ve el avance y el vehículo en camino.</figcaption>
+        </figure>
+        <figure class="captura">
+          <div class="captura__marco" style="--zoom: 140%; --x: -17%; --y: 0%"><img src="../capturas/rastro-bitacora.webp" alt="Bitácora de auditoría con la cadena verificada"></div>
+          <figcaption><strong>Bitácora de auditoría</strong>La cadena se recalcula y verifica; solo el auditor la lee.</figcaption>
+        </figure>
+      </div>
+      <p class="tambien"><strong>También:</strong> detalle de cada envío con su histórico, registro masivo desde CSV con vista previa, guías imprimibles con código de barras Code 128, exportación de la operación, catálogos de tiendas, clientes y transportistas, y administración de cuentas y roles por empresa. Interfaz web <em>mobile-first</em>, usable desde 360 px, y un segundo cliente en Flet para escritorio, web y Android.</p>
+    </section>
+
+    <!-- 5 · Arquitectura -->
+    <section class="bloque bloque--ancho">
+      <h2><span class="num">5</span>Arquitectura sin servidor en AWS</h2>
+      <div class="arquitectura">
+        <svg viewBox="0 0 1400 370" role="img" aria-labelledby="arq-titulo">
+          <title id="arq-titulo">Usuarios y destinatario entran por HTTPS al sitio estático y a API Gateway; ocho funciones Lambda con una capa común de control escriben en DynamoDB y en S3 cifrado con KMS; CloudTrail registra la actividad.</title>
+          <defs>
+            <marker id="punta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#55637a"/>
+            </marker>
+          </defs>
+          <style>
+            .caja { fill: #fff; stroke: #c3ccd9; stroke-width: 2.5; }
+            .caja--acento { fill: #e7effa; stroke: #1d4f91; stroke-width: 3; }
+            .caja--actor { fill: #f4f6f9; stroke: #c3ccd9; stroke-width: 2.5; }
+            .caja--discontinua { fill: #fff; stroke: #8390a5; stroke-width: 2.5; stroke-dasharray: 9 7; }
+            .t-fuerte { font: 700 28px "Segoe UI", sans-serif; fill: #16202c; }
+            .t-suave { font: 400 22px "Segoe UI", sans-serif; fill: #55637a; }
+            .t-rotulo { font: 700 23px "Segoe UI", sans-serif; fill: #8a4b00; letter-spacing: .04em; }
+            .linea { stroke: #55637a; stroke-width: 2.5; fill: none; }
+            .linea--discontinua { stroke-dasharray: 8 6; }
+          </style>
+
+          <rect class="caja--actor" x="0" y="62" width="220" height="110" rx="16"/>
+          <text class="t-fuerte" x="110" y="110" text-anchor="middle">Usuarios</text>
+          <text class="t-suave" x="110" y="142" text-anchor="middle">cinco roles</text>
+          <rect class="caja--actor" x="0" y="242" width="220" height="110" rx="16"/>
+          <text class="t-fuerte" x="110" y="290" text-anchor="middle">Destinatario</text>
+          <text class="t-suave" x="110" y="322" text-anchor="middle">sin cuenta</text>
+
+          <rect x="268" y="4" width="1128" height="362" rx="24" fill="#fffaf2" stroke="#f0c98d" stroke-width="3"/>
+          <text class="t-rotulo" x="296" y="42">AWS · us-east-1 · todo por HTTPS</text>
+
+          <path class="linea" d="M220 117 H300" marker-end="url(#punta)"/>
+          <path class="linea" d="M220 297 H300" marker-end="url(#punta)"/>
+
+          <rect class="caja" x="304" y="62" width="230" height="290" rx="16"/>
+          <text class="t-fuerte" x="419" y="182" text-anchor="middle">Interfaz web</text>
+          <text class="t-suave" x="419" y="216" text-anchor="middle">sitio estático</text>
+          <text class="t-suave" x="419" y="244" text-anchor="middle">en S3</text>
+
+          <path class="linea" d="M534 207 H586" marker-end="url(#punta)"/>
+          <rect class="caja" x="590" y="62" width="210" height="290" rx="16"/>
+          <text class="t-fuerte" x="695" y="182" text-anchor="middle">API</text>
+          <text class="t-fuerte" x="695" y="216" text-anchor="middle">Gateway</text>
+          <text class="t-suave" x="695" y="248" text-anchor="middle">HTTP</text>
+
+          <path class="linea" d="M800 207 H852" marker-end="url(#punta)"/>
+          <rect class="caja--acento" x="856" y="62" width="240" height="290" rx="16"/>
+          <text class="t-fuerte" x="976" y="162" text-anchor="middle">8 funciones</text>
+          <text class="t-fuerte" x="976" y="196" text-anchor="middle">Lambda</text>
+          <text class="t-suave" x="976" y="240" text-anchor="middle">una sola capa</text>
+          <text class="t-suave" x="976" y="268" text-anchor="middle">común de control</text>
+
+          <path class="linea" d="M1096 122 H1150" marker-end="url(#punta)"/>
+          <path class="linea" d="M1096 207 H1150" marker-end="url(#punta)"/>
+          <path class="linea linea--discontinua" d="M1096 292 H1150" marker-end="url(#punta)"/>
+
+          <rect class="caja" x="1154" y="74" width="220" height="96" rx="14"/>
+          <text class="t-fuerte" x="1264" y="115" text-anchor="middle">3 tablas</text>
+          <text class="t-suave" x="1264" y="147" text-anchor="middle">DynamoDB</text>
+          <rect class="caja" x="1154" y="178" width="220" height="96" rx="14"/>
+          <text class="t-fuerte" x="1264" y="219" text-anchor="middle">Evidencias</text>
+          <text class="t-suave" x="1264" y="251" text-anchor="middle">S3 · cifrado KMS</text>
+          <rect class="caja--discontinua" x="1154" y="282" width="220" height="96" rx="14"/>
+          <text class="t-fuerte" x="1264" y="323" text-anchor="middle">Actividad</text>
+          <text class="t-suave" x="1264" y="355" text-anchor="middle">CloudTrail</text>
+
+        </svg>
+      </div>
+      <div class="servicios">
+        <div class="servicio"><code>auth</code>identidad y sesiones revocables</div>
+        <div class="servicio"><code>shipments</code>registro, asignación y guías</div>
+        <div class="servicio"><code>tracking</code>puntos de control y rutas</div>
+        <div class="servicio"><code>evidence</code>enlaces prefirmados</div>
+        <div class="servicio"><code>public</code>consulta sin autenticación</div>
+        <div class="servicio"><code>audit</code>bitácora y verificador</div>
+        <div class="servicio"><code>masters</code>tiendas, clientes y catálogos</div>
+        <div class="servicio"><code>dashboard</code>indicadores de operación</div>
+      </div>
+    </section>
+
+    <!-- 6 · Resultados -->
+    <section class="bloque">
+      <h2><span class="num">6</span>Resultados y pruebas</h2>
+      <ul class="verificacion">
+        <li>
+          <strong>Pruebas automatizadas</strong>
+          Unitarias y de extremo a extremo; sin Docker ni credenciales.
+          <span class="terminal">327 passed, 5 skipped · 0 fallos</span>
+        </li>
+        <li>
+          <strong>Despliegue verificado en AWS</strong>
+          26/09/2026, código de salida 0; 16/10/2026, con sitio HTTPS y modo ruta: todo verificado.
+        </li>
+        <li>
+          <strong>Auditoría independiente</strong>
+          Un programa aparte evaluó 11 controles: 10 conformes, 1 desviado, 0 sin ejecutar.
+        </li>
+      </ul>
+      <div class="hallazgo">
+        <strong>Hallazgo principal, corregido</strong>
+        El secreto de firma de sesiones estuvo publicado 27 minutos: se rotó, se redesplegaron las ocho funciones y hoy lo vigila el control C-09.
+      </div>
+    </section>
+
+    <!-- 7 · Normativa -->
+    <section class="bloque">
+      <h2><span class="num">7</span>Normativa</h2>
+      <table>
+        <thead><tr><th>Marco</th><th>Cómo se atiende</th></tr></thead>
+        <tbody>
+          <tr><th>Ley 1581 de 2012</th><td>Minimización, cifrado, acceso por rol; datos sintéticos</td></tr>
+          <tr><th>ISO/IEC 27001:2022</th><td>Llave propia con rotación; versionado</td></tr>
+          <tr><th>CIS AWS</th><td>Registro con validación de integridad</td></tr>
+          <tr><th>OWASP A01:2021</th><td>Identificadores aleatorios; 404 entre empresas</td></tr>
+          <tr><th>NIST SP 800-92</th><td>Bitácora: actor, acción, recurso, momento</td></tr>
+          <tr class="no-cumple"><th>Well-Architected</th><td>Mínimo privilegio: no se cumple, el laboratorio no permite un rol por función</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 8 · Tecnologías -->
+    <section class="bloque">
+      <h2><span class="num">8</span>Tecnologías</h2>
+      <div class="tecnologias">
+        <div class="grupo-tec">
+          <h3>Nube</h3>
+          <div class="chips"><span class="chip chip--aws">Lambda</span><span class="chip chip--aws">API Gateway</span><span class="chip chip--aws">DynamoDB</span><span class="chip chip--aws">S3</span><span class="chip chip--aws">KMS</span><span class="chip chip--aws">CloudTrail</span></div>
+        </div>
+        <div class="grupo-tec">
+          <h3>Servicios</h3>
+          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">boto3</span><span class="chip">JWT</span><span class="chip">PBKDF2</span></div>
+        </div>
+        <div class="grupo-tec">
+          <h3>Interfaz</h3>
+          <div class="chips"><span class="chip">React</span><span class="chip">TypeScript</span><span class="chip">Vite</span><span class="chip">Leaflet</span><span class="chip">OpenStreetMap</span></div>
+        </div>
+        <div class="grupo-tec">
+          <h3>Entorno y calidad</h3>
+          <div class="chips"><span class="chip">Docker Compose</span><span class="chip">nginx</span><span class="chip">MinIO</span><span class="chip">pytest</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 · Conclusiones -->
+    <section class="bloque">
+      <h2><span class="num">9</span>Conclusiones</h2>
+      <ul class="lista">
+        <li>Los <strong>nueve requisitos</strong> se cumplen y pueden comprobarse.</li>
+        <li><strong>Tres verificaciones</strong> independientes coinciden: pruebas, despliegue y auditoría.</li>
+        <li>Tres riesgos se materializaron; los tres se gestionaron.</li>
+      </ul>
+      <p><strong>Siguiente paso:</strong> un rol de ejecución por función y validar con una empresa real.</p>
+      <p class="nota"><strong>Limitaciones declaradas:</strong> sin usuarios reales; mínimo privilegio incumplido; integridad de la bitácora por detección, no por prevención, frente a quien administra la cuenta.</p>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <span><strong>Rastro</strong> · Trazabilidad verificable de envíos · Datos 100 % sintéticos</span>
+    <span>Cloud Computing (ISD38) · Grupo 30112 · CUN · Noviembre de 2026</span>
+  </footer>
+</div>
+</body>
+</html>

@@ -257,6 +257,168 @@ Las cifras de esas pantallas son de la pila local: los controles que necesitan
 la cuenta de AWS quedan SIN REVISAR, y así lo dice la respuesta preparada de
 Cotejo 8. La ejecución de referencia sigue siendo la del 26/09/2026.
 
+## Anexos de la entrega: póster y video
+
+Desde el 2026-11-06, `presentacion/anexos/` produce los dos anexos que pide el
+formulario de entrega además de la memoria técnica: el **póster digital** y el
+**video demostrativo**. Los archivos resultantes, cómo subirlos y de dónde sale
+cada cifra están en
+[`documentacion/entregables/anexos/`](../../entregables/anexos/README.md).
+
+| Fuente | Produce | Necesita |
+|---|---|---|
+| `anexos/poster.html` | El póster, maquetado en HTML y CSS | Las capturas de `capturas/` |
+| `anexos/exportar-poster.mjs` | `poster-rastro.pdf`, `.png` y `.jpg` | Edge del equipo |
+| `anexos/grabar-demo.mjs` | `video-demostrativo-rastro.mp4` | La pila local levantada y Edge |
+| `anexos/pitch.html` + `anexos/grabar-pitch.mjs` | `video-pitch-rastro.mp4` (2026-11-06) | El MP4 del video demostrativo y Edge |
+| `anexos/musica-pitch.mjs` | La música del pitch, sintetizada | Nada |
+
+```bash
+cd presentacion
+npm install --no-save playwright-core@1.56.1 sharp@0.34.3 qrcode@1.5.4 ffmpeg-static@5.2.0
+node anexos/exportar-poster.mjs    # unos 20 s
+node anexos/grabar-demo.mjs        # unos 5 min; docker compose up -d antes
+node anexos/grabar-pitch.mjs       # unos 6 min; --muestras=5,21,80 para revisar fotogramas sueltos
+```
+
+Igual que el guion de capturas: las dependencias se instalan sin guardarlas, no
+se descargan navegadores (canal `msedge`) y nada de esto entra en la imagen de
+Docker del módulo, que solo copia `dist/`.
+
+### El póster
+
+- **Lienzo fijo A1 vertical**: 594 × 841 mm, maquetado a 96 ppp (2245 × 3179 px
+  de CSS). El PDF sale a ese tamaño con el texto vectorial; el PNG y el JPG, a
+  2,2 de densidad (4939 × 6994 px, unos 211 ppp).
+- **Las capturas son las de `capturas/`**, recortadas con CSS y no con archivos
+  nuevos: cada figura declara `--zoom`, `--x` y `--y` y la imagen se amplía y
+  se desplaza dentro de un marco 4:3, para quitar el menú lateral y que el
+  texto de la interfaz siga siendo legible. Si se regeneran las capturas, el
+  póster se actualiza al volver a exportarlo.
+- **El código QR** del repositorio lo genera el exportador (`qrcode`) y lo
+  inserta en `#qr`; el HTML no lleva una imagen fija que pueda quedar
+  desactualizada.
+- **El exportador se niega a producir un póster que no cabe.** Comprueba que
+  todas las imágenes cargaron, que ningún bloque se desborde y que ningún
+  bloque quede debajo del pie. Esto último hace falta porque el cuerpo es la
+  fila `1fr` de la rejilla: cuando el contenido sobra, la última fila no se
+  desborda de su bloque sino que pasa por debajo del pie, y la primera versión
+  del control no lo vio (se notó al revisar el PNG).
+- **Cifras**: las mismas reglas que las diapositivas. La tabla de fuentes está
+  en el README de los anexos.
+
+### El video
+
+- **Una orden de principio a fin**, en doce escenas: el despachador entra, ve
+  el panel, registra la orden y la asigna; el conductor la recoge y sale a ruta
+  en el teléfono; el despachador lo sigue en el mapa; la destinataria lo
+  consulta sin cuenta; el conductor entrega con foto; otra empresa intenta
+  abrir la guía; el auditor verifica la bitácora; el administrador muestra los
+  roles. Portada y cierre son láminas fijas. Guion completo, con tiempos y
+  texto para voz en off, en
+  [`guion-video-demostrativo.md`](../../entregables/anexos/guion-video-demostrativo.md).
+- **Se graba con el «screencast» del protocolo de DevTools**: cada cuadro llega
+  como JPEG con su hora y ffmpeg arma un tramo de 30 fps respetando esas horas.
+  Solo se graba mientras pasa algo; las esperas (entre escenas, mientras el
+  conductor avanza para dibujar un recorrido) quedan fuera.
+- **La aplicación corre dentro de un escenario** servido desde su mismo origen
+  (`/__escenario/escritorio` y `/__escenario/telefono`, respondidos por la
+  propia grabación con `route`): así el marco comparte la sesión y el permiso de
+  ubicación. En escritorio la aplicación ocupa 1280 × 628 y debajo va una
+  franja con el rol y lo que se ve; en teléfono se ve a 390 px de ancho, a
+  escala, con la leyenda al lado.
+- **El puntero se dibuja**: sin cabeza no hay puntero que grabar, así que un
+  guion inyectado pinta una flecha que sigue al ratón y un círculo en cada
+  clic; en el teléfono, solo el círculo, como un toque.
+- **La ubicación se emula** con la geolocalización de Playwright: el conductor
+  recorre siete puntos de Chapinero por la carrera 13, y como la aplicación
+  envía antes de los quince segundos cuando se avanzan más de cien metros, el
+  recorrido aparece en el mapa de seguimiento en pocos segundos.
+- **Cada ejecución deja una orden más** en la pila local y cierra al final la
+  ruta del conductor; si una ejecución anterior quedó a medias, la cierra antes
+  de empezar. No escribe en el repositorio nada más que el MP4.
+- **El MP4 lleva una pista de audio en silencio**: algunos reproductores y
+  plataformas tratan mal un MP4 sin audio.
+
+### El video pitch
+
+Para presentar Rastro a toda la universidad, no para enseñar a usarlo: 1 min
+34 s con la forma de un pitch (gancho, problema, marca, tres personas, seis
+funcionalidades con la aplicación real, seguridad, cifras y cierre con QR).
+Las frases y cifras son las de la
+[presentación a la universidad](../../sustentacion/presentacion-universidad.md).
+Escenas y voz en off opcional en
+[`guion-video-pitch.md`](../../entregables/anexos/guion-video-pitch.md).
+
+- **Se renderiza, no se graba.** `pitch.html` es un lienzo de 1920 × 1080 con
+  todas sus animaciones creadas en pausa (Web Animations API) y con su retraso
+  absoluto en la línea de tiempo. `grabar-pitch.mjs` llama a
+  `window.fotograma(t)` para cada uno de los 2808 cuadros, que coloca cada
+  animación, contador y fragmento en `t`, y lo fotografía. Así cada cuadro sale
+  igual por lento que vaya el equipo, cosa que el screencast no garantiza con
+  animaciones.
+- **Una sola animación por propiedad y elemento.** Con `fill: both`, una
+  segunda animación de opacidad sobre el mismo elemento ganaría también antes de
+  empezar. Las entradas van en los elementos; las salidas, en su escena o en un
+  envoltorio.
+- **La aplicación sale del video demostrativo**: seis fragmentos de seis
+  segundos, recortados sin la franja de leyenda (escritorio) o con el marco del
+  teléfono, extraídos a JPEG cuadro a cuadro. Sus ventanas (`FRAGMENTOS`) son de
+  la grabación del 2026-11-06: si se vuelve a grabar el demostrativo, hay que
+  revisarlas con los tiempos por escena que imprime `grabar-demo.mjs`.
+- **La música es original**, sintetizada nota a nota en `musica-pitch.mjs`
+  (colchón de sierras filtradas, arpegio, bajo, batería y reverberación, a
+  100 pulsaciones por minuto), para no depender de ninguna pista con derechos.
+  Sigue la forma del video: intro en menor durante el problema, entrada de la
+  batería con la marca, respiro en «Seguro por diseño» y cierre que se apaga.
+  Queda en torno a -16 LUFS integrados. No se pudo escuchar al hacerla: se
+  comprobó por sonoridad por sección, picos, forma de onda y espectrograma.
+  `--sin-musica` la quita.
+
+### Decisiones y alternativas descartadas
+
+- **Pitch con voz sintética, descartado**: una voz de texto a voz le quita
+  credibilidad a un pitch. Va sin voz y con todo el mensaje en pantalla; el
+  guion trae la locución para que la grabe el equipo si quiere.
+- **Música de una biblioteca, descartada** para el archivo: no se puede
+  descargar ni verificar su licencia desde aquí. Si se prefiere, YouTube Studio
+  permite cambiarla por una pista de su biblioteca de audio al publicarlo.
+- **`recordVideo` de Playwright, descartado.** Necesita el ffmpeg que Playwright
+  descarga aparte y graba VP8 a una tasa baja: el texto de la interfaz salía
+  borroso. El screencast da cuadros JPEG nítidos a 1920 × 1080.
+- **Leyenda superpuesta a la aplicación, descartada** tras la primera toma: en
+  la escena de la orden tapaba justo los campos que se estaban llenando. La
+  franja debajo de la aplicación no tapa nada.
+- **Capturas fijas desde el guion del video, descartadas.** Se probó que el
+  video dejara las pantallas de ruta para el póster, pero `capturas/capturar.mjs`
+  ya las produce (`rastro-modo-ruta`, `rastro-seguimiento`,
+  `rastro-rastreo-en-camino`) y dos guiones escribiendo los mismos archivos
+  versionados se pisarían. El video no escribe en `capturas/`.
+- **Póster con marcos de teléfono, descartado**: las capturas versionadas son de
+  escritorio a 1440 × 900, y las de 360 px de `modulos/rutas-de-entrega/assets/`
+  no tienen resolución para un A1.
+- **Narración grabada, no incluida**: una voz sintética no aporta y la del
+  equipo la tiene que grabar el equipo. La franja hace que el video se entienda
+  sin sonido, y el guion trae el texto por si se quiere añadir.
+
+### Dependencias de los anexos
+
+- **Lee**: `seed/organizaciones.json` (cuentas del video), `capturas/*.webp`
+  (póster) y el MP4 del video demostrativo (pitch).
+- **Necesita**: la pila local completa para el video (Rastro en 5173 y su API en
+  8080) y conexión a internet para las teselas de OpenStreetMap del mapa.
+- **Escribe**: solo en `documentacion/entregables/anexos/`.
+- **Nadie depende de ellos**: no forman parte de la construcción del deck.
+
+### Formato fijo, no responsive
+
+El póster y el video son piezas de formato fijo —una lámina A1 y un cuadro de
+1920 × 1080— y no módulos con interfaz, así que no siguen el enfoque
+mobile-first; lo mismo vale para el escenario de grabación (1280 × 720). Lo que
+el video sí ejercita es el comportamiento responsive de la aplicación: las
+escenas de teléfono la muestran a 390 px de ancho, con su navegación colapsada
+en pestañas.
+
 ## Decisiones
 
 **Un lienzo fijo de 1920 × 1080 que se escala entero con `zoom`.** Es la única
@@ -451,6 +613,8 @@ tiene este módulo.
   `docker-compose.yml` es el servicio `presentacion`, sin `depends_on`, y se
   puede levantar solo.
 - **Nadie depende de él.**
+- **Los anexos de la entrega** (`anexos/`) tienen sus propias dependencias:
+  véase [Anexos de la entrega](#anexos-de-la-entrega-póster-y-video).
 
 ## Comportamiento responsive
 

@@ -1,0 +1,502 @@
+<!doctype html>
+<!--
+  Video pitch de Rastro: la composición.
+
+  Un lienzo de 1920 × 1080 con ocho escenas sobre una línea de tiempo de
+  93,6 s. No se reproduce en tiempo real: `grabar-pitch.mjs` llama a
+  `window.fotograma(t)` para cada cuadro (30 por segundo) y lo fotografía, así
+  que cada cuadro sale igual en cada ejecución por lento que vaya el equipo.
+
+  Las animaciones son de la Web Animations API, creadas en pausa con su retraso
+  absoluto en la línea de tiempo; `fotograma(t)` las coloca todas en `t`. Cada
+  propiedad de un elemento tiene una sola animación: las entradas van en el
+  elemento y las salidas en su escena, para que no se pisen.
+
+  Las escenas siguen los compases de la música (2,4 s), de modo que los cortes
+  caen en el pulso. Los textos y cifras salen de la presentación a la
+  universidad (`documentacion/sustentacion/presentacion-universidad.md`).
+
+  Es una pieza de formato fijo, no un módulo con interfaz: no es responsive.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Rastro · pitch</title>
+<style>
+  :root {
+    --oscuro: #07111f;
+    --azul: #1d4f91;
+    --turquesa: #17a2b8;
+    --claro: #7fd3e0;
+    --texto: #ffffff;
+    --texto-suave: #c9dbef;
+    --texto-tenue: #8fa7c4;
+    --coral: #ff8f80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #000; }
+  #lienzo {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    color: var(--texto);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(135deg, #07111f, #0b2140 55%, #0a3445);
+  }
+
+  /* Fondo: dos manchas de luz que derivan y una retícula de puntos. */
+  .mancha { position: absolute; border-radius: 50%; pointer-events: none; }
+  #mancha1 { width: 1400px; height: 1400px; left: -300px; top: -500px;
+    background: radial-gradient(circle, rgba(29, 79, 145, 0.55), transparent 62%); }
+  #mancha2 { width: 1200px; height: 1200px; left: 1000px; top: 300px;
+    background: radial-gradient(circle, rgba(23, 162, 184, 0.32), transparent 62%); }
+  #reticula { position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.6px, transparent 1.8px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 78%);
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 78%); }
+
+  .escena { position: absolute; inset: 0; visibility: hidden; }
+  .negro { position: absolute; inset: 0; background: #000; pointer-events: none; }
+
+  .kicker { font-size: 24px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--claro); }
+  .titulo-escena { position: absolute; left: 0; right: 0; text-align: center; margin: 0;
+    font-size: 64px; font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; }
+
+  /* 1 · Gancho ------------------------------------------------------- */
+  #e1 .centro { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 70px; }
+  .cita { margin: 0; font-size: 104px; font-weight: 800; letter-spacing: -0.015em; }
+  .comilla { color: var(--claro); }
+  .preguntas { display: flex; gap: 70px; font-size: 76px; font-weight: 700; color: var(--claro); }
+
+  /* 2 · Problema ------------------------------------------------------ */
+  #e2-t { top: 140px; }
+  .fuentes { position: absolute; left: 0; right: 0; top: 400px; display: flex; justify-content: center; gap: 44px; }
+  .fuente { width: 330px; height: 250px; border-radius: 28px; display: grid; place-content: center; justify-items: center; gap: 22px;
+    background: rgba(255, 255, 255, 0.06); border: 2px dashed rgba(255, 255, 255, 0.28);
+    font-size: 30px; font-weight: 600; text-align: center; line-height: 1.2; padding: 0 20px; }
+  .fuente svg { width: 76px; height: 76px; }
+  .remate { position: absolute; left: 0; right: 0; top: 760px; margin: 0; text-align: center; font-size: 58px; font-weight: 600; line-height: 1.2; }
+  .remate strong { color: var(--coral); font-weight: 800; }
+
+  /* 3 · Marca --------------------------------------------------------- */
+  .destello { position: absolute; left: 960px; top: 440px; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(127, 211, 224, 0.75), rgba(23, 162, 184, 0.15) 45%, transparent 68%); }
+  .marca-grande { position: absolute; left: 0; right: 0; top: 270px; display: flex; justify-content: center; align-items: center; gap: 44px; }
+  .marca-grande h1 { margin: 0; font-size: 210px; font-weight: 900; line-height: 1; letter-spacing: 0.04em; }
+  .logo .trazo { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .logo .nodo { transform-box: fill-box; transform-origin: center; }
+  .lema { position: absolute; left: 0; right: 0; margin: 0; text-align: center; font-size: 54px; font-weight: 600; }
+  #e3-l1 { top: 640px; }
+  #e3-l2 { top: 716px; color: var(--claro); font-weight: 800; }
+
+  /* 4 · Tres personas ------------------------------------------------- */
+  #e4-t { top: 130px; }
+  .personas { position: absolute; left: 0; right: 0; top: 300px; display: flex; justify-content: center; gap: 44px; }
+  .persona { width: 500px; height: 380px; border-radius: 30px; padding: 44px 42px; display: grid; align-content: start; gap: 18px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)); border: 2px solid rgba(255, 255, 255, 0.14); }
+  .persona .icono { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--azul), var(--turquesa)); }
+  .persona .icono svg { width: 52px; height: 52px; }
+  .persona h3 { margin: 6px 0 0; font-size: 46px; font-weight: 800; }
+  .persona p { margin: 0; font-size: 30px; line-height: 1.32; color: var(--texto-suave); }
+  .pie-escena { position: absolute; left: 0; right: 0; margin: 0; text-align: center; font-size: 38px; font-weight: 600; }
+  #e4-p1 { top: 760px; }
+  #e4-p2 { top: 830px; color: var(--claro); }
+
+  /* 5 · Funcionalidades ---------------------------------------------- */
+  .funcion .texto { position: absolute; left: 130px; top: 0; bottom: 0; width: 620px; display: grid; align-content: center; gap: 22px; }
+  .funcion .paso { font-size: 30px; font-weight: 800; color: var(--claro); letter-spacing: 0.06em; }
+  .funcion h2 { margin: 0; font-size: 70px; font-weight: 800; line-height: 1.08; letter-spacing: -0.01em; }
+  .funcion p { margin: 0; font-size: 34px; line-height: 1.32; color: var(--texto-suave); }
+  .medio { position: absolute; box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5); }
+  .medio--escritorio { left: 800px; top: 262px; width: 1040px; border-radius: 18px; overflow: hidden; background: #fff; }
+  .medio--escritorio .barra { height: 44px; background: #e8edf4; display: flex; align-items: center; gap: 9px; padding: 0 18px; }
+  .medio--escritorio .barra i { width: 14px; height: 14px; border-radius: 50%; background: #c3ccd9; }
+  .medio--escritorio .barra span { margin-left: 18px; flex: 1; height: 28px; border-radius: 8px; background: #fff; color: #55637a;
+    font-size: 17px; line-height: 28px; padding: 0 14px; }
+  .medio--telefono { left: 1130px; top: 96px; width: 422px; height: 884px; border-radius: 50px; overflow: hidden; background: #0f1b2d; }
+  .medio .clip { display: block; width: 100%; height: auto; }
+  .medio .zoom { transform-origin: 50% 40%; }
+  #progreso { position: absolute; left: 130px; bottom: 90px; display: flex; gap: 14px; visibility: hidden; }
+  #progreso i { width: 46px; height: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.18); }
+  #progreso i.activo { background: var(--claro); }
+  #progreso i.hecho { background: rgba(127, 211, 224, 0.45); }
+
+  /* 6 · Seguro por diseño ------------------------------------------- */
+  #e6-t { top: 130px; }
+  .seguro { position: absolute; left: 230px; right: 230px; top: 310px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px 60px; }
+  .garantia { display: grid; grid-template-columns: 104px 1fr; gap: 28px; align-items: center; }
+  .garantia .icono { width: 104px; height: 104px; border-radius: 28px; display: grid; place-items: center;
+    background: rgba(127, 211, 224, 0.14); border: 2px solid rgba(127, 211, 224, 0.4); }
+  .garantia .icono svg { width: 56px; height: 56px; }
+  .garantia h3 { margin: 0 0 6px; font-size: 42px; font-weight: 800; }
+  .garantia p { margin: 0; font-size: 28px; line-height: 1.3; color: var(--texto-suave); }
+
+  /* 7 · Cifras ------------------------------------------------------- */
+  #e7-t { top: 130px; }
+  .cifras { position: absolute; left: 0; right: 0; top: 300px; display: flex; justify-content: center; gap: 36px; }
+  .cifra { width: 400px; height: 360px; border-radius: 30px; padding: 40px 36px; display: grid; align-content: start; gap: 16px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)); border: 2px solid rgba(255, 255, 255, 0.14); }
+  .cifra b { font-size: 112px; font-weight: 900; line-height: 1; color: var(--claro); letter-spacing: -0.02em; white-space: nowrap; }
+  .cifra b small { font-size: 60px; font-weight: 800; }
+  .cifra > span { font-size: 31px; line-height: 1.3; color: var(--texto-suave); }
+  #e7-p { top: 760px; font-size: 40px; }
+  #e7-p strong { color: var(--claro); }
+
+  /* 8 · Cierre ------------------------------------------------------- */
+  .cierre { position: absolute; left: 150px; top: 0; bottom: 0; width: 1100px; display: grid; align-content: center; gap: 30px; }
+  .cierre .marca { display: flex; align-items: center; gap: 32px; }
+  .cierre h1 { margin: 0; font-size: 168px; font-weight: 900; line-height: 1; letter-spacing: 0.04em; }
+  .cierre .lema-final { margin: 0; font-size: 50px; font-weight: 700; line-height: 1.18; }
+  .cierre .lema-final em { font-style: normal; color: var(--claro); }
+  .cierre .equipo { margin: 0; font-size: 31px; line-height: 1.5; color: var(--texto-suave); }
+  .cierre .equipo strong { color: #fff; }
+  .qr { position: absolute; right: 170px; top: 50%; margin-top: -250px; width: 420px; display: grid; justify-items: center; gap: 20px; text-align: center; }
+  .qr .tarjeta { background: #fff; border-radius: 28px; padding: 28px; }
+  .qr .tarjeta svg { width: 300px; height: 300px; display: block; }
+  .qr code { font: 600 28px/1.2 "Cascadia Code", Consolas, monospace; color: #fff; }
+  .qr span { font-size: 26px; color: var(--texto-tenue); }
+</style>
+</head>
+<body>
+<div id="lienzo">
+  <div class="mancha" id="mancha1"></div>
+  <div class="mancha" id="mancha2"></div>
+  <div id="reticula"></div>
+
+  <!-- 1 · Gancho ------------------------------------------------------ -->
+  <section class="escena" id="e1" data-ini="0" data-fin="7.2">
+    <div class="centro">
+      <p class="cita" id="e1-cita"><span class="comilla">«</span>Su pedido va en camino.<span class="comilla">»</span></p>
+      <div class="preguntas"><span id="e1-p1">¿Dónde?</span><span id="e1-p2">¿Con quién?</span><span id="e1-p3">¿Desde cuándo?</span></div>
+    </div>
+  </section>
+
+  <!-- 2 · Problema ---------------------------------------------------- -->
+  <section class="escena" id="e2" data-ini="7.2" data-fin="16.8">
+    <h2 class="titulo-escena" id="e2-t">En una mensajería pequeña, la respuesta<br>está repartida en cuatro sitios.</h2>
+    <div class="fuentes">
+      <div id="e2-s1"><div class="fuente" id="e2-f1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7fd3e0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        La memoria<br>del mensajero</div></div>
+      <div id="e2-s2"><div class="fuente" id="e2-f2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7fd3e0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+        Un chat</div></div>
+      <div id="e2-s3"><div class="fuente" id="e2-f3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7fd3e0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        Una hoja<br>de cálculo</div></div>
+      <div id="e2-s4"><div class="fuente" id="e2-f4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7fd3e0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>
+        El teléfono<br>del despachador</div></div>
+    </div>
+    <p class="remate" id="e2-r">Y cuando un paquete se pierde,<br><strong>nadie puede probar qué pasó.</strong></p>
+  </section>
+
+  <!-- 3 · Marca ------------------------------------------------------- -->
+  <section class="escena" id="e3" data-ini="16.8" data-fin="24">
+    <div class="destello" id="e3-d"></div>
+    <div class="marca-grande">
+      <svg class="logo" viewBox="0 0 48 48" width="240" height="240" aria-hidden="true">
+        <path id="e3-esquinas" class="trazo" pathLength="1" d="M14 5H9a4 4 0 0 0-4 4v5M34 5h5a4 4 0 0 1 4 4v5M14 43H9a4 4 0 0 1-4-4v-5M34 43h5a4 4 0 0 0 4-4v-5"/>
+        <path id="e3-camino" class="trazo" pathLength="1" d="M13 33 L24 24 L35 15" opacity=".4"/>
+        <circle id="e3-n1" class="nodo" cx="13" cy="33" r="3.4" fill="none" stroke="#fff" stroke-width="2.6"/>
+        <circle id="e3-n2" class="nodo" cx="24" cy="24" r="3.4" fill="#fff" opacity=".6"/>
+        <circle id="e3-n3" class="nodo" cx="35" cy="15" r="5.6" fill="#7fd3e0"/>
+        <path id="e3-check" pathLength="1" d="M32.6 15.1 L34.4 16.9 L37.6 13.3" fill="none" stroke="#07111f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1 id="e3-nombre">RASTRO</h1>
+    </div>
+    <p class="lema" id="e3-l1">Cada paquete, con su historia completa:</p>
+    <p class="lema" id="e3-l2">quién lo movió, cuándo y con qué prueba.</p>
+  </section>
+
+  <!-- 4 · Tres personas ----------------------------------------------- -->
+  <section class="escena" id="e4" data-ini="24" data-fin="31.2">
+    <h2 class="titulo-escena" id="e4-t">Una aplicación, tres personas</h2>
+    <div class="personas">
+      <div class="persona" id="e4-c1">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 10h.01M15 10h.01"/></svg></div>
+        <h3>La empresa</h3>
+        <p>Crea las guías, asigna mensajeros y ve toda la operación.</p>
+      </div>
+      <div class="persona" id="e4-c2">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></div>
+        <h3>El mensajero</h3>
+        <p>Desde su celular recoge, sale a ruta y entrega con foto.</p>
+      </div>
+      <div class="persona" id="e4-c3">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></div>
+        <h3>El cliente</h3>
+        <p>Consulta su envío con un código, sin crear cuenta.</p>
+      </div>
+    </div>
+    <p class="pie-escena" id="e4-p1">En el celular, el computador o la tableta. Sin instalar nada.</p>
+    <p class="pie-escena" id="e4-p2">Varias empresas a la vez, y ninguna ve los datos de otra.</p>
+  </section>
+
+  <!-- 5 · Funcionalidades, con la aplicación real --------------------- -->
+  <section class="escena funcion" id="e5a" data-ini="31.2" data-fin="37.2">
+    <div class="texto">
+      <span class="paso">01 · LA EMPRESA</span>
+      <h2>Crea la guía y asigna al mensajero en segundos.</h2>
+      <p>Cada envío recibe un código único que nadie puede adivinar.</p>
+    </div>
+    <div class="medio medio--escritorio"><div class="barra"><i></i><i></i><i></i><span>rastro · Mensajería Andes S.A.S.</span></div>
+      <div class="zoom"><img class="clip" data-clip="asignar" alt=""></div></div>
+  </section>
+
+  <section class="escena funcion" id="e5b" data-ini="37.2" data-fin="43.2">
+    <div class="texto">
+      <span class="paso">02 · LA EMPRESA</span>
+      <h2>Ve a sus mensajeros moverse en el mapa.</h2>
+      <p>En vivo, con el recorrido y las paradas de cada ruta.</p>
+    </div>
+    <div class="medio medio--escritorio"><div class="barra"><i></i><i></i><i></i><span>rastro · Seguimiento</span></div>
+      <div class="zoom"><img class="clip" data-clip="seguimiento" alt=""></div></div>
+  </section>
+
+  <section class="escena funcion" id="e5c" data-ini="43.2" data-fin="49.2">
+    <div class="texto">
+      <span class="paso">03 · EL MENSAJERO</span>
+      <h2>Sale a ruta desde su celular.</h2>
+      <p>Su ubicación se comparte solo mientras la ruta está abierta.</p>
+    </div>
+    <div class="medio medio--telefono"><div class="zoom"><img class="clip" data-clip="ruta" alt=""></div></div>
+  </section>
+
+  <section class="escena funcion" id="e5d" data-ini="49.2" data-fin="55.2">
+    <div class="texto">
+      <span class="paso">04 · EL CLIENTE</span>
+      <h2>Sigue su paquete sin crear cuenta.</h2>
+      <p>Con el código de la guía ve el avance y el vehículo en camino.</p>
+    </div>
+    <div class="medio medio--telefono"><div class="zoom"><img class="clip" data-clip="consulta" alt=""></div></div>
+  </section>
+
+  <section class="escena funcion" id="e5e" data-ini="55.2" data-fin="61.2">
+    <div class="texto">
+      <span class="paso">05 · EL MENSAJERO</span>
+      <h2>Entrega con foto.</h2>
+      <p>Sin prueba no hay entrega: el sistema no la acepta.</p>
+    </div>
+    <div class="medio medio--telefono"><div class="zoom"><img class="clip" data-clip="entrega" alt=""></div></div>
+  </section>
+
+  <section class="escena funcion" id="e5f" data-ini="61.2" data-fin="67.2">
+    <div class="texto">
+      <span class="paso">06 · EL AUDITOR</span>
+      <h2>Nadie puede borrar la historia.</h2>
+      <p>Cada registro guarda la huella del anterior: si alguien cambia uno, se nota.</p>
+    </div>
+    <div class="medio medio--escritorio"><div class="barra"><i></i><i></i><i></i><span>rastro · Bitácora de auditoría</span></div>
+      <div class="zoom"><img class="clip" data-clip="bitacora" alt=""></div></div>
+  </section>
+
+  <div id="progreso" data-ini="31.2" data-fin="67.2"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <!-- 6 · Seguro por diseño ------------------------------------------- -->
+  <section class="escena" id="e6" data-ini="67.2" data-fin="74.4">
+    <h2 class="titulo-escena" id="e6-t">Seguro por diseño</h2>
+    <div class="seguro">
+      <div class="garantia" id="e6-g1">
+        <div class="icono"><svg viewBox="0 0 48 48" fill="none" stroke="#7fd3e0" stroke-width="3"><rect x="5" y="9" width="16" height="30" rx="3"/><rect x="27" y="9" width="16" height="30" rx="3"/><path d="M24 6v36" stroke="#ff8f80" stroke-dasharray="4 4"/></svg></div>
+        <div><h3>Cada empresa ve solo lo suyo</h3><p>Pedir un paquete ajeno responde como si no existiera.</p></div>
+      </div>
+      <div class="garantia" id="e6-g2">
+        <div class="icono"><svg viewBox="0 0 48 48" fill="none" stroke="#7fd3e0" stroke-width="3"><rect x="4" y="16" width="12" height="16" rx="3"/><rect x="18" y="16" width="12" height="16" rx="3"/><rect x="32" y="16" width="12" height="16" rx="3" fill="#7fd3e0"/></svg></div>
+        <div><h3>Nadie borra la historia</h3><p>Cada registro guarda la huella del anterior.</p></div>
+      </div>
+      <div class="garantia" id="e6-g3">
+        <div class="icono"><svg viewBox="0 0 48 48" fill="none" stroke="#7fd3e0" stroke-width="3"><rect x="9" y="21" width="30" height="21" rx="4"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="31" r="3" fill="#7fd3e0"/></svg></div>
+        <div><h3>Las fotos, en un cofre cifrado</h3><p>Con una llave propia, en la nube.</p></div>
+      </div>
+      <div class="garantia" id="e6-g4">
+        <div class="icono"><svg viewBox="0 0 48 48" fill="none" stroke="#7fd3e0" stroke-width="3" stroke-linecap="round"><circle cx="17" cy="17" r="7"/><path d="M5 40c2-7 6-10 12-10s10 3 12 10"/><path d="M31 22l4 4 8-9"/></svg></div>
+        <div><h3>Nadie se revisa a sí mismo</h3><p>El administrador no lee la bitácora; el auditor no puede cambiar nada.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Cifras ------------------------------------------------------ -->
+  <section class="escena" id="e7" data-ini="74.4" data-fin="84">
+    <h2 class="titulo-escena" id="e7-t">Hecho y comprobado</h2>
+    <div class="cifras">
+      <div class="cifra" id="e7-c1"><b><span class="contador" data-hasta="327" data-ini="75.0" data-dur="1.6">0</span></b><span>pruebas automáticas, ningún fallo</span></div>
+      <div class="cifra" id="e7-c2"><b><span class="contador" data-hasta="10" data-ini="75.6" data-dur="1.2">0</span><small> / 11</small></b><span>controles conformes en una auditoría independiente</span></div>
+      <div class="cifra" id="e7-c3"><b><small>US$ </small><span class="contador" data-hasta="50" data-ini="76.2" data-dur="1.2">0</span></b><span>todo el semestre en la nube de Amazon</span></div>
+      <div class="cifra" id="e7-c4"><b><span class="contador" data-hasta="12" data-ini="76.8" data-dur="1.0">0</span></b><span>semanas, 3 estudiantes y 2 materias</span></div>
+    </div>
+    <p class="pie-escena" id="e7-p">Un programa aparte nos audita. <strong>Encontró un error real, y lo corregimos.</strong></p>
+  </section>
+
+  <!-- 8 · Cierre ------------------------------------------------------ -->
+  <section class="escena" id="e8" data-ini="84" data-fin="93.6">
+    <div class="cierre">
+      <div class="marca" id="e8-m">
+        <svg viewBox="0 0 48 48" width="150" height="150" aria-hidden="true">
+          <path d="M14 5H9a4 4 0 0 0-4 4v5M34 5h5a4 4 0 0 1 4 4v5M14 43H9a4 4 0 0 1-4-4v-5M34 43h5a4 4 0 0 0 4-4v-5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M13 33 L24 24 L35 15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+          <circle cx="13" cy="33" r="3.4" fill="none" stroke="#fff" stroke-width="2.6"/><circle cx="24" cy="24" r="3.4" fill="#fff" opacity=".6"/>
+          <circle cx="35" cy="15" r="5.6" fill="#7fd3e0"/><path d="M32.6 15.1 L34.4 16.9 L37.6 13.3" fill="none" stroke="#07111f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>RASTRO</h1>
+      </div>
+      <p class="lema-final" id="e8-l">Saber dónde está cada paquete<br><em>y poder demostrar qué pasó con él.</em></p>
+      <p class="equipo" id="e8-e">Un proyecto de Ingeniería de Sistemas de la <strong>CUN</strong><br>
+        Sergio Montoya · Nicolás Torres · Óscar Rincón</p>
+    </div>
+    <div class="qr" id="e8-q">
+      <div class="tarjeta" id="qr"></div>
+      <code>github.com/Serann10255/Rastro</code>
+      <span>Grupo 30112 · Periodo 2026B</span>
+    </div>
+  </section>
+
+  <div class="negro" id="negro-ini"></div>
+  <div class="negro" id="negro-fin"></div>
+</div>
+
+<script>
+  const DURACION = 93.6;
+  const FPS = 30;
+  const $ = (s) => document.querySelector(s);
+  const animaciones = [];
+  const SUAVE = "cubic-bezier(.16,.84,.3,1)";
+
+  function anim(el, cuadros, t0, dur, easing = SUAVE) {
+    const a = el.animate(cuadros, { duration: dur * 1000, delay: t0 * 1000, fill: "both", easing });
+    a.pause();
+    animaciones.push(a);
+    return a;
+  }
+  /** Entrada: aparece subiendo (o desde un lado) y queda. */
+  function entra(sel, t0, { dy = 40, dx = 0, escala = 1, dur = 0.8 } = {}) {
+    return anim($(sel), [
+      { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${escala})` },
+      { opacity: 1, transform: "none" },
+    ], t0, dur);
+  }
+
+  /* Cada escena se funde al entrar y al salir. */
+  const escenas = [...document.querySelectorAll(".escena")].map((el) => {
+    const ini = +el.dataset.ini, fin = +el.dataset.fin, dur = fin - ini;
+    const fi = 0.4, fo = 0.45;
+    anim(el, [
+      { opacity: 0, offset: 0 },
+      { opacity: 1, offset: fi / dur },
+      { opacity: 1, offset: 1 - fo / dur },
+      { opacity: 0, offset: 1 },
+    ], ini, dur, "linear");
+    return { el, ini, fin };
+  });
+
+  /* Fondo y fundidos a negro del principio y del final. */
+  anim($("#mancha1"), [{ transform: "translate(0, 0)" }, { transform: "translate(420px, 260px)" }], 0, DURACION, "ease-in-out");
+  anim($("#mancha2"), [{ transform: "translate(0, 0)" }, { transform: "translate(-520px, -300px)" }], 0, DURACION, "ease-in-out");
+  anim($("#negro-ini"), [{ opacity: 1 }, { opacity: 0 }], 0, 0.9, "linear");
+  anim($("#negro-fin"), [{ opacity: 0 }, { opacity: 1 }], DURACION - 1.3, 1.3, "linear");
+
+  /* 1 · Gancho */
+  entra("#e1-cita", 0.5, { dy: 30, dur: 1.0 });
+  entra("#e1-p1", 2.3, { dy: 0, escala: 0.8, dur: 0.6 });
+  entra("#e1-p2", 3.0, { dy: 0, escala: 0.8, dur: 0.6 });
+  entra("#e1-p3", 3.7, { dy: 0, escala: 0.8, dur: 0.6 });
+
+  /* 2 · Problema: cuatro sitios que luego se desordenan */
+  entra("#e2-t", 7.5);
+  [8.3, 8.65, 9.0, 9.35].forEach((t, i) => entra(`#e2-f${i + 1}`, t, { dy: 60 }));
+  const desorden = [[-40, 50, -9], [30, -40, 7], [-20, 60, 6], [50, -30, -8]];
+  desorden.forEach(([x, y, r], i) =>
+    anim($(`#e2-s${i + 1}`), [
+      { transform: "none", opacity: 1 },
+      { transform: `translate(${x}px, ${y}px) rotate(${r}deg)`, opacity: 0.4 },
+    ], 11.0, 1.3, "cubic-bezier(.5,0,.3,1)"));
+  entra("#e2-r", 12.0, { dy: 30 });
+
+  /* 3 · Marca */
+  anim($("#e3-d"), [{ transform: "scale(.15)", opacity: 0.95 }, { transform: "scale(1.6)", opacity: 0 }], 16.8, 1.4);
+  anim($("#e3-esquinas"), [{ strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDasharray: 1, strokeDashoffset: 0 }], 16.95, 0.9);
+  anim($("#e3-camino"), [{ strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDasharray: 1, strokeDashoffset: 0 }], 17.5, 0.7);
+  [["#e3-n1", 17.65], ["#e3-n2", 17.9], ["#e3-n3", 18.15]].forEach(([s, t]) =>
+    anim($(s), [{ transform: "scale(0)" }, { transform: "scale(1.25)", offset: 0.7 }, { transform: "scale(1)" }], t, 0.5));
+  anim($("#e3-check"), [{ strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDasharray: 1, strokeDashoffset: 0 }], 18.45, 0.4);
+  anim($("#e3-nombre"), [{ opacity: 0, letterSpacing: "0.45em" }, { opacity: 1, letterSpacing: "0.04em" }], 18.3, 1.1);
+  entra("#e3-l1", 19.5, { dy: 30 });
+  entra("#e3-l2", 20.3, { dy: 30 });
+
+  /* 4 · Tres personas */
+  entra("#e4-t", 24.25);
+  [24.9, 25.35, 25.8].forEach((t, i) => entra(`#e4-c${i + 1}`, t, { dy: 70 }));
+  entra("#e4-p1", 27.0, { dy: 24 });
+  entra("#e4-p2", 27.8, { dy: 24 });
+
+  /* 5 · Funcionalidades: texto a la izquierda, la aplicación a la derecha */
+  document.querySelectorAll(".funcion").forEach((sec) => {
+    const t0 = +sec.dataset.ini;
+    const q = (s) => sec.querySelector(s);
+    anim(q(".paso"), [{ opacity: 0, transform: "translateY(20px)" }, { opacity: 1, transform: "none" }], t0 + 0.15, 0.6);
+    anim(q("h2"), [{ opacity: 0, transform: "translateY(36px)" }, { opacity: 1, transform: "none" }], t0 + 0.3, 0.8);
+    anim(q("p"), [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "none" }], t0 + 0.75, 0.8);
+    anim(q(".medio"), [{ opacity: 0, transform: "translateX(90px) scale(.97)" }, { opacity: 1, transform: "none" }], t0 + 0.1, 0.9);
+    anim(q(".zoom"), [{ transform: "scale(1)" }, { transform: "scale(1.045)" }], t0, 6, "linear");
+    q(".clip").dataset.ini = t0;
+  });
+
+  /* 6 · Seguro por diseño */
+  entra("#e6-t", 67.45);
+  [68.1, 68.6, 69.1, 69.6].forEach((t, i) => entra(`#e6-g${i + 1}`, t, { dx: -40, dy: 0 }));
+
+  /* 7 · Cifras */
+  entra("#e7-t", 74.6);
+  [74.95, 75.55, 76.15, 76.75].forEach((t, i) => entra(`#e7-c${i + 1}`, t, { dy: 70 }));
+  entra("#e7-p", 78.6, { dy: 24 });
+
+  /* 8 · Cierre */
+  entra("#e8-m", 84.3, { dy: 0, escala: 0.9, dur: 1.0 });
+  entra("#e8-l", 85.2, { dy: 30 });
+  entra("#e8-e", 86.0, { dy: 30 });
+  entra("#e8-q", 86.6, { dx: 60, dy: 0 });
+
+  /* --------------------------------------------------------------- */
+
+  const contadores = [...document.querySelectorAll(".contador")];
+  const clips = [...document.querySelectorAll(".clip")];
+  const barras = [...document.querySelectorAll("#progreso i")];
+  const progreso = $("#progreso");
+  window.CLIPS = { base: "", cuadros: {} };
+  window.ponerQR = (svg) => ($("#qr").innerHTML = svg);
+
+  /** Deja el lienzo exactamente como debe verse en el instante t. */
+  window.fotograma = async (t) => {
+    for (const a of animaciones) a.currentTime = t * 1000;
+    for (const e of escenas) e.el.style.visibility = t >= e.ini && t < e.fin ? "visible" : "hidden";
+
+    for (const c of contadores) {
+      const p = Math.min(1, Math.max(0, (t - +c.dataset.ini) / +c.dataset.dur));
+      c.textContent = String(Math.round(+c.dataset.hasta * (1 - (1 - p) ** 3)));
+    }
+
+    const enFunciones = t >= 31.2 && t < 67.2;
+    progreso.style.visibility = enFunciones ? "visible" : "hidden";
+    const actual = Math.floor((t - 31.2) / 6);
+    barras.forEach((b, i) => (b.className = i === actual ? "activo" : i < actual ? "hecho" : ""));
+
+    const esperas = [];
+    for (const img of clips) {
+      const sec = img.closest(".escena");
+      if (sec.style.visibility !== "visible") continue;
+      const n = window.CLIPS.cuadros[img.dataset.clip] ?? 1;
+      const i = Math.min(n - 1, Math.max(0, Math.floor((t - +img.dataset.ini) * FPS)));
+      const src = `${window.CLIPS.base}/${img.dataset.clip}/f${String(i + 1).padStart(4, "0")}.jpg`;
+      if (img.getAttribute("src") !== src) {
+        img.src = src;
+        esperas.push(img.decode().catch(() => undefined));
+      }
+    }
+    await Promise.all(esperas);
+  };
+</script>
+</body>
+</html>
