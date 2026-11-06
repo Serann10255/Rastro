@@ -10,7 +10,7 @@ Fecha: 2026-11-06 · Duración: 1 min 34 s · Archivo:
 | Formato | MP4, H.264, 1920 × 1080, 30 fps; audio AAC estéreo con música |
 | Peso | ≈ 30 MB |
 | Música | Original, sintetizada para este video (`presentacion/anexos/musica-pitch.mjs`): no tiene derechos de terceros y se puede publicar en cualquier sitio |
-| De dónde sale | Las frases y las cifras son las de la [presentación a la universidad](../../sustentacion/presentacion-universidad.md); las imágenes de la aplicación, del video demostrativo |
+| De dónde sale | Las frases y las cifras son las de la [presentación a la universidad](../../sustentacion/presentacion-universidad.md); las imágenes de la aplicación, del video demostrativo y, la del mapa en vivo, de un plano propio con el conductor circulando a velocidad de ciudad |
 
 Sigue la forma clásica de un pitch: **gancho → problema → solución → cómo
 funciona → por qué confiar → cifras → cierre**. Cada escena dura un número
@@ -25,9 +25,9 @@ exacto de compases de la música (2,4 s), así que los cortes caen en el pulso.
 | 1 | 0:00 – 0:07 | Gancho, sobre fondo oscuro | «Su pedido va en camino.» · ¿Dónde? ¿Con quién? ¿Desde cuándo? |
 | 2 | 0:07 – 0:17 | Cuatro tarjetas que se desordenan: la memoria del mensajero, un chat, una hoja de cálculo, el teléfono del despachador | En una mensajería pequeña, la respuesta está repartida en cuatro sitios. · Y cuando un paquete se pierde, **nadie puede probar qué pasó.** |
 | 3 | 0:17 – 0:24 | Entra la batería. El logotipo se dibuja y aparece la marca | RASTRO · Cada paquete, con su historia completa: quién lo movió, cuándo y con qué prueba. |
-| 4 | 0:24 – 0:31 | Tres tarjetas | Una aplicación, tres personas: la empresa, el mensajero, el cliente. · En el celular, el computador o la tableta. Sin instalar nada. · Varias empresas a la vez, y ninguna ve los datos de otra. |
+| 4 | 0:24 – 0:31 | Tres tarjetas | Una aplicación, tres personas: la empresa, el mensajero, el cliente. · En el navegador o instalada como app, en Android y en el computador. · Varias empresas a la vez, y ninguna ve los datos de otra. |
 | 5 | 0:31 – 0:37 | La aplicación: detalle de la guía y asignación | 01 · La empresa — Crea la guía y asigna al mensajero en segundos. |
-| 6 | 0:37 – 0:43 | La aplicación: mapa de seguimiento | 02 · La empresa — Ve a sus mensajeros moverse en el mapa. |
+| 6 | 0:37 – 0:43 | La aplicación: mapa de seguimiento, con la vista fija y el vehículo avanzando por la carrera 13 (al 2,5×) | 02 · La empresa — Ve a sus mensajeros moverse en el mapa. |
 | 7 | 0:43 – 0:49 | El teléfono del conductor sale a ruta | 03 · El mensajero — Sale a ruta desde su celular. |
 | 8 | 0:49 – 0:55 | El teléfono del cliente con el vehículo en camino | 04 · El cliente — Sigue su paquete sin crear cuenta. |
 | 9 | 0:55 – 1:01 | La entrega con foto | 05 · El mensajero — Entrega con foto. Sin prueba no hay entrega. |
@@ -55,7 +55,7 @@ Clipchamp (viene con Windows) bajando la música a la mitad mientras se habla.
 | 1 | «Su pedido va en camino.» Todos lo hemos oído. Pero ¿dónde va? ¿Con quién? |
 | 2 | En una mensajería pequeña, la respuesta está repartida: en la memoria del mensajero, en un chat, en una hoja de cálculo. Y cuando un paquete se pierde, nadie puede probar qué pasó. |
 | 3 | Por eso construimos Rastro. Cada paquete, con su historia completa: quién lo movió, cuándo y con qué prueba. |
-| 4 | La usan la empresa, el mensajero y el cliente, desde cualquier pantalla y sin instalar nada. |
+| 4 | La usan la empresa, el mensajero y el cliente, desde el navegador o con la app instalada en Android y en el computador. |
 | 5–6 | La empresa crea la guía, asigna al mensajero y lo ve moverse en el mapa. |
 | 7–8 | El mensajero sale a ruta desde su celular, y el cliente sigue su paquete sin crear cuenta. |
 | 9–10 | La entrega se cierra con una foto. Y la historia no se puede borrar: si alguien cambia un registro, se nota. |

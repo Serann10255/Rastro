@@ -270,7 +270,8 @@ cada cifra están en
 | `anexos/poster.html` | El póster, maquetado en HTML y CSS | Las capturas de `capturas/` |
 | `anexos/exportar-poster.mjs` | `poster-rastro.pdf`, `.png` y `.jpg` | Edge del equipo |
 | `anexos/grabar-demo.mjs` | `video-demostrativo-rastro.mp4` | La pila local levantada y Edge |
-| `anexos/pitch.html` + `anexos/grabar-pitch.mjs` | `video-pitch-rastro.mp4` (2026-11-06) | El MP4 del video demostrativo y Edge |
+| `anexos/pitch.html` + `anexos/grabar-pitch.mjs` | `video-pitch-rastro.mp4` (2026-11-06) | El MP4 del video demostrativo, `fragmentos/seguimiento-en-vivo.mp4` y Edge |
+| `anexos/grabar-seguimiento.mjs` | `anexos/fragmentos/seguimiento-en-vivo.mp4`, el plano del mapa en vivo para el pitch (1,8 MB) | La pila local levantada y Edge |
 | `anexos/musica-pitch.mjs` | La música del pitch, sintetizada | Nada |
 
 ```bash
@@ -278,8 +279,13 @@ cd presentacion
 npm install --no-save playwright-core@1.56.1 sharp@0.34.3 qrcode@1.5.4 ffmpeg-static@5.2.0
 node anexos/exportar-poster.mjs    # unos 20 s
 node anexos/grabar-demo.mjs        # unos 5 min; docker compose up -d antes
-node anexos/grabar-pitch.mjs       # unos 6 min; --muestras=5,21,80 para revisar fotogramas sueltos
+node anexos/grabar-seguimiento.mjs # unos 2 min; solo si hay que rehacer el plano del mapa
+node anexos/grabar-pitch.mjs       # unos 14 min; --muestras=5,21,80 para revisar fotogramas sueltos
 ```
+
+`grabar-seguimiento.mjs` reutiliza las piezas de `grabar-demo.mjs` (sesión
+contra la pila local, cuentas de la semilla, cierre de la ruta), que las exporta
+y solo graba el demostrativo cuando se ejecuta directamente.
 
 Igual que el guion de capturas: las dependencias se instalan sin guardarlas, no
 se descargan navegadores (canal `msedge`) y nada de esto entra en la imagen de
@@ -366,6 +372,19 @@ Escenas y voz en off opcional en
   teléfono, extraídos a JPEG cuadro a cuadro. Sus ventanas (`FRAGMENTOS`) son de
   la grabación del 2026-11-06: si se vuelve a grabar el demostrativo, hay que
   revisarlas con los tiempos por escena que imprime `grabar-demo.mjs`.
+- **Salvo el seguimiento en vivo, que tiene su propio plano.** En el
+  demostrativo el conductor avanza a saltos de unos 450 m (para que el
+  recorrido se dibuje rápido) y la escena incluye el reencuadre del mapa al
+  elegir la ruta; recortado en el pitch, se veía como un mapa que «se desubica
+  de un momento a otro» (lo señaló el equipo el 2026-11-06). El plano de
+  `grabar-seguimiento.mjs` tiene al conductor a 36 km/h con una lectura de GPS
+  por segundo, elige la ruta y aleja el mapa un nivel fuera de cámara, y graba
+  34 s con la vista fija; el pitch usa 15 s de él al 2,5×. El marcador avanza a
+  pasos, cada vez que la pantalla consulta: así funciona la aplicación.
+- **El mapa de Seguimiento no sigue al vehículo**: encuadra al elegir la ruta y
+  después se queda quieto (`web/src/componentes/Mapa.tsx`, sin `seguir`). Con
+  recorridos largos el marcador puede salirse de la vista; en el plano se evita
+  alejando el mapa antes de grabar.
 - **La música es original**, sintetizada nota a nota en `musica-pitch.mjs`
   (colchón de sierras filtradas, arpegio, bajo, batería y reverberación, a
   100 pulsaciones por minuto), para no depender de ninguna pista con derechos.

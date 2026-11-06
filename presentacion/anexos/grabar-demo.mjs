@@ -279,9 +279,9 @@ ${SCRIPT_LEYENDA}
 /* Navegador                                                                */
 /* ------------------------------------------------------------------------ */
 
-async function contexto(navegador, { geolocalizacion } = {}) {
+async function contexto(navegador, { geolocalizacion, viewport = VENTANA } = {}) {
   const ctx = await navegador.newContext({
-    viewport: VENTANA,
+    viewport,
     deviceScaleFactor: DENSIDAD,
     locale: "es-CO",
     timezoneId: "America/Bogota",
@@ -820,7 +820,13 @@ async function principal() {
   if (!process.env.DEMO_CONSERVAR) await rm(TRABAJO, { recursive: true, force: true });
 }
 
-principal().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+/* Lo que reutiliza `grabar-seguimiento.mjs`: la sesión contra la pila local,
+ * las cuentas de la semilla y el cierre de la ruta del conductor. */
+export { asentar, contexto, entrar, esperar, ffmpeg, terminarRuta, usuarios, FPS, URL_RASTRO };
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  principal().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

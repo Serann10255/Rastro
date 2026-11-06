@@ -53,10 +53,17 @@ const VOLUMEN_MUSICA = "-3.5dB";
 const ESCRITORIO = "crop=1920:940:0:0";
 const TELEFONO = "crop=486:1018:180:31";
 
-/* Seis segundos de cada uno, dentro de su escena y lejos de los fundidos. */
+/* Seis segundos de pitch por fragmento, dentro de su escena y lejos de los
+ * fundidos. `archivo` toma el fragmento de otro video en lugar del
+ * demostrativo; `velocidad` lo acelera (2 = el doble de rápido).
+ *
+ * El seguimiento no sale del demostrativo: allí el conductor avanza a saltos de
+ * 450 m y el mapa se reencuadra al elegir la ruta, y en el pitch se veía como un
+ * mapa que «se desubica». Sale de un plano propio, `grabar-seguimiento.mjs`,
+ * con el conductor a velocidad de ciudad y la vista fija. */
 const FRAGMENTOS = {
   asignar: { desde: 52.6, recorte: ESCRITORIO }, // el detalle con el UUID y la asignación
-  seguimiento: { desde: 91.0, recorte: ESCRITORIO }, // la ruta elegida en el mapa
+  seguimiento: { archivo: "fragmentos/seguimiento-en-vivo.mp4", desde: 8, velocidad: 2.5 }, // tres avances del vehículo en 6 s
   ruta: { desde: 73.6, recorte: TELEFONO }, // «Salir a ruta» y el mapa del conductor
   consulta: { desde: 113.0, recorte: TELEFONO }, // la consulta pública con el vehículo
   entrega: { desde: 130.0, recorte: TELEFONO }, // la foto y la confirmación
@@ -72,12 +79,13 @@ async function ffmpeg(...argumentos) {
 
 async function extraerFragmentos() {
   const cuadros = {};
-  for (const [nombre, { desde, recorte }] of Object.entries(FRAGMENTOS)) {
+  for (const [nombre, { desde, recorte, archivo, velocidad = 1 }] of Object.entries(FRAGMENTOS)) {
     const carpeta = join(TRABAJO, "fragmentos", nombre);
     await mkdir(carpeta, { recursive: true });
+    const filtros = [recorte, velocidad !== 1 ? `setpts=PTS/${velocidad}` : null, `fps=${FPS}`].filter(Boolean);
     await ffmpeg(
-      "-ss", String(desde), "-t", String(SEGUNDOS_FRAGMENTO), "-i", DEMO,
-      "-vf", `${recorte},fps=${FPS}`, "-q:v", "2",
+      "-ss", String(desde), "-t", String(SEGUNDOS_FRAGMENTO * velocidad), "-i", archivo ? join(CARPETA, archivo) : DEMO,
+      "-vf", filtros.join(","), "-q:v", "2",
       join(carpeta, "f%04d.jpg"),
     );
     cuadros[nombre] = (await readdir(carpeta)).filter((f) => f.endsWith(".jpg")).length;

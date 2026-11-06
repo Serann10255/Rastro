@@ -39,10 +39,23 @@ Se renderiza cuadro a cuadro desde `presentacion/anexos/pitch.html` con
 `grabar-pitch.mjs`, y la música sale de `musica-pitch.mjs`. Las frases y cifras
 son las de la presentación a la universidad.
 
+### Correcciones al pitch, señaladas por el equipo
+
+- **«Sin instalar nada» no era cierto**: Rastro también se instala, como app
+  de Android y de escritorio con el cliente Flet. La escena de las tres
+  personas dice ahora «En el navegador o instalada como app, en Android y en el
+  computador».
+- **El mapa de seguimiento «se desubicaba»**: el fragmento venía del video
+  demostrativo, donde el conductor avanza a saltos de 450 m y el mapa se
+  reencuadra al elegir la ruta. Se grabó un plano propio
+  (`grabar-seguimiento.mjs` → `presentacion/anexos/fragmentos/seguimiento-en-vivo.mp4`)
+  con el conductor a velocidad de ciudad y la vista fija, y el pitch se volvió a
+  renderizar.
+
 ## Fuentes nuevas
 
 En `presentacion/anexos/`: `poster.html`, `exportar-poster.mjs`,
-`grabar-demo.mjs`, `pitch.html`, `grabar-pitch.mjs` y `musica-pitch.mjs`. Cómo funcionan, qué se descartó y por qué, en el
+`grabar-demo.mjs`, `grabar-seguimiento.mjs`, `pitch.html`, `grabar-pitch.mjs` y `musica-pitch.mjs`, y el plano `fragmentos/seguimiento-en-vivo.mp4`. Cómo funcionan, qué se descartó y por qué, en el
 [README del módulo `presentacion`](../modulos/presentacion/README.md#anexos-de-la-entrega-póster-y-video).
 No se añadieron dependencias al módulo ni cambió la construcción del deck.
 
