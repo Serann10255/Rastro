@@ -32,7 +32,7 @@ interface PropiedadesCaja {
   ancho: number;
   alto: number;
   lineas: LineaCaja[];
-  variante?: "normal" | "acento" | "actor" | "discontinua";
+  variante?: "normal" | "acento" | "actor" | "discontinua" | "exito" | "peligro";
 }
 
 /** Caja con su texto centrado en vertical y en horizontal. */

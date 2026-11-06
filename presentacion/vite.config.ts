@@ -7,10 +7,11 @@ import { rutasDeDeck, sustentacion } from "./compilador/plugin.ts";
 
 const ruta = (relativa: string) => fileURLToPath(new URL(relativa, import.meta.url));
 
-// Un sitio estático con tres páginas: el índice y un deck por proyecto. Son
-// páginas y no rutas de una sola aplicación porque cada deck lleva la identidad
-// de su proyecto —el azul de Rastro, el índigo de Cotejo— y esa identidad se
-// declara sobre `:root`: dos identidades en la misma página se pisarían.
+// Un sitio estático con cuatro páginas: el índice, un deck de sustentación por
+// proyecto y la presentación de Rastro a la universidad. Son páginas y no rutas
+// de una sola aplicación porque cada deck lleva la identidad de su proyecto —el
+// azul de Rastro, el índigo de Cotejo— y esa identidad se declara sobre
+// `:root`: dos identidades en la misma página se pisarían.
 export default defineConfig({
   plugins: [
     sustentacion({
@@ -18,7 +19,7 @@ export default defineConfig({
       carpetaFiguras: ruta("./src/figuras"),
       carpetaCapturas: ruta("./capturas"),
     }),
-    rutasDeDeck(["rastro", "cotejo"]),
+    rutasDeDeck(["rastro", "cotejo", "universidad"]),
     react(),
   ],
   resolve: {
@@ -62,6 +63,7 @@ export default defineConfig({
         inicio: ruta("./index.html"),
         rastro: ruta("./rastro/index.html"),
         cotejo: ruta("./cotejo/index.html"),
+        universidad: ruta("./universidad/index.html"),
       },
     },
   },

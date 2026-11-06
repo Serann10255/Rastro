@@ -129,6 +129,13 @@ imprime nítido a cualquier tamaño. Una biblioteca de terceros para eso serían
 decenas de kilobytes servidos en cada carga y una dependencia más que auditar en
 un proyecto que se audita a sí mismo.
 
+El precio de escribirlo a mano es que nadie lo comprobaba: hasta el 2026-10-26
+la tabla traía dos patrones que no existen en la norma y corría todos los
+valores desde el 83, incluido el código de inicio, así que ningún lector leía las
+guías. Se encontró al portarlo al [cliente Flet](../cliente-flet/README.md), que
+ahora tiene una prueba con valores de referencia de la norma
+(`cliente-flet/tests/test_codigo_barras.py`); las dos tablas son la misma.
+
 **Las guías se imprimen desde el navegador.** `@media print` oculta la navegación
 y fija el salto de página entre etiquetas. Generar el PDF en el servidor
 implicaría una dependencia de composición tipográfica dentro de una función de

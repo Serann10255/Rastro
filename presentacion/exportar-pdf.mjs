@@ -1,4 +1,4 @@
-/* Exporta los PDF de las dos sustentaciones sin pasar por el diálogo de impresión.
+/* Exporta los PDF de las presentaciones sin pasar por el diálogo de impresión.
  *
  * El diálogo del navegador solo respeta el tamaño y la orientación que fija la
  * hoja de estilos cuando el destino es «Guardar como PDF»; con una impresora
@@ -13,9 +13,10 @@
  *   cd presentacion
  *   npm install --no-save playwright-core@1.56.1
  *   npm run pdf                      # tema claro, en documentacion/entregables/sustentacion/
- *   npm run pdf -- --tema=oscuro     # los cuatro en oscuro, con «oscuro» en el nombre
+ *   npm run pdf -- --tema=oscuro     # todos en oscuro, con «oscuro» en el nombre
+ *   npm run pdf -- --solo=universidad   # solo ese deck
  *
- * Genera cuatro archivos: las diapositivas a página completa de 16:9 y el guion
+ * Genera dos archivos por deck: las diapositivas a página completa de 16:9 y el guion
  * como documento de texto en vertical, una hoja por diapositiva, para cada deck. No añade dependencias al módulo: igual que
  * capturas/capturar.mjs, `playwright-core` usa el canal `msedge` del equipo.
  */
@@ -42,16 +43,21 @@ const tema = argumentos.tema === "oscuro" ? "oscuro" : "claro";
 const sufijo = tema === "oscuro" ? " oscuro" : "";
 
 const DECKS = [
-  { ruta: "rastro", nombre: "Rastro" },
-  { ruta: "cotejo", nombre: "Cotejo" },
+  { ruta: "rastro", nombre: "Rastro · sustentación" },
+  { ruta: "cotejo", nombre: "Cotejo · sustentación" },
+  { ruta: "universidad", nombre: "Rastro · presentación a la universidad" },
 ];
 
 /** Las dos salidas de cada deck, con el tema pedido: solo diapositivas, y el
  *  guion con una hoja por diapositiva. */
 const FORMATOS = [
-  { consulta: "diapositivas", archivo: (n) => `${n} · sustentación${sufijo}.pdf` },
-  { consulta: "", archivo: (n) => `${n} · sustentación${sufijo} guion.pdf` },
+  { consulta: "diapositivas", archivo: (n) => `${n}${sufijo}.pdf` },
+  { consulta: "", archivo: (n) => `${n}${sufijo} guion.pdf` },
 ];
+
+/** `--solo=universidad` (o `rastro,cotejo`): exportar unos decks sin
+ *  regenerar los PDF de los demás. Sin la opción, todos. */
+const solo = argumentos.solo?.split(",");
 
 function paginas(pdf) {
   return (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? []).length;
@@ -62,7 +68,7 @@ async function principal() {
   const navegador = await chromium.launch({ channel: "msedge", headless: true });
   try {
     const pagina = await navegador.newPage();
-    for (const deck of DECKS) {
+    for (const deck of DECKS.filter((d) => !solo || solo.includes(d.ruta))) {
       for (const formato of FORMATOS) {
         const parametros = [formato.consulta, `tema=${tema}`].filter(Boolean).join("&");
         await pagina.goto(`${ORIGEN}/${deck.ruta}/?${parametros}`, { waitUntil: "networkidle" });

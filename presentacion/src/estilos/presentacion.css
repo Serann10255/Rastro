@@ -568,6 +568,44 @@
   stroke-dasharray: 10 7;
 }
 
+/* Cierre correcto y algo que salió mal. Nunca solo color: la figura lo dice
+ * también con palabras («Entregado», «cambiado»). */
+.fig-caja--exito {
+  fill: var(--exito-suave);
+  stroke: var(--exito);
+  stroke-width: 3.5;
+}
+
+.fig-caja--peligro {
+  fill: var(--peligro-suave);
+  stroke: var(--peligro);
+  stroke-width: 3.5;
+}
+
+/* Una hora de un día en la figura de pago por uso: vacía o con cobro. */
+.fig-celda {
+  fill: var(--fondo-sutil);
+  stroke: var(--borde);
+  stroke-width: 2;
+}
+
+.fig-celda--llena {
+  fill: var(--acento);
+  stroke: var(--acento);
+}
+
+/* Eslabón entre dos registros de la bitácora; roto, discontinuo y en rojo. */
+.fig-eslabon {
+  fill: none;
+  stroke: var(--texto-suave);
+  stroke-width: 5;
+}
+
+.fig-eslabon--roto {
+  stroke: var(--peligro);
+  stroke-dasharray: 9 9;
+}
+
 .fig-marco {
   fill: none;
   stroke: var(--borde-fuerte);
@@ -615,6 +653,19 @@
 
 .fig-caja--acento ~ .fig-texto {
   fill: var(--acento-fuerte);
+}
+
+.fig-caja--exito ~ .fig-texto {
+  fill: var(--exito);
+}
+
+.fig-caja--peligro ~ .fig-texto,
+.fig-texto--peligro {
+  fill: var(--peligro);
+}
+
+.fig-texto--peligro {
+  font-weight: 750;
 }
 
 /* ======================================================================= */

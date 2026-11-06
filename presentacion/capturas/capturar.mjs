@@ -8,7 +8,8 @@
  * Uso, desde `presentacion/`:
  *
  *   npm install --no-save playwright-core@1.56.1 sharp@0.34.3
- *   node capturas/capturar.mjs
+ *   node capturas/capturar.mjs                 # todo
+ *   node capturas/capturar.mjs --solo=ruta     # solo el modo ruta (rastro, cotejo, ruta)
  *
  * No añade dependencias al módulo: se instalan sin guardarlas y `npm ci` las
  * retira. No descarga navegadores: usa el canal `msedge` del equipo.
@@ -60,7 +61,11 @@ async function usuarios() {
   const semilla = JSON.parse(await readFile(join(RAIZ, "seed", "organizaciones.json"), "utf8"));
   const andes = semilla.organizaciones.find((o) => o.org_id === "org-andes");
   const porGrupo = (grupo) => andes.usuarios.find((u) => u.grupos.includes(grupo));
-  return { administrador: porGrupo("administrador"), auditor: porGrupo("auditor") };
+  return {
+    administrador: porGrupo("administrador"),
+    auditor: porGrupo("auditor"),
+    conductores: andes.usuarios.filter((u) => u.grupos.includes("conductor")),
+  };
 }
 
 async function guardar(pagina, nombre) {
@@ -169,6 +174,148 @@ async function capturarRastro(navegador, cuentas) {
 }
 
 /* ------------------------------------------------------------------------ */
+/* Modo ruta                                                                */
+/* ------------------------------------------------------------------------ */
+
+/** Un recorrido verosímil por Chapinero, de la calle 45 a la 65 por la
+ *  Caracas. Las teselas son de OpenStreetMap: hace falta conexión. */
+const RECORRIDO = [
+  [4.6322, -74.0676],
+  [4.6385, -74.066],
+  [4.6445, -74.0646],
+  [4.6492, -74.0633],
+  [4.6497, -74.0605],
+  [4.653, -74.0596],
+];
+const PUNTOS_DEL_RECORRIDO = 30;
+
+function interpolar(tramos, cuantos) {
+  const puntos = [];
+  for (let i = 0; i < cuantos; i++) {
+    const t = (i / (cuantos - 1)) * (tramos.length - 1);
+    const k = Math.min(Math.floor(t), tramos.length - 2);
+    const f = t - k;
+    const [a, b] = [tramos[k], tramos[k + 1]];
+    puntos.push({ lat: a[0] + (b[0] - a[0]) * f, lon: a[1] + (b[1] - a[1]) * f });
+  }
+  return puntos;
+}
+
+async function api(metodo, ruta, { token, cuerpo } = {}) {
+  const respuesta = await fetch(`${API_RASTRO}${ruta}`, {
+    method: metodo,
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+  });
+  const datos = await respuesta.json().catch(() => null);
+  if (!respuesta.ok) throw new Error(`${metodo} ${ruta}: ${respuesta.status} ${JSON.stringify(datos)}`);
+  return datos;
+}
+
+/**
+ * Deja una ruta abierta con su recorrido, por la API y como lo haría el
+ * teléfono: el conductor con más guías en su poder sale con todas ellas y
+ * reporta las posiciones del recorrido. Si ya tenía una ruta abierta (una
+ * captura anterior), la cierra antes: las paradas conservan su estado y
+ * vuelven a poder salir.
+ */
+async function prepararRuta(conductores) {
+  let elegido = null;
+  for (const conductor of conductores) {
+    const { token } = await api("POST", "/auth/token", {
+      cuerpo: { correo: conductor.correo, clave: conductor.clave },
+    });
+    const activa = await api("GET", "/rutas/activa", { token });
+    if (activa.ruta) {
+      await api("POST", `/rutas/${activa.ruta.ruta_id}/finalizacion`, { token, cuerpo: { nota: "" } });
+    }
+    const { estados_aptos: aptos } = activa.ruta ? await api("GET", "/rutas/activa", { token }) : activa;
+    const { envios } = await api("GET", "/envios", { token });
+    const enSuPoder = envios.filter((e) => aptos.includes(e.estado)).map((e) => e.envio_id);
+    if (!elegido || enSuPoder.length > elegido.envios.length) elegido = { conductor, token, envios: enSuPoder };
+  }
+  if (!elegido?.envios.length) throw new Error("Ningún conductor de la semilla tiene guías en su poder.");
+
+  const puntos = interpolar(RECORRIDO, PUNTOS_DEL_RECORRIDO);
+  const [inicio] = puntos;
+  const { ruta } = await api("POST", "/rutas", {
+    token: elegido.token,
+    cuerpo: {
+      envios: elegido.envios,
+      ubicacion: { ...inicio, precision_m: 9, capturada_en: new Date().toISOString() },
+    },
+  });
+  // El servidor recorta al presente cualquier hora futura, y el recorrido se
+  // ordena por hora: con todas iguales, el trazo saldría en zigzag. Se deja
+  // pasar un segundo por lectura y se reparten entre el inicio y ahora, como
+  // las enviaría un teléfono que estuvo sin señal.
+  await new Promise((listo) => setTimeout(listo, PUNTOS_DEL_RECORRIDO * 1000));
+  const desde = Date.parse(ruta.iniciada_en);
+  const paso = (Date.now() - 1000 - desde) / (puntos.length - 1);
+  await api("POST", `/rutas/${ruta.ruta_id}/posiciones`, {
+    token: elegido.token,
+    cuerpo: {
+      posiciones: puntos.slice(1).map((p, i) => ({
+        ...p,
+        precision_m: 8 + (i % 5),
+        capturada_en: new Date(desde + (i + 1) * paso).toISOString(),
+      })),
+    },
+  });
+  console.log(`  ruta de ${ruta.conductor_nombre} con ${elegido.envios.length} guías`);
+  return { conductor: elegido.conductor, envios: elegido.envios, ultima: puntos.at(-1) };
+}
+
+async function capturarRuta(navegador, cuentas) {
+  console.log("Modo ruta");
+  const { conductor, envios, ultima } = await prepararRuta(cuentas.conductores);
+
+  // La empresa: el mapa de Seguimiento con la ruta elegida y su recorrido.
+  const ctx = await contexto(navegador, URL_RASTRO, CONFIGURACION_RASTRO);
+  const pagina = await ctx.newPage();
+  await entrarEnRastro(pagina, cuentas.administrador);
+  await pagina.goto(`${URL_RASTRO}/seguimiento`);
+  await asentar(pagina);
+  await pagina.locator(".seguimiento__panel button.envio").first().click();
+  await asentar(pagina);
+  // El encuadre del mapa se anima y las teselas llegan después.
+  await pagina.waitForTimeout(1500);
+  await asentar(pagina);
+  await guardar(pagina, "rastro-seguimiento");
+  await ctx.close();
+
+  // El conductor, con el GPS del navegador en el último punto del recorrido.
+  const ctxConductor = await contexto(navegador, URL_RASTRO, CONFIGURACION_RASTRO);
+  await ctxConductor.grantPermissions(["geolocation"], { origin: URL_RASTRO });
+  await ctxConductor.setGeolocation({ latitude: ultima.lat, longitude: ultima.lon, accuracy: 9 });
+  const movil = await ctxConductor.newPage();
+  await entrarEnRastro(movil, conductor);
+  await movil.goto(`${URL_RASTRO}/entregas`);
+  await asentar(movil);
+  await movil.waitForTimeout(1500);
+  await asentar(movil);
+  await guardar(movil, "rastro-modo-ruta");
+  await ctxConductor.close();
+
+  // El destinatario de la primera parada, sin cuenta.
+  const ctxPublico = await contexto(navegador, URL_RASTRO, CONFIGURACION_RASTRO);
+  const publico = await ctxPublico.newPage();
+  await publico.goto(`${URL_RASTRO}/rastreo?envio=${envios[0]}`);
+  await asentar(publico);
+  const enCamino = publico.getByText("Su envío va en camino").first();
+  await enCamino.waitFor({ timeout: 15000 });
+  await enCamino.evaluate((nodo) => nodo.scrollIntoView({ block: "start" }));
+  await publico.evaluate(() => window.scrollBy(0, -400));
+  await publico.waitForTimeout(1500);
+  await asentar(publico);
+  await guardar(publico, "rastro-rastreo-en-camino");
+  await ctxPublico.close();
+}
+
+/* ------------------------------------------------------------------------ */
 /* Cotejo                                                                   */
 /* ------------------------------------------------------------------------ */
 
@@ -262,12 +409,21 @@ async function capturarCotejo(navegador, cuentas) {
 
 /* ------------------------------------------------------------------------ */
 
+/** `--solo=ruta` o `--solo=rastro,cotejo`: regenerar una parte sin tocar el
+ *  resto de las capturas. Sin la opción, todas. */
+const PARTES = { rastro: capturarRastro, ruta: capturarRuta, cotejo: capturarCotejo };
+
 async function principal() {
+  const solo = process.argv.find((a) => a.startsWith("--solo="))?.slice("--solo=".length).split(",");
+  const desconocidas = (solo ?? []).filter((p) => !(p in PARTES));
+  if (desconocidas.length) throw new Error(`Partes desconocidas: ${desconocidas.join(", ")}. Hay: ${Object.keys(PARTES).join(", ")}.`);
+
   const cuentas = await usuarios();
   const navegador = await chromium.launch({ channel: "msedge", headless: true });
   try {
-    await capturarRastro(navegador, cuentas);
-    await capturarCotejo(navegador, cuentas);
+    for (const [nombre, capturar] of Object.entries(PARTES)) {
+      if (!solo || solo.includes(nombre)) await capturar(navegador, cuentas);
+    }
   } finally {
     await navegador.close();
   }

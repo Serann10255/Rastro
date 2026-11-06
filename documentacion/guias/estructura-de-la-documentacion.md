@@ -39,6 +39,7 @@ formato ISO.
 | Programa de auditoría | [`cotejo`](../modulos/cotejo/README.md) |
 | API de auditoría | [`cotejo-api`](../modulos/cotejo-api/README.md) |
 | Interfaz de auditoría | [`cotejo-web`](../modulos/cotejo-web/README.md) |
+| Rastro y Cotejo en Flet (escritorio, web y Android) | [`cliente-flet`](../modulos/cliente-flet/README.md) |
 | Diapositivas de sustentación | [`presentacion`](../modulos/presentacion/README.md) |
 
 ## Decisiones registradas

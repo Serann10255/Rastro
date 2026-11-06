@@ -624,6 +624,16 @@ cierra una parada: cuenta como pendiente.
 Grupo: `conductor`. Devuelve un enlace prefirmado acotado al prefijo de la
 organización.
 
+Petición (`nombre_archivo` es obligatorio, hasta 160 caracteres;
+`tipo_contenido` admite `image/jpeg`, `image/png`, `image/webp` y
+`application/pdf`, y es `image/jpeg` si no se indica):
+
+```json
+{ "nombre_archivo": "entrega.jpg", "tipo_contenido": "image/jpeg" }
+```
+
+Respuesta:
+
 ```json
 {
   "evidencia_id": "94ad6c93...",

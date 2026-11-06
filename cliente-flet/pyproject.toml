@@ -1,0 +1,48 @@
+[project]
+name = "rastro"
+version = "0.1.0"
+description = "Rastro y Cotejo en Flet: escritorio, web y Android desde el mismo código"
+requires-python = ">=3.11"
+# Versiones exactas: el APK empaqueta lo que diga aquí, y una actualización de
+# Flet cambia la API declarativa con frecuencia (ver ADR-016).
+dependencies = [
+  "flet==1.0.5",
+  "flet-map==1.0.5",
+  "flet-geolocator==1.0.5",
+  "httpx==0.28.1",
+]
+
+[project.optional-dependencies]
+dev = ["flet-cli==1.0.5", "flet-desktop==1.0.5", "flet-web==1.0.5", "pytest>=8.0"]
+
+# --------------------------------------------------------------------------- #
+# Empaquetado con `flet build`.
+#
+# Los valores de aquí son los de Rastro. Cotejo sale del mismo proyecto con
+# otros parámetros en la línea de órdenes (`--module-name cotejo --project
+# cotejo ...`); el procedimiento completo está en
+# documentacion/despliegue/cliente-flet.md.
+# --------------------------------------------------------------------------- #
+
+[tool.flet]
+org = "co.rastro"
+product = "Rastro"
+company = "Rastro"
+copyright = "Proyecto académico CUN · grupo 30112"
+
+[tool.flet.app]
+path = "src"
+module = "rastro"
+
+[tool.flet.android.permission]
+# La ubicación del modo ruta: precisa, mientras la aplicación está abierta y,
+# con el servicio en primer plano, con la pantalla apagada.
+"android.permission.ACCESS_FINE_LOCATION" = true
+"android.permission.ACCESS_COARSE_LOCATION" = true
+"android.permission.FOREGROUND_SERVICE" = true
+"android.permission.FOREGROUND_SERVICE_LOCATION" = true
+# La notificación permanente que dice que la ubicación se está compartiendo.
+"android.permission.POST_NOTIFICATIONS" = true
+"android.permission.WAKE_LOCK" = true
+# La foto de la entrega.
+"android.permission.CAMERA" = true
